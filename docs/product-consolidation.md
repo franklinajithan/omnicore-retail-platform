@@ -18,6 +18,9 @@
 - Schema and migration for permanent item-code aliases.
 - Create-product duplicate-name warning and retired-code reuse protection.
 - Tenant-scoped read-only consolidation preview with conflict reporting and historical record counts.
+- Connected product-management comparison UI showing original and duplicate barcodes, suppliers, store stock and historical counts.
+- Additional blocking warnings for existing source transactions, price history and store balances; editing an already-consolidated source is prohibited once an alias exists.
+- Exact retired item-code lookup resolves to the surviving product rather than returning both source and target.
 - Search supports existing aliases once they are created by a future merge executor.
 
 **Not implemented:** write-side consolidation executor, alias insertion, canonical transaction reporting, balance reconciliation, conflict-resolution UI and integration tests. Do not delete duplicate records or present this as a completed merge feature.
