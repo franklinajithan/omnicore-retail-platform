@@ -22,8 +22,16 @@
 - Additional blocking warnings for existing source transactions, price history and store balances; editing an already-consolidated source is prohibited once an alias exists.
 - Exact retired item-code lookup resolves to the surviving product rather than returning both source and target.
 - Search resolves exact retired aliases to the surviving product, and the active catalogue excludes retired source records.
+- Read-only ledger endpoint `/v1/catalogue/products/:id/consolidation-ledger?duplicateId=...` compares each store's original and duplicate balance, recorded movement sum, movement count and historical order/receipt/price/activity counts. Missing balances remain unknown; combined balances are informational, not verified opening-stock reconciliation. Connected UI shows this comparison.
 - Combined Activity and Audit Trail reads include original source records and preserve source identifiers. Pricing History includes historical source prices for audit but never uses them as current effective retail. Retired products cannot receive new prices.
 
 **Implemented (restricted):** OWNER/ADMIN-only transactional consolidation for identical-name, same-unit products without source transaction/price history, nonzero balances, conflicting supplier mappings or conflicting overview values. It moves barcodes and supplier mappings, fills missing target metadata, retires the source without deletion, creates its permanent item-code alias, and records audits. The connected UI requires explicit confirmation and an audit reason.
 
 **Not implemented:** ledger-aware consolidation for duplicates with stock or historical transactions, complete historical canonical reporting across every module, resolution of overlapping supplier mappings or differing fields, end-to-end integration tests. Do not treat this restricted executor as the complete zero-loss consolidation workflow.
+
+## Next safety gate before historical merges
+- Validate source balance against its authoritative opening balance plus complete movement ledger, accounting for missing imported events and backdated adjustments.
+- Introduce cross-module locking/idempotency across stock movement posting, goods receipts, product edits and pricing; current advisory lock alone does not coordinate every writer.
+- Preserve immutable source transaction IDs and historical price snapshots. Generate explicit, balanced stock reclassification events per store rather than rewriting original movements.
+- Reconcile per-store totals and all linked row counts before retiring the duplicate; roll back atomically on any discrepancy.
+- Add database-backed integration tests for parallel writers, zero/missing balances, multi-store inventory, idempotent retries, price-history preservation and tenant isolation.
