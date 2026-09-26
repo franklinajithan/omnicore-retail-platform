@@ -15,3 +15,34 @@
 @media(max-width:1100px){.workspaceGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.capabilityGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:850px){.main{padding:16px 16px calc(110px + env(safe-area-inset-bottom))}.heading{margin:27px 0 22px;gap:15px}.heading h1{font-size:38px;letter-spacing:-1.6px}.heading p{font-size:14px}.demo{font-size:9px;padding:8px}.hero{grid-template-columns:1fr;min-height:0;border-radius:20px}.heroText{padding:26px 24px}.hero h2{font-size:29px}.heroArt{display:none}.sectionHead{margin:32px 0 16px}.workspaceGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.workspace,.workspaceDisabled{padding:15px 12px;gap:10px;flex-direction:column;min-height:160px}.workspaceIcon{width:42px;height:42px}.workspaceCopy strong{font-size:13px}.workspaceCopy small{font-size:11px}.workspace>b{position:absolute;align-self:flex-end}.capabilityGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.capability{padding:16px}.capability p{font-size:11px}.notice{margin-bottom:10px}}
 @media(max-width:370px){.workspaceGrid{grid-template-columns:1fr}.workspace,.workspaceDisabled{min-height:0;flex-direction:row}}
+
+
+/* Operational CRM dashboard: mobile-first, data-dense, no promotional hero */
+.opsHeading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:30px 0 22px}
+.opsHeading h1{font-size:clamp(27px,3vw,38px);letter-spacing:-1.1px;margin:7px 0}.opsHeading p{margin:0;color:#74849a;font-size:13px}
+.opsBadge{border:1px solid #d6e2ef;background:#f3f7fc;color:#4b6587;border-radius:9px;padding:8px 10px;font-size:10px;font-weight:800;letter-spacing:.8px;white-space:nowrap}
+.operationStore{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;color:#72829a}
+.operationStore select{min-width:160px;max-width:200px;min-height:43px;padding:8px 12px;border:1px solid #dbe5f0;border-radius:11px;background:white;color:#213c60;font:inherit}
+.connectPanel{background:#fff;border:1px solid #dce6f1;border-left:4px solid #3d70ac;border-radius:15px;padding:19px 22px;margin-bottom:20px;box-shadow:0 3px 14px #12274407}
+.connectPanel strong{font-size:15px}.connectPanel p{font-size:12px;color:#6d7f95;line-height:1.55}.connectPanel>small{display:block;color:#8995a5;font-size:10px;margin-top:12px}
+.connectionFields{display:flex;align-items:end;flex-wrap:wrap;gap:10px}.connectionFields label{display:grid;gap:5px;flex:1;min-width:155px;font-size:11px;font-weight:700;color:#61758e}
+.connectionFields input{padding:12px;border:1px solid #dbe4ef;border-radius:9px;min-width:0}.connectionFields button{padding:12px 20px;border:0;border-radius:9px;background:#285c99;color:white;font-weight:800;cursor:pointer}
+.connectionFields button:disabled{opacity:.5}.opsError{padding:12px;border:1px solid #eec9c9;background:#fff5f5;color:#9c3333;border-radius:10px;font-size:12px}
+.opsMetrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-bottom:19px}
+.opsMetric{min-width:0;padding:19px;background:white;border:1px solid #dfe7f1;border-radius:15px;box-shadow:0 3px 15px #12274408}
+.opsMetric span{display:block;font-size:12px;color:#71839a}.opsMetric strong{display:block;font-size:30px;letter-spacing:-1px;margin:13px 0 8px;font-variant-numeric:tabular-nums}.opsMetric small{font-size:10px;color:#94a1b1}
+.opsGrid{display:grid;grid-template-columns:1.2fr .8fr;gap:17px}.opsPanel{min-width:0;background:#fff;border:1px solid #dfe7f1;border-radius:15px;overflow:hidden}
+.opsPanelTitle{padding:20px;display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid #eaf0f6}
+.opsPanelTitle h2{font-size:16px;letter-spacing:-.3px;margin:0 0 5px}.opsPanelTitle p{font-size:11px;color:#8290a2;margin:0}
+.opsPanelTitle>a{font-size:11px;color:#2d649e;text-decoration:none;font-weight:800;white-space:nowrap}
+.opsEmpty{padding:36px 20px;color:#8290a2;font-size:12px;line-height:1.6}
+.opsProduct{display:flex;align-items:center;gap:12px;padding:13px 19px;border-bottom:1px solid #eff2f6}.opsProduct:last-child{border-bottom:0}
+.opsProductIcon{display:grid;place-items:center;width:35px;height:35px;flex-shrink:0;background:#edf3fb;color:#2c629e;border-radius:10px;font-size:19px}
+.opsProduct>div{min-width:0;flex:1}.opsProduct strong,.opsAction strong{display:block;font-size:12px;overflow-wrap:anywhere}
+.opsProduct small,.opsAction small{display:block;font-size:10px;color:#8290a2;margin-top:5px}.opsProductStatus{font-size:9px;color:#398360;font-weight:800}
+.opsActions{padding:10px 17px}.opsAction{display:flex;align-items:center;gap:12px;text-decoration:none;color:#21334d;padding:13px 4px;border-bottom:1px solid #edf1f6}
+.opsAction>span{display:grid;place-items:center;width:37px;height:37px;flex-shrink:0;background:#edf3fb;border-radius:10px;color:#326ca8;font-size:22px}
+.opsAction>div{flex:1}.opsAction>b{color:#356ca7}.opsComing{margin:10px 17px 18px;padding:14px;background:#f5f8fc;border:1px dashed #d5e1ef;border-radius:10px}
+.opsComing h3{font-size:12px;margin:0 0 7px}.opsComing p{font-size:11px;line-height:1.6;color:#8190a2;margin:0}
+@media(max-width:1050px){.opsGrid{grid-template-columns:1fr}.opsMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:850px){.topbar{gap:8px}.logo{font-size:18px}.logo small{display:none}.operationStore{font-size:0}.operationStore select{min-width:0;max-width:150px;font-size:12px}.opsHeading{margin:22px 0 17px}.opsHeading h1{font-size:29px}.opsHeading p{font-size:12px}.opsMetrics{gap:10px}.opsMetric{padding:16px}.opsMetric strong{font-size:25px}.opsPanelTitle{padding:16px}.opsGrid{gap:12px}.connectPanel{padding:15px}.connectionFields{align-items:stretch}.connectionFields button{width:100%}}
