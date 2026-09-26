@@ -40,7 +40,7 @@ if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
 }
 
 if (-not (Read-PnpmVersion)) {
-    Write-Host "Installing pnpm@$required using npm..." -ForegroundColor Cyan
+    # Remove a conflicting Corepack pnpm shim before npm writes pnpm.cmd.\n    if (Get-Command corepack -ErrorAction SilentlyContinue) {\n        Write-Host 'Removing conflicting Corepack pnpm shim...' -ForegroundColor Yellow\n        & corepack disable pnpm\n        Assert-Success 'Corepack shim removal'\n    }\n    Write-Host "Installing pnpm@$required using npm..." -ForegroundColor Cyan
     # Do NOT set strict-ssl=false or NODE_TLS_REJECT_UNAUTHORIZED=0.
     # A corporate proxy / SSL-inspecting network needs its CA configured.
     & npm install --global "pnpm@$required"
