@@ -37,3 +37,29 @@ jobs:
       - run: pnpm --filter @omnicore/database validate
         env:
           DATABASE_URL: postgresql://omnicore:test@localhost:5432/omnicore
+  web-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm --filter @omnicore/web build
+      - run: pnpm --filter @omnicore/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @omnicore/web test:e2e
+      - name: Upload regression diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-diagnostics
+          path: |
+            apps/web/playwright-report/
+            apps/web/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
