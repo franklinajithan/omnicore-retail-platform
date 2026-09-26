@@ -240,6 +240,7 @@ export class CatalogueController {
     const rows = await db.product.findMany({
       where: {
         tenantId,
+        status: 'ACTIVE',
         ...(exactAlias ? { id: exactAlias.productId } : {}),
         ...(!exactAlias && query?.trim() ? { OR: [
           { itemCode: { equals: query.trim(), mode: 'insensitive' as const } },
@@ -302,8 +303,10 @@ export class CatalogueController {
     const limit = Math.min(Math.max(Number(rawLimit ?? 50), 1), 100);
     const product = await db.product.findFirst({ where: { id, tenantId }, select: { id: true } });
     if (!product) throw new NotFoundException('Product not found');
+    const linked = await db.productAlias.findMany({ where: { tenantId, productId: id, sourceProductId: { not: null } }, select: { sourceProductId: true } });
+    const linkedIds = [id, ...linked.flatMap(a => a.sourceProductId ? [a.sourceProductId] : [])];
     return { items: await db.productAudit.findMany({
-      where: { tenantId, productId: id },
+      where: { tenantId, productId: { in: linkedIds } },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: limit,
       select: { id: true, actorId: true, action: true, changes: true, reason: true, createdAt: true },
@@ -341,9 +344,11 @@ export class CatalogueController {
       const store = await db.store.findFirst({ where: { id: storeId, tenantId }, select: { id: true } });
       if (!store) throw new BadRequestException('Invalid store for tenant');
     }
+    const linked = await db.productAlias.findMany({ where: { tenantId, productId: id, sourceProductId: { not: null } }, select: { sourceProductId: true } });
+    const linkedIds = [id, ...linked.flatMap(a => a.sourceProductId ? [a.sourceProductId] : [])];
     const items = await db.productActivity.findMany({
       where: {
-        tenantId, productId: id,
+        tenantId, productId: { in: linkedIds },
         ...(storeId ? { storeId } : {}),
         ...(barcode ? { scannedBarcode: barcode } : {}),
         ...(module ? { sourceModule: module } : {}),
@@ -351,11 +356,11 @@ export class CatalogueController {
       },
       orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
       take: limit,
-      select: { id: true, occurredAt: true, type: true, sourceModule: true, reference: true,
+      select: { id: true, productId: true, skuSnapshot: true, occurredAt: true, type: true, sourceModule: true, reference: true,
         scannedBarcode: true, quantityDelta: true, unitCost: true, actualSalePrice: true,
         currency: true, reason: true, store: { select: { id: true, code: true, name: true } } },
     });
-    return { items };
+    return { items, includedHistoricalProductIds: linkedIds.slice(1) };
   }
 
   @Get('barcodes/:code')
