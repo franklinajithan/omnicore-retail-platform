@@ -17,10 +17,10 @@ acceptance tests pass.
 | Deliveries | Purchase order/receipt database schema | Order/receipt API, source-linked history, idempotent posting, claims |
 | Linked items | Reference-only tab | Related/pack/recipe relationships, history and tenant validation |
 | Activity | Read-only tenant-scoped filtered API | Verified event projection, stock before/after, actor filter, UI |
-| Audit trail | Reference-only tab | Durable old/new field audit with actor, reason and timestamps |
+| Audit trail | Reference-only tab | Audit table and write-time before/after snapshots added; field-level diff presentation, reason capture and integration tests remain |
 | Documents | Reference-only tab | Secure upload, metadata, access control and attachment UI |
 | Responsive UX | Split desktop/mobile demo workspace | Live authenticated integration, accessible save/back, 50k pagination |
-| Security | Verified JWT tenant membership and role-gated writes | Store-level permissions, optimistic concurrency, full audit |
+| Security | Verified JWT tenant membership and role-gated writes | Store-level permissions and audited write integration tests; optimistic concurrency now implemented in API |
 | QA | Product validation unit tests and browser regression suite | End-to-end database tests for PM-001 through PM-011 |
 
 ## Non-negotiable business rules
@@ -50,3 +50,15 @@ keyboard/safe-area UX; PM-011 no misleading persistence claims.
 
 **Release status: NOT COMPLETE.** Existing endpoints and UI are partial.
 Run database-backed integration tests and CI before any production release.
+
+## September 26 implementation update
+
+- Added `Product.version` and a tenant-scoped `ProductAudit` table with migration.
+- Product creation and replacement now write actor-attributed configuration
+  audit snapshots in the same database operation as the product write.
+- Product replacement requires `If-Match: <version>`; concurrent stale
+  updates return HTTP 409. The immutable Item Code rule remains enforced.
+- Added `GET /v1/catalogue/products/:id/audit` with tenant isolation.
+- **Not yet complete:** audit stores before/after structured snapshots rather
+  than a normalized per-field change list; the editor must pass the version
+  and handle HTTP 409; migration and end-to-end tests still need verification.
