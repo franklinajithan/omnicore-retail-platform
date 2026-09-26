@@ -35,6 +35,19 @@ jobs:
         env:
           DATABASE_URL: postgresql://omnicore:test@localhost:5432/omnicore
       - run: pnpm --filter @omnicore/database test
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm --filter @omnicore/database generate
+        env:
+          DATABASE_URL: postgresql://omnicore:test@localhost:5432/omnicore
+      - run: pnpm --filter @omnicore/api typecheck
   web-regression:
     runs-on: ubuntu-latest
     timeout-minutes: 20
