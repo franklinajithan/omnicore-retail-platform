@@ -16,7 +16,7 @@ export async function mapSupplierItem(db: PrismaClient, input: SupplierItemInput
     throw new Error('Missing or invalid supplier mapping identity');
   const packSize = new Prisma.Decimal(input.packSize);
   const cost = new Prisma.Decimal(input.cost);
-  if (!packSize.isPositive() || cost.isNegative()) throw new Error('Invalid pack size or cost');
+  if (!packSize.greaterThan(0) || cost.isNegative()) throw new Error('Invalid pack size or cost');
   // Both sides must belong to the same authenticated tenant before any mapping is created.
   return db.$transaction(async tx => {
     const [supplier, product] = await Promise.all([
