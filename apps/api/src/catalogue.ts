@@ -16,16 +16,17 @@ export class CatalogueController {
     @Headers('x-tenant-id') selectedTenant: string | undefined,
     @Body() body: unknown,
   ) {
-    const tenantId = await this.identity.requireTenant(authorization, selectedTenant, ['OWNER', 'ADMIN', 'MANAGER']);
+    const { tenantId, actorId } = await this.identity.requireContext(authorization, selectedTenant, ['OWNER', 'ADMIN', 'MANAGER']);
     const input = parseProductWrite(body);
     try {
       return await db.product.create({
         data: {
+          audits: { create: { tenantId, actorId, action: 'CREATED', changes: { after: input } } },
           tenantId, itemCode: input.itemCode, name: input.name,
           status: input.status, baseUnit: input.baseUnit,
           barcodes: { create: input.barcodes.map(b => ({ tenantId, ...b })) },
         },
-        select: { id: true, itemCode: true, name: true, status: true, baseUnit: true,
+        select: { id: true, itemCode: true, name: true, status: true, baseUnit: true, version: true,
           barcodes: { select: { code: true, isPrimary: true } } },
       });
     } catch (error) {
@@ -40,22 +41,32 @@ export class CatalogueController {
     @Headers('authorization') authorization: string | undefined,
     @Headers('x-tenant-id') selectedTenant: string | undefined,
     @Param('id') id: string,
+    @Headers('if-match') ifMatch: string | undefined,
     @Body() body: unknown,
   ) {
-    const tenantId = await this.identity.requireTenant(authorization, selectedTenant, ['OWNER', 'ADMIN', 'MANAGER']);
+    const { tenantId, actorId } = await this.identity.requireContext(authorization, selectedTenant, ['OWNER', 'ADMIN', 'MANAGER']);
+    if (!ifMatch || !/^[1-9]\\d*$/.test(ifMatch)) throw new BadRequestException('If-Match product version required');
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))
       throw new BadRequestException('Invalid product id');
     const input = parseProductWrite(body);
     try {
       return await db.$transaction(async tx => {
-        const existing = await tx.product.findFirst({ where: { id, tenantId }, select: { id: true, itemCode: true } });
+        const existing = await tx.product.findFirst({ where: { id, tenantId }, select: { id: true, itemCode: true, name: true, baseUnit: true, status: true, version: true,
+          barcodes: { select: { code: true, isPrimary: true } } } });
         if (!existing) throw new NotFoundException('Product not found');
         if (existing.itemCode !== input.itemCode)
           throw new BadRequestException('Item Code is immutable; use a controlled migration');
+        if (existing.version !== Number(ifMatch)) throw new ConflictException('Product changed; reload before saving');
+        const locked = await tx.product.updateMany({ where: { id, tenantId, version: existing.version }, data: { version: { increment: 1 } } });
+        if (!locked.count) throw new ConflictException('Product changed; reload before saving');
         await tx.productBarcode.deleteMany({ where: { tenantId, productId: id } });
         return tx.product.update({
           where: { id },
           data: {
+            audits: { create: { tenantId, actorId, action: 'UPDATED', changes: {
+              before: { name: existing.name, baseUnit: existing.baseUnit, status: existing.status, barcodes: existing.barcodes },
+              after: { name: input.name, baseUnit: input.baseUnit, status: input.status, barcodes: input.barcodes },
+            } } },
             itemCode: input.itemCode, name: input.name, status: input.status,
             baseUnit: input.baseUnit,
             barcodes: { create: input.barcodes.map(b => ({ tenantId, ...b })) },
@@ -117,7 +128,7 @@ export class CatalogueController {
     const product = await db.product.findFirst({
       where: { id, tenantId },
       select: {
-        id: true, itemCode: true, name: true, status: true, baseUnit: true, createdAt: true,
+        id: true, itemCode: true, name: true, status: true, baseUnit: true, createdAt: true, version: true,
         barcodes: { where: { tenantId }, select: { id: true, code: true, isPrimary: true },
           orderBy: [{ isPrimary: 'desc' }, { code: 'asc' }] },
         suppliers: { where: { supplier: { tenantId } },
