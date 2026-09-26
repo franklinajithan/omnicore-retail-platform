@@ -1,0 +1,39 @@
+name: OmniCore CI
+on:
+  push:
+    branches: [main, feat/catalog-foundation]
+  pull_request:
+    branches: [main]
+jobs:
+  shared:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm --filter @omnicore/shared typecheck
+      - run: pnpm --filter @omnicore/shared test
+  database:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm --filter @omnicore/database generate
+        env:
+          DATABASE_URL: postgresql://omnicore:test@localhost:5432/omnicore
+      - run: pnpm --filter @omnicore/database validate
+        env:
+          DATABASE_URL: postgresql://omnicore:test@localhost:5432/omnicore
