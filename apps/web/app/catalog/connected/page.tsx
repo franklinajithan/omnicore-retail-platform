@@ -126,7 +126,7 @@ export default function ConnectedCatalogue() {
           <p>Optimistic concurrency: {selected ? 'version ' + selected.version : 'new item'}. A conflicting edit is rejected.</p>
         </section>
       </div>
-      {selected && <ConnectedDetails product={selected} request={request} />}
+      {selected && <ConnectedDetails product={selected} request={request} onRefresh={() => openProduct(selected.id)} />}
     </>}
     <MobileNavigation />
   </main>;
