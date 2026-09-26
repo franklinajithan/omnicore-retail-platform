@@ -55,6 +55,8 @@ export class CatalogueController {
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))
       throw new BadRequestException('Invalid product id');
     const input = parseProductWrite(body);
+    const mergedAlias = await db.productAlias.findFirst({ where: { tenantId, sourceProductId: id }, select: { productId: true } });
+    if (mergedAlias) throw new ConflictException('Consolidated duplicate is read-only; edit the surviving product');
     try {
       return await db.$transaction(async tx => {
         const existing = await tx.product.findFirst({ where: { id, tenantId }, select: { id: true, itemCode: true, name: true, baseUnit: true, status: true, version: true, imageUrl: true, category: true, vatApplicable: true, caseSize: true, casePrice: true, eachPrice: true,
@@ -119,12 +121,17 @@ export class CatalogueController {
     const target = products.find(p => p.id === id)!;
     const source = products.find(p => p.id === duplicateId)!;
     const conflicts: string[] = [];
+    if (target.status !== 'ACTIVE' || source.status !== 'ACTIVE') conflicts.push('Both products must be active before consolidation');
+    if (target.name.trim().toLowerCase() !== source.name.trim().toLowerCase()) conflicts.push('Product names differ: verify that they are identical goods');
+    if (target.barcodes.some(b => source.barcodes.some(other => other.code === b.code))) conflicts.push('Overlapping barcodes: investigate duplicate barcode ownership');
     if (target.baseUnit !== source.baseUnit) conflicts.push('Base units differ: manual stock conversion required');
     for (const field of ['category','vatApplicable','caseSize','casePrice','eachPrice'] as const) {
       if (target[field] != null && source[field] != null && String(target[field]) !== String(source[field])) conflicts.push(field + ' differs');
     }
     const supplierConflicts = source.suppliers.filter(m => target.suppliers.some(t => t.supplierId === m.supplierId && (t.supplierCode !== m.supplierCode || String(t.packSize) !== String(m.packSize) || String(t.cost) !== String(m.cost))));
     if (supplierConflicts.length) conflicts.push('Supplier mappings conflict: retain both original records for review');
+    if (source.balances.length) conflicts.push('Duplicate has store balances: stock ledger reconciliation required');
+    if (source._count.movements || source._count.orderLines || source._count.receiptLines || source._count.activities || source._count.prices) conflicts.push('Duplicate has transactional or price history: historical reporting must be reconciled');
     const summary = (p: typeof target) => ({ id:p.id,itemCode:p.itemCode,name:p.name,version:p.version,
       barcodes:p.barcodes.map(b=>({code:b.code,isPrimary:b.isPrimary})),
       suppliers:p.suppliers.map(m=>({supplier:m.supplier.name,code:m.supplierCode,packSize:m.packSize,cost:m.cost})),
@@ -147,9 +154,11 @@ export class CatalogueController {
     if (rawLimit && !/^\d+$/.test(rawLimit)) throw new BadRequestException('Invalid limit');
     const limit = Math.min(Math.max(Number(rawLimit ?? 50), 1), 100);
     // Exact item-code and barcode lookup are included alongside name search.
+    const exactAlias = query?.trim() ? await db.productAlias.findFirst({ where: { tenantId, itemCode: { equals: query.trim(), mode: 'insensitive' } }, select: { productId: true } }) : null;
     const rows = await db.product.findMany({
       where: {
         tenantId,
+        ...(exactAlias ? { id: exactAlias.productId } : {}),
         ...(query?.trim() ? { OR: [
           { itemCode: { equals: query.trim(), mode: 'insensitive' as const } },
           { itemCode: { contains: query.trim(), mode: 'insensitive' as const } },
