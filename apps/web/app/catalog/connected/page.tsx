@@ -9,7 +9,7 @@ import { MobileNavigation } from '../../mobile-shell';
 type Barcode = { code: string; isPrimary: boolean };
 type Product = Detail & { status: 'ACTIVE' | 'INACTIVE' };
 type Page = { items: Product[]; nextCursor: string | null };
-type MergeProduct = {id:string;itemCode:string;name:string;barcodes:{code:string}[];suppliers:{supplier:string;code:string;packSize:string;cost:string}[];balances:{store:string;quantity:string}[];historicalRecords:Record<string,number>};
+type MergeProduct = {id:string;itemCode:string;name:string;version:number;barcodes:{code:string}[];suppliers:{supplier:string;code:string;packSize:string;cost:string}[];balances:{store:string;quantity:string}[];historicalRecords:Record<string,number>};
 type MergePreview = {target:MergeProduct;duplicate:MergeProduct;conflicts:string[];note:string};
 const api = process.env.NEXT_PUBLIC_OMNICORE_API_URL;
 
@@ -31,6 +31,8 @@ export default function ConnectedCatalogue() {
   const [mergePreview,setMergePreview] = useState<MergePreview|null>(null);
   const [mergeError,setMergeError] = useState('');
   const [mergeBusy,setMergeBusy] = useState(false);
+  const [mergeReason,setMergeReason] = useState('');
+  const [mergeConfirmed,setMergeConfirmed] = useState(false);
 
   useEffect(() => setConfigured(Boolean(api && /^https?:\/\//.test(api))), []);
   const request = useCallback(async (path: string, options: RequestInit = {}) => {
@@ -65,7 +67,7 @@ export default function ConnectedCatalogue() {
     setBusy(true); setMessage('');
     try {
       const product = await request('/v1/catalogue/products/' + id) as Product;
-      setSelected(product);setMergePreview(null);setDuplicateId('');
+      setSelected(product);setMergePreview(null);setDuplicateId('');setMergeConfirmed(false);setMergeReason('');
       setDraft({ itemCode: product.itemCode, name: product.name, baseUnit: product.baseUnit,
         status: product.status, barcodes: product.barcodes.map(b => b.code).join('\n'), imageUrl: product.imageUrl??'', category: product.category??'', vatApplicable: product.vatApplicable==null?'':product.vatApplicable?'yes':'no', caseSize: product.caseSize??'', casePrice: product.casePrice??'', eachPrice: product.eachPrice??'' });
     } catch (error) { setMessage((error as Error).message); }
@@ -97,6 +99,21 @@ export default function ConnectedCatalogue() {
     setMergeBusy(true);setMergeError('');setMergePreview(null);
     try{setMergePreview(await request('/v1/catalogue/products/'+selected.id+'/consolidation-preview?duplicateId='+encodeURIComponent(duplicateId)) as MergePreview);}
     catch(error){setMergeError((error as Error).message);}finally{setMergeBusy(false);}
+  }
+
+  async function executeMerge(){
+    if(!mergePreview||mergePreview.conflicts.length||!mergeConfirmed||!mergeReason.trim())return;
+    setMergeBusy(true);setMergeError('');
+    try{
+      const result=await request('/v1/catalogue/products/'+mergePreview.target.id+'/consolidate',{
+        method:'POST',body:JSON.stringify({duplicateId:mergePreview.duplicate.id,targetVersion:mergePreview.target.version,
+          duplicateVersion:mergePreview.duplicate.version,reason:mergeReason.trim()})
+      }) as {itemCode:string;retiredItemCode:string};
+      setMergePreview(null);setMergeConfirmed(false);setMergeReason('');
+      await openProduct(result.itemCode===mergePreview.target.itemCode?mergePreview.target.id:mergePreview.target.id);
+      await load(null,true);
+      setMessage('Consolidated '+result.retiredItemCode+' into '+result.itemCode+'. Historical records preserved.');
+    }catch(error){setMergeError((error as Error).message);}finally{setMergeBusy(false);}
   }
 
   const field = { width: '100%', padding: 11, border: '1px solid #b9c9db', borderRadius: 10 } as const;
@@ -150,7 +167,7 @@ export default function ConnectedCatalogue() {
         <h2>Duplicate product consolidation</h2>
         <p>Original item code: <strong>{selected.itemCode}</strong>. Compare both records before consolidation. This preview never changes data.</p>
         <label style={{display:'grid',gap:8,maxWidth:540}}>Select duplicate
-          <select style={field} value={duplicateId} onChange={e=>{setDuplicateId(e.target.value);setMergePreview(null);}}>
+          <select style={field} value={duplicateId} onChange={e=>{setDuplicateId(e.target.value);setMergePreview(null);setMergeConfirmed(false);}}>
             <option value="">Choose another product from loaded results</option>
             {items.filter(p=>p.id!==selected.id).map(p=><option key={p.id} value={p.id}>{p.itemCode} · {p.name}</option>)}
           </select>
@@ -170,6 +187,19 @@ export default function ConnectedCatalogue() {
             </article>)}
           </div>
           <p role="status" style={{padding:12,background:'#edf4fc',borderRadius:10}}>{mergePreview.note}</p>
+          <h4>Confirm consolidation</h4>
+          <p>Only conflict-free products without transaction or price history or outstanding stock can merge here.</p>
+          <label style={{display:'grid',gap:6,maxWidth:540}}>Required audit reason
+            <textarea style={field} maxLength={500} rows={3} value={mergeReason} onChange={e=>setMergeReason(e.target.value)}/>
+          </label>
+          <label style={{display:'flex',gap:8,marginTop:12}}>
+            <input type="checkbox" checked={mergeConfirmed} onChange={e=>setMergeConfirmed(e.target.checked)}/>
+            I verified these are identical products and the original item code is correct.
+          </label>
+          <button type="button" className={styles.btn+' '+styles.primary} style={{marginTop:12}}
+            disabled={mergeBusy||mergePreview.conflicts.length>0||!mergeConfirmed||!mergeReason.trim()}
+            onClick={()=>void executeMerge()}>{mergeBusy?'Consolidating…':'Consolidate into original item code'}</button>
+
         </div>}
       </section>}
       {selected && <ConnectedDetails product={selected} request={request} onRefresh={() => openProduct(selected.id)} />}
