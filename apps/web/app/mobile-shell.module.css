@@ -9,3 +9,14 @@
 .symbol{font-size:24px;line-height:27px}.disabled{opacity:.42}
 .storeLabel{max-width:190px}.storeLabel select{max-width:145px;font-size:13px}
 }
+
+
+/* Refined native-app style navigation */
+@media(max-width:850px){
+.nav{bottom:8px;left:10px;right:10px;border:1px solid #e5eaf2;border-radius:21px;background:#ffffffef;box-shadow:0 10px 42px #152c4c22;padding:7px 7px calc(7px + env(safe-area-inset-bottom));gap:3px}
+.item,.active,.disabled{min-height:58px;font-size:10px;letter-spacing:.1px;font-weight:650;border-radius:15px}
+.symbol{display:grid;place-items:center;height:27px;line-height:1}
+.active{background:#e9f1fc;color:#235a9c;box-shadow:inset 0 0 0 1px #d6e5f7}
+.active:before{top:-2px;width:22px;height:3px;background:#397ac6}
+.disabled{opacity:.38}
+}
