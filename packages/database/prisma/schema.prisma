@@ -43,6 +43,7 @@ model Tenant {
   receipts  GoodsReceipt[]
   activities ProductActivity[]
   productAudits ProductAudit[]
+  prices ProductPrice[]
   users     TenantUser[]
 }
 
@@ -66,6 +67,7 @@ model Store {
   movements StockMovement[]
   receipts  GoodsReceipt[]
   activities ProductActivity[]
+  prices ProductPrice[]
   @@unique([tenantId, code])
   @@unique([id, tenantId])
 }
@@ -82,6 +84,7 @@ model Product {
   version     Int @default(1)
   tenant      Tenant @relation(fields: [tenantId], references: [id])
   audits      ProductAudit[]
+  prices      ProductPrice[]
   barcodes    ProductBarcode[]
   suppliers   SupplierProduct[]
   balances    StockBalance[]
@@ -281,4 +284,24 @@ model ProductAudit {
   tenant    Tenant  @relation(fields: [tenantId], references: [id])
   product   Product @relation(fields: [productId, tenantId], references: [id, tenantId])
   @@index([tenantId, productId, createdAt, id])
+}
+
+/// Per-store effective-dated retail prices. Historical rows are never overwritten.
+/// Null storeId means the tenant-wide default price.
+model ProductPrice {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  productId   String   @db.Uuid
+  storeId     String?  @db.Uuid
+  currency    String   @db.VarChar(3)
+  retail      Decimal  @db.Decimal(18, 4)
+  vatRate     Decimal  @db.Decimal(5, 2)
+  effectiveAt DateTime
+  createdAt   DateTime @default(now())
+  actorId     String
+  reason      String?
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  product     Product  @relation(fields: [productId, tenantId], references: [id, tenantId])
+  store       Store?   @relation(fields: [storeId, tenantId], references: [id, tenantId])
+  @@index([tenantId, productId, storeId, effectiveAt, id])
 }
