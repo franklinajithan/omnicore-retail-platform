@@ -23,4 +23,6 @@
 - Exact retired item-code lookup resolves to the surviving product rather than returning both source and target.
 - Search supports existing aliases once they are created by a future merge executor.
 
-**Not implemented:** write-side consolidation executor, alias insertion, canonical transaction reporting, balance reconciliation, conflict-resolution UI and integration tests. Do not delete duplicate records or present this as a completed merge feature.
+**Implemented (restricted):** OWNER/ADMIN-only transactional consolidation for identical-name, same-unit products without source transaction/price history, nonzero balances, conflicting supplier mappings or conflicting overview values. It moves barcodes and supplier mappings, fills missing target metadata, retires the source without deletion, creates its permanent item-code alias, and records audits. The connected UI requires explicit confirmation and an audit reason.
+
+**Not implemented:** ledger-aware consolidation for duplicates with stock or historical transactions, historical canonical reporting, resolution of overlapping supplier mappings or differing fields, end-to-end integration tests. Do not treat this restricted executor as the complete zero-loss consolidation workflow.
