@@ -11,6 +11,10 @@ const db = new PrismaClient();
 @Injectable()
 export class TenantIdentity {
   async requireTenant(authorization?: string, selectedTenant?: string, allowedRoles?: string[]): Promise<string> {
+    return (await this.requireContext(authorization, selectedTenant, allowedRoles)).tenantId;
+  }
+
+  async requireContext(authorization?: string, selectedTenant?: string, allowedRoles?: string[]): Promise<{tenantId: string; actorId: string; role: string}> {
     const issuer = process.env.AUTH_JWT_ISSUER;
     const audience = process.env.AUTH_JWT_AUDIENCE;
     const jwksUrl = process.env.AUTH_JWKS_URL;
@@ -37,6 +41,6 @@ export class TenantIdentity {
       throw new ForbiddenException('Select a tenant for this request');
     if (allowedRoles && !allowedRoles.includes(memberships[0].role.toUpperCase()))
       throw new ForbiddenException('Insufficient tenant permissions');
-    return memberships[0].tenantId;
+    return { tenantId: memberships[0].tenantId, actorId: userId, role: memberships[0].role };
   }
 }
