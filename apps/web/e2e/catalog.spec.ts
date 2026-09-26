@@ -58,3 +58,23 @@ test('CAT-014: manufacturer creation', async ({ page }) => {
   await page.getByRole('button', { name: 'Add manufacturer' }).click();
   await expect(page.getByText('QA Manufacturer')).toBeVisible();
 });
+
+test('MOB-001 MOB-002: mobile catalogue has app navigation and no horizontal page overflow', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'Mobile viewport only');
+  await page.goto('/catalog');
+  const nav = page.getByRole('navigation', { name: 'Mobile navigation' });
+  await expect(nav).toBeVisible();
+  await expect(nav.getByRole('link', { name: 'Products' })).toHaveAttribute('aria-current', 'page');
+  await expect(nav.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
+  await expect(nav.getByText('Scan')).toHaveAttribute('aria-disabled', 'true');
+  const hasOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+  expect(hasOverflow).toBe(false);
+});
+
+test('MOB-005: app manifest exposes standalone catalogue entry point', async ({ request }) => {
+  const response = await request.get('/manifest.webmanifest');
+  expect(response.ok()).toBeTruthy();
+  const manifest = await response.json();
+  expect(manifest.display).toBe('standalone');
+  expect(manifest.start_url).toBe('/catalog');
+});
