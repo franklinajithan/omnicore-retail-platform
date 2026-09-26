@@ -46,3 +46,26 @@
 .opsComing h3{font-size:12px;margin:0 0 7px}.opsComing p{font-size:11px;line-height:1.6;color:#8190a2;margin:0}
 @media(max-width:1050px){.opsGrid{grid-template-columns:1fr}.opsMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:850px){.topbar{gap:8px}.logo{font-size:18px}.logo small{display:none}.operationStore{font-size:0}.operationStore select{min-width:0;max-width:150px;font-size:12px}.opsHeading{margin:22px 0 17px}.opsHeading h1{font-size:29px}.opsHeading p{font-size:12px}.opsMetrics{gap:10px}.opsMetric{padding:16px}.opsMetric strong{font-size:25px}.opsPanelTitle{padding:16px}.opsGrid{gap:12px}.connectPanel{padding:15px}.connectionFields{align-items:stretch}.connectionFields button{width:100%}}
+
+
+/* Premium enterprise application visual language */
+.shell{background:#f6f8fc;color:#17263d;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+.sidebar{background:#111e33;box-shadow:8px 0 32px #142d4b08}
+.brand{display:flex;align-items:center;gap:10px;font-size:20px;letter-spacing:-.5px;flex-wrap:wrap}
+.brand small{width:100%;margin:0 0 0 43px}
+.brandMark,.logoMark{display:inline-grid;place-items:center;background:linear-gradient(145deg,#4282d0,#285894);color:white;border-radius:11px;width:34px;height:34px;flex-shrink:0;box-shadow:0 4px 12px #225b9b35}
+.logo{display:flex;align-items:center;gap:9px;font-size:19px}.logo small{font-size:12px}
+.sidebar .nav,.sidebar .active{display:flex;align-items:center;gap:5px;min-height:42px;border-radius:11px;margin:3px 0}
+.sidebar .active{background:#2c4870;box-shadow:inset 3px 0 #77b3ff}
+.topbar{background:#ffffffbf;border:1px solid #e7edf5;border-radius:16px;padding:13px 17px;box-shadow:0 4px 18px #1c365209}
+.main{padding-top:20px}
+.opsHeading{margin:26px 0 18px}.opsHeading h1{font-size:31px;font-weight:760;letter-spacing:-1.1px}
+.opsMetric{border:1px solid #e4eaf3;border-radius:17px;padding:19px 20px;box-shadow:0 5px 22px #1c36520a;position:relative}
+.opsMetric:before{content:'';position:absolute;top:17px;right:17px;width:6px;height:6px;border-radius:50%;background:#7eabdc}
+.opsMetric strong{font-weight:760;font-size:29px}.opsMetric small{color:#8a9bb0}
+.opsPanel{border:1px solid #e3eaf3;border-radius:18px;box-shadow:0 6px 28px #1c365209}
+.opsPanelTitle{background:#fcfdff}.opsPanelTitle h2{font-weight:740}
+.opsAction{border-radius:11px;padding:15px 11px;transition:background .15s}.opsAction:hover{background:#f1f6fd}.opsAction>span,.opsProductIcon{background:#edf4ff;color:#3769a4;border:1px solid #dfeafa}
+.opsProductStatus{padding:5px 8px;border-radius:7px;background:#eaf7ef;color:#278052;font-size:9px}
+.operationStore select{box-shadow:0 2px 8px #1b3e6108}
+@media(max-width:850px){.main{padding:13px 13px calc(112px + env(safe-area-inset-bottom))}.topbar{border-radius:13px;padding:10px 12px}.logo{font-size:16px;gap:7px}.logoMark{width:31px;height:31px}.opsHeading h1{font-size:27px}.opsMetric{padding:15px;border-radius:14px}.opsMetric strong{font-size:24px}.opsPanel{border-radius:15px}.opsBadge{font-size:9px}}
