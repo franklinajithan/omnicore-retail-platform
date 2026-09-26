@@ -1,4 +1,4 @@
-import { BadRequestException, Controller, Get, Headers, Param, Query, } from '@nestjs/common';
+import { BadRequestException, Controller, Get, NotFoundException, Headers, Param, Query, } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { TenantIdentity } from './identity';
 
@@ -41,9 +41,36 @@ export class CatalogueController {
     return { items, nextCursor: rows.length > limit ? items[items.length - 1].id : null };
   }
 
+
+  // Tenant-scoped maintenance detail: never return cross-tenant supplier mappings.
+  @Get('products/:id')
+  async productDetail(
+    @Headers('authorization') authorization: string | undefined,
+    @Headers('x-tenant-id') selectedTenant: string | undefined,
+    @Param('id') id: string,
+  ) {
+    const tenantId = await this.identity.requireTenant(authorization, selectedTenant);
+    if (!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(id)) throw new BadRequestException('Invalid product id');
+    const product = await db.product.findFirst({
+      where: { id, tenantId },
+      select: {
+        id: true, itemCode: true, name: true, status: true, baseUnit: true, createdAt: true,
+        barcodes: { where: { tenantId }, select: { id: true, code: true, isPrimary: true },
+          orderBy: [{ isPrimary: 'desc' }, { code: 'asc' }] },
+        suppliers: { where: { supplier: { tenantId } },
+          select: { id: true, supplierCode: true, packSize: true, cost: true,
+            supplier: { select: { id: true, code: true, name: true } } } },
+        balances: { where: { tenantId },
+          select: { quantity: true, store: { select: { id: true, code: true, name: true } } } },
+      },
+    });
+    if (!product) throw new NotFoundException('Product not found');
+    return product;
+  }
+
   @Get('barcodes/:code')
   async barcode(@Headers('authorization') authorization: string | undefined, @Headers('x-tenant-id') selectedTenant: string | undefined, @Param('code') code: string) {
-    const tenantId = await this.identity.requireTenant(authorization);
+    const tenantId = await this.identity.requireTenant(authorization, selectedTenant);
     if (!code.trim() || code.length > 128) throw new BadRequestException('Invalid barcode');
     return db.productBarcode.findUnique({
       where: { tenantId_code: { tenantId, code } },
