@@ -7,9 +7,15 @@ export type ProductWrite = {
   baseUnit: string;
   status: ProductStatus;
   barcodes: { code: string; isPrimary: boolean }[];
+  imageUrl: string | null;
+  category: string | null;
+  vatApplicable: boolean | null;
+  caseSize: string | null;
+  casePrice: string | null;
+  eachPrice: string | null;
 };
 
-const allowed = new Set(['itemCode', 'name', 'baseUnit', 'status', 'barcodes']);
+const allowed = new Set(['itemCode', 'name', 'baseUnit', 'status', 'barcodes', 'imageUrl', 'category', 'vatApplicable', 'caseSize', 'casePrice', 'eachPrice']);
 function requiredText(value: unknown, field: string, max: number): string {
   if (typeof value !== 'string' || !value.trim() || value.trim().length > max)
     throw new BadRequestException(`Invalid ${field}`);
@@ -43,5 +49,21 @@ export function parseProductWrite(body: unknown): ProductWrite {
     throw new BadRequestException('Duplicate barcodes');
   if (barcodes.length && barcodes.filter(b => b.isPrimary).length !== 1)
     throw new BadRequestException('Exactly one primary barcode required');
-  return { itemCode, name, baseUnit, status: input.status, barcodes };
+  const optionalText = (value: unknown, label: string, max: number) => value == null || value === '' ? null : requiredText(value, label, max);
+  const decimal = (value: unknown, label: string, scale: number) => {
+    if (value == null || value === '') return null;
+    const v = String(value);
+    if (!Number.isFinite(Number(v)) || Number(v) < 0 || v.length > 20 || !new RegExp('^[0-9]+(?:[.][0-9]{1,' + scale + '})?
+}
+).test(v)) throw new BadRequestException('Invalid ' + label);
+    return v;
+  };
+  const imageUrl = optionalText(input.imageUrl, 'image URL', 2048);
+  if (imageUrl && !/^https:\/\/[^\s]+$/.test(imageUrl)) throw new BadRequestException('HTTPS image URL required');
+  if (input.vatApplicable != null && typeof input.vatApplicable !== 'boolean') throw new BadRequestException('Invalid VAT applicability');
+  const caseSize = decimal(input.caseSize, 'case size', 3);
+  if (caseSize !== null && Number(caseSize) <= 0) throw new BadRequestException('Case size must be positive');
+  return { itemCode, name, baseUnit, status: input.status, barcodes, imageUrl,
+    category: optionalText(input.category, 'category', 128), vatApplicable: input.vatApplicable == null ? null : input.vatApplicable,
+    caseSize, casePrice: decimal(input.casePrice, 'case price', 4), eachPrice: decimal(input.eachPrice, 'each price', 4) };
 }
