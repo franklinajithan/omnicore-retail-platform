@@ -64,8 +64,16 @@ export class CatalogueController {
           where: { id },
           data: {
             audits: { create: { tenantId, actorId, action: 'UPDATED', changes: {
-              before: { name: existing.name, baseUnit: existing.baseUnit, status: existing.status, barcodes: existing.barcodes },
-              after: { name: input.name, baseUnit: input.baseUnit, status: input.status, barcodes: input.barcodes },
+              fields: [
+                ...(['name', 'baseUnit', 'status'] as const)
+                  .filter(field => existing[field] !== input[field])
+                  .map(field => ({ field, before: existing[field], after: input[field] })),
+                ...(JSON.stringify(existing.barcodes.map(b => ({ code: b.code, isPrimary: b.isPrimary }))
+                  .sort((a, b) => a.code.localeCompare(b.code))) !==
+                  JSON.stringify([...input.barcodes].sort((a, b) => a.code.localeCompare(b.code)))
+                  ? [{ field: 'barcodes', before: existing.barcodes.map(b => ({ code: b.code, isPrimary: b.isPrimary })),
+                       after: input.barcodes }] : []),
+              ],
             } } },
             itemCode: input.itemCode, name: input.name, status: input.status,
             baseUnit: input.baseUnit,
