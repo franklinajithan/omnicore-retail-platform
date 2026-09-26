@@ -78,3 +78,20 @@ test('MOB-005: app manifest exposes standalone catalogue entry point', async ({ 
   expect(manifest.display).toBe('standalone');
   expect(manifest.start_url).toBe('/catalog');
 });
+
+test('MOB-009: overview home tab renders demo dashboard and links to catalogue', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: /Good morning/ })).toBeVisible();
+  await expect(page.getByText('DEMO DATA · NOT LIVE')).toBeVisible();
+  await page.getByRole('link', { name: /Product catalogue/ }).first().click();
+  await expect(page).toHaveURL(/\/catalog$/);
+});
+
+test('MOB-010: mobile home bottom tab navigates between overview and products', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'Mobile viewport only');
+  await page.goto('/catalog');
+  await page.getByRole('navigation', { name: 'Mobile navigation' }).getByRole('link', { name: 'Home' }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await page.getByRole('navigation', { name: 'Mobile navigation' }).getByRole('link', { name: 'Products' }).click();
+  await expect(page).toHaveURL(/\/catalog$/);
+});
