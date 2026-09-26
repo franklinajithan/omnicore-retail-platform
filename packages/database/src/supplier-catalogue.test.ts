@@ -32,7 +32,7 @@ test('SUP-002: rejects a supplier or product from another tenant before writing'
   assert.equal(writes, 0);
 });
 test('SUP-003: validates positive pack sizes and nonnegative costs', async () => {
-  const db = {} as never;
+  const db = { $transaction: async () => { throw new Error('Unexpected transaction'); } } as never;
   const base = { tenantId: 't', supplierId: 's', productId: 'p', supplierCode: 'C', packSize: '1', cost: '1' };
   await assert.rejects(mapSupplierItem(db, { ...base, packSize: '0' }), /pack size/);
   await assert.rejects(mapSupplierItem(db, { ...base, cost: '-1' }), /cost/);
