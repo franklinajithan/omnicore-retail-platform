@@ -12,6 +12,7 @@ type Audit = { id: string; action: string; actorId: string; createdAt: string; c
 type Price = { id: string; storeId: string | null; currency: string; retail: string; vatRate: string; effectiveAt: string };
 type Activity = { id: string; occurredAt: string; type: string; sourceModule: string; reference: string; scannedBarcode: string | null; quantityDelta: string; actualSalePrice: string | null; store: { name: string } };
 type Request = (path: string, options?: RequestInit) => Promise<unknown>;
+type Store = {id:string;code:string;name:string};
 const tabs = ['Overview','Barcodes & suppliers','Pricing & VAT','Store stock','Activity','Audit trail'] as const;
 type Tab = typeof tabs[number];
 const box = { border: '1px solid #dce4ed', padding: 12, borderRadius: 8, overflowX: 'auto' as const };
@@ -20,12 +21,26 @@ export default function ConnectedDetails({ product, request }: { product: Detail
  const [tab,setTab] = useState<Tab>('Overview');
  const [price,setPrice] = useState<{ effective: Price | null; source: string; history: Price[] } | null>(null);
  const [store,setStore] = useState('');
+ const [stores,setStores] = useState<Store[]>([]);
+ const [retail,setRetail] = useState('');
+ const [vat,setVat] = useState('20');
+ const [currency,setCurrency] = useState('GBP');
+ const [effectiveAt,setEffectiveAt] = useState('');
+ const [reason,setReason] = useState('');
+ const [saving,setSaving] = useState(false);
+ const [notice,setNotice] = useState('');
+ const [priceRefresh,setPriceRefresh] = useState(0);
  const [audit,setAudit] = useState<Audit[]>([]);
  const [activity,setActivity] = useState<Activity[]>([]);
  const [barcode,setBarcode] = useState('');
  const [module,setModule] = useState('');
  const [error,setError] = useState('');
  const [busy,setBusy] = useState(false);
+ useEffect(() => {
+  let active=true;
+  void request('/v1/operations/overview').then(v=>{if(active)setStores((v as {stores:Store[]}).stores);}).catch(()=>{if(active)setStores([]);});
+  return ()=>{active=false;};
+ },[request]);
  useEffect(() => {
   let active = true;
   setError(''); setPrice(null); setAudit([]); setActivity([]);
@@ -53,7 +68,17 @@ export default function ConnectedDetails({ product, request }: { product: Detail
   }
   void fetchTab();
   return () => { active = false; };
- },[product.id,request,tab,store,barcode,module]);
+ },[product.id,request,tab,store,barcode,module,priceRefresh]);
+ async function savePrice(e: React.FormEvent){
+  e.preventDefault();setNotice('');setError('');
+  if(!/^\\d+(?:\\.\\d{1,4})?$/.test(retail)||!/^\\d+(?:\\.\\d{1,2})?$/.test(vat)||Number(vat)>100){setError('Enter valid retail and VAT values.');return;}
+  if(!effectiveAt){setError('Select an effective date and time.');return;}
+  setSaving(true);
+  try{
+   await request('/v1/catalogue/products/'+product.id+'/prices',{method:'POST',body:JSON.stringify({storeId:store||null,currency,retail,vatRate:vat,effectiveAt:new Date(effectiveAt).toISOString(),reason:reason.trim()||null})});
+   setNotice('Price saved to the API.');setRetail('');setReason('');setPriceRefresh(v=>v+1);
+  }catch(e){setError((e as Error).message);}finally{setSaving(false);}
+ }
  return <section style={{...box,marginTop:20}}>
   <h2>Product details · {product.itemCode}</h2>
   <nav aria-label="Connected product detail tabs" style={{display:'flex',gap:8,overflowX:'auto',paddingBottom:12}}>
@@ -68,8 +93,18 @@ export default function ConnectedDetails({ product, request }: { product: Detail
    <h3>Supplier mappings</h3>{product.suppliers?.length ? <table><thead><tr><th>Supplier</th><th>Supplier code</th><th>Pack size</th><th>Cost</th></tr></thead><tbody>{product.suppliers.map(s=><tr key={s.id}><td>{s.supplier.name}</td><td>{s.supplierCode}</td><td>{s.packSize}</td><td>{s.cost}</td></tr>)}</tbody></table> : <p>No supplier mappings found.</p>}
   </>}
   {tab==='Pricing & VAT' && <>
-   <label>Price scope <select value={store} onChange={e=>setStore(e.target.value)}><option value="">Tenant default</option>{product.balances?.map(b=><option key={b.store.id} value={b.store.id}>{b.store.name}</option>)}</select></label>
-   <p>Only stores with an existing stock-balance row appear in this selector. Other store pricing requires the full store directory.</p>
+   <label>Price scope <select value={store} onChange={e=>setStore(e.target.value)}><option value="">Tenant default</option>{stores.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+   <p>Prices can be set at tenant level or for any store in your tenant. A store price overrides the tenant default when effective.</p>
+   <form onSubmit={e=>void savePrice(e)} style={{display:'grid',gap:10,maxWidth:560,padding:16,margin:'16px 0',background:'#f5f8fc',borderRadius:12}}>
+    <h3 style={{margin:0}}>Schedule retail price</h3>
+    <label>Retail price<input required inputMode="decimal" value={retail} onChange={e=>setRetail(e.target.value)} placeholder="0.00" /></label>
+    <label>VAT rate (%)<input required inputMode="decimal" value={vat} onChange={e=>setVat(e.target.value)} /></label>
+    <label>Currency<select value={currency} onChange={e=>setCurrency(e.target.value)}><option>GBP</option><option>EUR</option></select></label>
+    <label>Effective from<input required type="datetime-local" value={effectiveAt} onChange={e=>setEffectiveAt(e.target.value)}/></label>
+    <label>Change reason (optional)<input maxLength={500} value={reason} onChange={e=>setReason(e.target.value)}/></label>
+    <button type="submit" disabled={saving}>{saving?'Saving…':'Save scheduled price'}</button>
+    {notice&&<p role="status">{notice}</p>}
+   </form>
    {price && <><h3>Effective price · {price.source}</h3>{price.effective ? <p>{price.effective.currency} {price.effective.retail} · VAT {price.effective.vatRate}%</p> : <p>No effective price configured.</p>}
     <h3>Price history (latest 100)</h3><div style={{overflowX:'auto'}}><table><thead><tr><th>Effective</th><th>Scope</th><th>Retail</th><th>VAT</th></tr></thead><tbody>{price.history.map(p=><tr key={p.id}><td>{new Date(p.effectiveAt).toLocaleString()}</td><td>{p.storeId??'Tenant'}</td><td>{p.currency} {p.retail}</td><td>{p.vatRate}%</td></tr>)}</tbody></table></div></>}
   </>}
