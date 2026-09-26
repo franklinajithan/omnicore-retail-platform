@@ -68,7 +68,7 @@ export class CatalogueController {
             audits: { create: { tenantId, actorId, action: 'UPDATED', changes: {
               fields: [
                 ...(['name', 'baseUnit', 'status', 'imageUrl', 'category', 'vatApplicable', 'caseSize', 'casePrice', 'eachPrice'] as const)
-                  .filter(field => existing[field] !== input[field])
+                  .filter(field => String(existing[field] ?? '') !== String(input[field] ?? ''))
                   .map(field => ({ field, before: existing[field], after: input[field] })),
                 ...(JSON.stringify(existing.barcodes.map(b => ({ code: b.code, isPrimary: b.isPrimary }))
                   .sort((a, b) => a.code.localeCompare(b.code))) !==
@@ -83,6 +83,7 @@ export class CatalogueController {
             barcodes: { create: input.barcodes.map(b => ({ tenantId, ...b })) },
           },
           select: { id: true, itemCode: true, name: true, status: true, baseUnit: true, version: true,
+            imageUrl: true, category: true, vatApplicable: true, caseSize: true, casePrice: true, eachPrice: true,
             barcodes: { select: { code: true, isPrimary: true } } },
         });
       });
