@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import ConnectedDetails, { type Detail } from './connected-details';
+import styles from './connected.module.css';
+import { AppIcon } from '../../app-icon';
+import { MobileNavigation } from '../../mobile-shell';
 
 type Barcode = { code: string; isPrimary: boolean };
 type Product = Detail & { status: 'ACTIVE' | 'INACTIVE' };
@@ -83,47 +86,48 @@ export default function ConnectedCatalogue() {
     finally { setBusy(false); }
   }
 
-  const field = { width: '100%', padding: 11, border: '1px solid #b9c9db', borderRadius: 6 } as const;
-  return <main style={{ maxWidth: 1250, margin: 'auto', padding: 24, fontFamily: 'Arial, sans-serif', color: '#15243b' }}>
-    <a href="/catalog">← Back to catalogue prototype</a>
-    <h1>Connected Product Management</h1>
-    <p>This is a developer integration screen, not the production login. Credentials remain in this page&apos;s memory and are cleared when it reloads.</p>
+  const field = { width: '100%', padding: 11, border: '1px solid #b9c9db', borderRadius: 10 } as const;
+  return <main className={styles.shell}>
+    <a className={styles.back} href="/catalog">← Products</a>
+    <h1 className={styles.heading}>Product Management</h1>
+    <p className={styles.sub}>Connected product records · Tenant-scoped data · Version-controlled editing</p><p className={styles.banner}>Development access only. Production sign-in is not yet integrated; temporary credentials are cleared when you reload.</p>
     {!configured ? <p role="alert">Set NEXT_PUBLIC_OMNICORE_API_URL to the authenticated API origin to enable this screen.</p> :
     <>
-      <section style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', marginBottom: 24 }}>
+      <section className={styles.credentials}>
         <label>Temporary access token<input style={field} type="password" autoComplete="off" value={token} onChange={e => setToken(e.target.value)} /></label>
         <label>Tenant ID (required for multi-tenant users)<input style={field} value={tenant} onChange={e => setTenant(e.target.value)} /></label>
       </section>
-      <form onSubmit={e => { e.preventDefault(); void load(null, true); }} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 18 }}>
+      <form onSubmit={e => { e.preventDefault(); void load(null, true); }} className={styles.toolbar}>
         <input style={{ ...field, flex: 1, minWidth: 220 }} aria-label="Search live products" placeholder="Search Item Code, name or barcode" value={query} onChange={e => setQuery(e.target.value)} />
-        <button type="submit" disabled={busy || !token}>Search API</button>
-        <button type="button" disabled={busy} onClick={() => { setSelected(null); setDraft({ itemCode: '', name: '', baseUnit: 'EACH', status: 'ACTIVE', barcodes: '' }); }}>New product</button>
+        <button className={styles.btn+' '+styles.primary} type="submit" disabled={busy || !token}>Search</button>
+        <button className={styles.btn} type="button" disabled={busy} onClick={() => { setSelected(null); setDraft({ itemCode: '', name: '', baseUnit: 'EACH', status: 'ACTIVE', barcodes: '' }); }}>New product</button>
       </form>
       {message && <p role="status" style={{ padding: 10, background: '#f2f6fa' }}>{message}</p>}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(310px,1fr))', gap: 24 }}>
-        <section><h2>Products (server-paged)</h2>
+      <div className={styles.grid}>
+        <section className={styles.panel}><div className={styles.panelHead}><h2>Products</h2><small>50 per page</small></div><div className={styles.list}>
           {items.map(p => <button type="button" key={p.id} onClick={() => void openProduct(p.id)}
-            style={{ ...field, display: 'block', marginBottom: 8, textAlign: 'left', background: selected?.id === p.id ? '#eaf3fc' : 'white' }}>
-            <strong>{p.itemCode}</strong> — {p.name}<br /><small>{p.status} · {p.barcodes.length} barcodes</small>
+            className={selected?.id===p.id?styles.row+' '+styles.selected:styles.row}>
+            <span className={styles.rowIcon}><AppIcon name="products" size={19}/></span><span className={styles.rowBody}><strong>{p.name}</strong><small>{p.itemCode} · {p.status} · {p.barcodes.length} barcodes</small></span><AppIcon name="arrow" size={16}/>
           </button>)}
-          <div style={{ display: 'flex', gap: 10 }}>
+          </div><div className={styles.pages}>
             <button disabled={busy || !history.length} onClick={() => { const previous = history[history.length - 1]; setHistory(v => v.slice(0, -1)); void load(previous); }}>Previous</button>
             <button disabled={busy || !cursor} onClick={() => { setHistory(v => [...v, currentCursor]); void load(cursor); }}>Next</button>
           </div>
         </section>
-        <section><h2>{selected ? 'Edit ' + selected.itemCode : 'Create product'}</h2>
-          <div style={{ display: 'grid', gap: 12 }}>
+        <section className={styles.panel}><div className={styles.panelHead}><h2>{selected ? 'Edit ' + selected.itemCode : 'Create product'}</h2></div>
+          <div className={styles.form}>
             <label>Item Code<input style={field} value={draft.itemCode} readOnly={Boolean(selected)} onChange={e => setDraft(v => ({ ...v, itemCode: e.target.value }))} /></label>
             <label>Name<input style={field} value={draft.name} onChange={e => setDraft(v => ({ ...v, name: e.target.value }))} /></label>
             <label>Base unit<input style={field} value={draft.baseUnit} onChange={e => setDraft(v => ({ ...v, baseUnit: e.target.value }))} /></label>
             <label>Status<select style={field} value={draft.status} onChange={e => setDraft(v => ({ ...v, status: e.target.value as Product['status'] }))}><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option></select></label>
             <label>Barcodes (one per line; first is primary)<textarea style={field} rows={6} value={draft.barcodes} onChange={e => setDraft(v => ({ ...v, barcodes: e.target.value }))} /></label>
-            <button disabled={busy || !token} onClick={() => void save()}>{busy ? 'Working…' : selected ? 'Save changes to API' : 'Create in API'}</button>
+            <button className={styles.btn+' '+styles.primary} disabled={busy || !token} onClick={() => void save()}>{busy ? 'Working…' : selected ? 'Save changes to API' : 'Create in API'}</button>
           </div>
           <p>Optimistic concurrency: {selected ? 'version ' + selected.version : 'new item'}. A conflicting edit is rejected.</p>
         </section>
       </div>
       {selected && <ConnectedDetails product={selected} request={request} />}
     </>}
+    <MobileNavigation />
   </main>;
 }
