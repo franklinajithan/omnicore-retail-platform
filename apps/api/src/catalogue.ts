@@ -45,7 +45,7 @@ export class CatalogueController {
     @Body() body: unknown,
   ) {
     const { tenantId, actorId } = await this.identity.requireContext(authorization, selectedTenant, ['OWNER', 'ADMIN', 'MANAGER']);
-    if (!ifMatch || !/^[1-9]\\d*$/.test(ifMatch)) throw new BadRequestException('If-Match product version required');
+    if (!ifMatch || !/^[1-9]\d*$/.test(ifMatch)) throw new BadRequestException('If-Match product version required');
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))
       throw new BadRequestException('Invalid product id');
     const input = parseProductWrite(body);
@@ -71,7 +71,7 @@ export class CatalogueController {
             baseUnit: input.baseUnit,
             barcodes: { create: input.barcodes.map(b => ({ tenantId, ...b })) },
           },
-          select: { id: true, itemCode: true, name: true, status: true, baseUnit: true,
+          select: { id: true, itemCode: true, name: true, status: true, baseUnit: true, version: true,
             barcodes: { select: { code: true, isPrimary: true } } },
         });
       });
@@ -142,6 +142,29 @@ export class CatalogueController {
     return product;
   }
 
+
+
+  @Get('products/:id/audit')
+  async productAudit(
+    @Headers('authorization') authorization: string | undefined,
+    @Headers('x-tenant-id') selectedTenant: string | undefined,
+    @Param('id') id: string,
+    @Query('limit') rawLimit?: string,
+  ) {
+    const tenantId = await this.identity.requireTenant(authorization, selectedTenant);
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))
+      throw new BadRequestException('Invalid product id');
+    if (rawLimit && !/^[0-9]+$/.test(rawLimit)) throw new BadRequestException('Invalid limit');
+    const limit = Math.min(Math.max(Number(rawLimit ?? 50), 1), 100);
+    const product = await db.product.findFirst({ where: { id, tenantId }, select: { id: true } });
+    if (!product) throw new NotFoundException('Product not found');
+    return { items: await db.productAudit.findMany({
+      where: { tenantId, productId: id },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit,
+      select: { id: true, actorId: true, action: true, changes: true, reason: true, createdAt: true },
+    }) };
+  }
 
   @Get('products/:id/activity')
   async productActivity(
