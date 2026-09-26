@@ -1,0 +1,200 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  SUBMITTED
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CANCELLED
+}
+
+enum MovementType {
+  RECEIPT
+  SALE
+  WASTAGE
+  ADJUSTMENT
+  TRANSFER_IN
+  TRANSFER_OUT
+  RETURN
+}
+
+model Tenant {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  createdAt DateTime @default(now())
+  stores    Store[]
+  products  Product[]
+  suppliers Supplier[]
+  orders    PurchaseOrder[]
+  movements StockMovement[]
+  balances  StockBalance[]
+  receipts  GoodsReceipt[]
+  users     TenantUser[]
+}
+
+model TenantUser {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  userId   String
+  role     String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+}
+
+model Store {
+  id        String @id @default(uuid()) @db.Uuid
+  tenantId  String @db.Uuid
+  code      String
+  name      String
+  tenant    Tenant @relation(fields: [tenantId], references: [id])
+  balances  StockBalance[]
+  movements StockMovement[]
+  receipts  GoodsReceipt[]
+  @@unique([tenantId, code])
+  @@unique([id, tenantId])
+}
+
+model Product {
+  id          String @id @default(uuid()) @db.Uuid
+  tenantId    String @db.Uuid
+  sku         String
+  name        String
+  status      ProductStatus @default(ACTIVE)
+  baseUnit    String @default("EACH")
+  createdAt   DateTime @default(now())
+  tenant      Tenant @relation(fields: [tenantId], references: [id])
+  barcodes    ProductBarcode[]
+  suppliers   SupplierProduct[]
+  balances    StockBalance[]
+  movements   StockMovement[]
+  orderLines  PurchaseOrderLine[]
+  receiptLines GoodsReceiptLine[]
+  @@unique([tenantId, sku])
+  @@unique([id, tenantId])
+}
+
+model ProductBarcode {
+  id        String @id @default(uuid()) @db.Uuid
+  productId String @db.Uuid
+  code      String
+  product   Product @relation(fields: [productId], references: [id])
+  @@unique([productId, code])
+  @@index([code])
+}
+
+model Supplier {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  code     String
+  name     String
+  email    String?
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  products SupplierProduct[]
+  orders   PurchaseOrder[]
+  @@unique([tenantId, code])
+  @@unique([id, tenantId])
+}
+
+model SupplierProduct {
+  id           String @id @default(uuid()) @db.Uuid
+  supplierId   String @db.Uuid
+  productId    String @db.Uuid
+  supplierCode String
+  packSize     Decimal @db.Decimal(18, 3)
+  cost         Decimal @db.Decimal(18, 4)
+  supplier     Supplier @relation(fields: [supplierId], references: [id])
+  product      Product @relation(fields: [productId], references: [id])
+  @@unique([supplierId, supplierCode])
+  @@unique([supplierId, productId])
+}
+
+model StockBalance {
+  id        String @id @default(uuid()) @db.Uuid
+  tenantId  String @db.Uuid
+  storeId   String @db.Uuid
+  productId String @db.Uuid
+  quantity  Decimal @default(0) @db.Decimal(18, 3)
+  tenant    Tenant @relation(fields: [tenantId], references: [id])
+  store     Store @relation(fields: [storeId, tenantId], references: [id, tenantId])
+  product   Product @relation(fields: [productId, tenantId], references: [id, tenantId])
+  @@unique([tenantId, storeId, productId])
+}
+
+model StockMovement {
+  id             String @id @default(uuid()) @db.Uuid
+  tenantId       String @db.Uuid
+  storeId        String @db.Uuid
+  productId      String @db.Uuid
+  type           MovementType
+  quantityDelta  Decimal @db.Decimal(18, 3)
+  referenceType  String
+  referenceId    String
+  idempotencyKey String
+  createdAt      DateTime @default(now())
+  tenant         Tenant @relation(fields: [tenantId], references: [id])
+  store          Store @relation(fields: [storeId, tenantId], references: [id, tenantId])
+  product        Product @relation(fields: [productId, tenantId], references: [id, tenantId])
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, storeId, productId, createdAt])
+}
+
+model PurchaseOrder {
+  id         String @id @default(uuid()) @db.Uuid
+  tenantId   String @db.Uuid
+  supplierId String @db.Uuid
+  number     String
+  status     PurchaseOrderStatus @default(DRAFT)
+  createdAt  DateTime @default(now())
+  tenant     Tenant @relation(fields: [tenantId], references: [id])
+  supplier   Supplier @relation(fields: [supplierId, tenantId], references: [id, tenantId])
+  lines      PurchaseOrderLine[]
+  receipts   GoodsReceipt[]
+  @@unique([tenantId, number])
+  @@unique([id, tenantId])
+}
+
+model PurchaseOrderLine {
+  id              String @id @default(uuid()) @db.Uuid
+  orderId         String @db.Uuid
+  productId       String @db.Uuid
+  orderedQuantity Decimal @db.Decimal(18, 3)
+  unitCost        Decimal @db.Decimal(18, 4)
+  order           PurchaseOrder @relation(fields: [orderId], references: [id])
+  product         Product @relation(fields: [productId], references: [id])
+}
+
+model GoodsReceipt {
+  id             String @id @default(uuid()) @db.Uuid
+  tenantId       String @db.Uuid
+  orderId        String @db.Uuid
+  storeId        String @db.Uuid
+  idempotencyKey String
+  createdAt      DateTime @default(now())
+  tenant         Tenant @relation(fields: [tenantId], references: [id])
+  order          PurchaseOrder @relation(fields: [orderId, tenantId], references: [id, tenantId])
+  store          Store @relation(fields: [storeId, tenantId], references: [id, tenantId])
+  lines          GoodsReceiptLine[]
+  @@unique([tenantId, idempotencyKey])
+}
+
+model GoodsReceiptLine {
+  id               String @id @default(uuid()) @db.Uuid
+  receiptId        String @db.Uuid
+  productId        String @db.Uuid
+  receivedQuantity Decimal @db.Decimal(18, 3)
+  receipt          GoodsReceipt @relation(fields: [receiptId], references: [id])
+  product          Product @relation(fields: [productId], references: [id])
+}
