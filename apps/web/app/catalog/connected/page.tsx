@@ -14,6 +14,7 @@ export default function ConnectedCatalogue() {
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<Product[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
+  const [currentCursor, setCurrentCursor] = useState<string | null>(null);
   const [history, setHistory] = useState<(string | null)[]>([]);
   const [selected, setSelected] = useState<Product | null>(null);
   const [draft, setDraft] = useState({ itemCode: '', name: '', baseUnit: 'EACH', status: 'ACTIVE' as Product['status'], barcodes: '' });
@@ -44,7 +45,7 @@ export default function ConnectedCatalogue() {
       if (query.trim()) params.set('q', query.trim());
       if (next) params.set('cursor', next);
       const result = await request('/v1/catalogue/products?' + params) as Page;
-      setItems(result.items); setCursor(result.nextCursor);
+      setItems(result.items); setCursor(result.nextCursor); setCurrentCursor(next);
       if (reset) setHistory([]);
     } catch (error) { setMessage((error as Error).message); }
     finally { setBusy(false); }
@@ -105,7 +106,7 @@ export default function ConnectedCatalogue() {
           </button>)}
           <div style={{ display: 'flex', gap: 10 }}>
             <button disabled={busy || !history.length} onClick={() => { const previous = history[history.length - 1]; setHistory(v => v.slice(0, -1)); void load(previous); }}>Previous</button>
-            <button disabled={busy || !cursor} onClick={() => { setHistory(v => [...v, history.length ? history[history.length - 1] : null]); void load(cursor); }}>Next</button>
+            <button disabled={busy || !cursor} onClick={() => { setHistory(v => [...v, currentCursor]); void load(cursor); }}>Next</button>
           </div>
         </section>
         <section><h2>{selected ? 'Edit ' + selected.itemCode : 'Create product'}</h2>
