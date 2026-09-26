@@ -141,6 +141,88 @@ export class CatalogueController {
       note:'Preview only. No records have been merged, deleted, reassigned or recalculated. Historical transactions and financial snapshots must be preserved.' };
   }
 
+  // Conservative executor: retains the source row and all historical financial/stock records.
+  // Only conflict-free identity and supplier metadata are moved; historical views can resolve aliases.
+  @Post('products/:id/consolidate')
+  async consolidate(
+    @Headers('authorization') authorization: string | undefined,
+    @Headers('x-tenant-id') selectedTenant: string | undefined,
+    @Param('id') id: string,
+    @Body() body: { duplicateId?: string; targetVersion?: number; duplicateVersion?: number; reason?: string },
+  ) {
+    const { tenantId, actorId } = await this.identity.requireContext(authorization, selectedTenant, ['OWNER', 'ADMIN']);
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuid.test(id) || !body || !body.duplicateId || !uuid.test(body.duplicateId) || id === body.duplicateId ||
+        !Number.isSafeInteger(body.targetVersion) || !Number.isSafeInteger(body.duplicateVersion) ||
+        !body.reason?.trim() || body.reason.length > 500)
+      throw new BadRequestException('Distinct products, current versions and an audit reason are required');
+    try {
+      return await db.$transaction(async tx => {
+        // Serialize consolidations within a tenant and protect concurrent duplicate consolidations.
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${tenantId}::text))`;
+        const rows = await tx.product.findMany({
+          where: { tenantId, id: { in: [id, body.duplicateId!] } },
+          include: { barcodes: true, suppliers: true, balances: true,
+            _count: { select: { movements: true, orderLines: true, receiptLines: true, activities: true, prices: true } } },
+        });
+        if (rows.length !== 2) throw new NotFoundException('Both products must belong to this tenant');
+        const target = rows.find(p => p.id === id)!;
+        const source = rows.find(p => p.id === body.duplicateId)!;
+        const already = await tx.productAlias.findFirst({ where: { tenantId, OR: [
+          { sourceProductId: source.id }, { sourceProductId: target.id },
+          { itemCode: source.itemCode }, { itemCode: target.itemCode },
+        ] } });
+        if (already) throw new ConflictException('A product is already consolidated or an item code is reserved');
+        if (target.version !== body.targetVersion || source.version !== body.duplicateVersion)
+          throw new ConflictException('Product changed: reload the consolidation preview');
+        if (target.status !== 'ACTIVE' || source.status !== 'ACTIVE' || target.baseUnit !== source.baseUnit ||
+            target.name.trim().toLowerCase() !== source.name.trim().toLowerCase())
+          throw new ConflictException('Products must be active, identically named and use the same base unit');
+        const fields = ['category','vatApplicable','caseSize','casePrice','eachPrice'] as const;
+        for (const field of fields)
+          if (target[field] != null && source[field] != null && String(target[field]) !== String(source[field]))
+            throw new ConflictException('Resolve conflicting ' + field + ' before consolidating');
+        // Historical transactions remain attached to the retired product and cannot be silently reclassified.
+        if (source.balances.some(b => !b.quantity.isZero()) || Object.values(source._count).some(n => n > 0))
+          throw new ConflictException('Duplicate has stock or transaction/price history: ledger-aware consolidation is required');
+        if (source.barcodes.some(b => target.barcodes.some(t => t.code === b.code)))
+          throw new ConflictException('Duplicate barcode ownership requires review');
+        if (source.suppliers.some(m => target.suppliers.some(t => t.supplierId === m.supplierId)))
+          throw new ConflictException('Overlapping suppliers require mapping review');
+        const lockedTarget = await tx.product.updateMany({ where: { id, tenantId, version: target.version }, data: { version: { increment: 1 } } });
+        const lockedSource = await tx.product.updateMany({ where: { id: source.id, tenantId, version: source.version }, data: { version: { increment: 1 } } });
+        if (lockedTarget.count !== 1 || lockedSource.count !== 1) throw new ConflictException('Product version changed');
+        const targetPrimary = target.barcodes.some(b => b.isPrimary);
+        await tx.productBarcode.updateMany({ where: { tenantId, productId: source.id }, data: { productId: target.id, isPrimary: false } });
+        if (!targetPrimary && source.barcodes.length) {
+          const first = source.barcodes.find(b => b.isPrimary) ?? source.barcodes[0];
+          await tx.productBarcode.update({ where: { id: first.id }, data: { isPrimary: true } });
+        }
+        await tx.supplierProduct.updateMany({ where: { productId: source.id }, data: { productId: target.id } });
+        const fill = Object.fromEntries(fields.filter(f => target[f] == null && source[f] != null).map(f => [f, source[f]]));
+        await tx.product.update({ where: { id }, data: { ...fill, imageUrl: target.imageUrl ?? source.imageUrl } });
+        await tx.productAlias.create({ data: { tenantId, itemCode: source.itemCode, productId: target.id, sourceProductId: source.id, actorId } });
+        await tx.product.update({ where: { id: source.id }, data: { status: 'INACTIVE' } });
+        await tx.productAudit.create({ data: { tenantId, productId: target.id, actorId, action: 'CONSOLIDATED', reason: body.reason.trim(),
+          changes: { sourceProductId: source.id, sourceItemCode: source.itemCode, targetItemCode: target.itemCode,
+            movedBarcodes: source.barcodes.map(b => b.code), movedSupplierMappingIds: source.suppliers.map(m => m.id),
+            preservedSourceProduct: true, historicalRecordsMoved: false } } });
+        await tx.productAudit.create({ data: { tenantId, productId: source.id, actorId, action: 'CONSOLIDATED_INTO', reason: body.reason.trim(),
+          changes: { targetProductId: target.id, targetItemCode: target.itemCode } } });
+        const remainingBarcodes = await tx.productBarcode.count({ where: { tenantId, productId: source.id } });
+        const remainingSuppliers = await tx.supplierProduct.count({ where: { productId: source.id } });
+        if (remainingBarcodes || remainingSuppliers) throw new ConflictException('Reconciliation failed; no changes saved');
+        return { targetId: target.id, itemCode: target.itemCode, retiredItemCode: source.itemCode,
+          movedBarcodes: source.barcodes.length, movedSupplierMappings: source.suppliers.length,
+          historicalRecordsPreserved: true };
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 20000 });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002')
+        throw new ConflictException('Concurrent consolidation or barcode/supplier conflict; reload preview');
+      throw error;
+    }
+  }
+
   @Get('products')
   async products(
     @Headers('authorization') authorization?: string,
