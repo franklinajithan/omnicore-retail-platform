@@ -30,6 +30,13 @@ export default function ConnectedDetails({ product, request }: { product: Detail
  const [saving,setSaving] = useState(false);
  const [notice,setNotice] = useState('');
  const [priceRefresh,setPriceRefresh] = useState(0);
+ const [supplierOptions,setSupplierOptions] = useState<{id:string;name:string;code:string}[]>([]);
+ const [supplierId,setSupplierId] = useState('');
+ const [supplierCode,setSupplierCode] = useState('');
+ const [packSize,setPackSize] = useState('1');
+ const [cost,setCost] = useState('');
+ const [mappingNotice,setMappingNotice] = useState('');
+ const [mappingBusy,setMappingBusy] = useState(false);
  const [audit,setAudit] = useState<Audit[]>([]);
  const [activity,setActivity] = useState<Activity[]>([]);
  const [barcode,setBarcode] = useState('');
@@ -39,6 +46,7 @@ export default function ConnectedDetails({ product, request }: { product: Detail
  useEffect(() => {
   let active=true;
   void request('/v1/operations/overview').then(v=>{if(active)setStores((v as {stores:Store[]}).stores);}).catch(()=>{if(active)setStores([]);});
+  void request('/v1/suppliers').then(v=>{if(active)setSupplierOptions((v as {items:{id:string;name:string;code:string}[]}).items);}).catch(()=>{if(active)setSupplierOptions([]);});
   return ()=>{active=false;};
  },[request]);
  useEffect(() => {
@@ -71,13 +79,22 @@ export default function ConnectedDetails({ product, request }: { product: Detail
  },[product.id,request,tab,store,barcode,module,priceRefresh]);
  async function savePrice(e: React.FormEvent){
   e.preventDefault();setNotice('');setError('');
-  if(!/^\\d+(?:\\.\\d{1,4})?$/.test(retail)||!/^\\d+(?:\\.\\d{1,2})?$/.test(vat)||Number(vat)>100){setError('Enter valid retail and VAT values.');return;}
+  if(!/^\d+(?:\.\d{1,4})?$/.test(retail)||!/^\d+(?:\.\d{1,2})?$/.test(vat)||Number(vat)>100){setError('Enter valid retail and VAT values.');return;}
   if(!effectiveAt){setError('Select an effective date and time.');return;}
   setSaving(true);
   try{
    await request('/v1/catalogue/products/'+product.id+'/prices',{method:'POST',body:JSON.stringify({storeId:store||null,currency,retail,vatRate:vat,effectiveAt:new Date(effectiveAt).toISOString(),reason:reason.trim()||null})});
    setNotice('Price saved to the API.');setRetail('');setReason('');setPriceRefresh(v=>v+1);
   }catch(e){setError((e as Error).message);}finally{setSaving(false);}
+ }
+ async function saveMapping(e:React.FormEvent){
+  e.preventDefault();setError('');setMappingNotice('');
+  if(!supplierId||!supplierCode.trim()||!/^\\d+(?:\\.\\d{1,3})?$/.test(packSize)||Number(packSize)<=0||!/^\\d+(?:\\.\\d{1,4})?$/.test(cost)){setError('Choose a supplier and enter a valid supplier code, pack size and cost.');return;}
+  setMappingBusy(true);
+  try{
+   await request('/v1/suppliers/'+supplierId+'/products',{method:'POST',body:JSON.stringify({productId:product.id,supplierCode:supplierCode.trim(),packSize,cost})});
+   setMappingNotice('Supplier mapping saved. Reload this product to see the updated mapping.');setSupplierCode('');setCost('');
+  }catch(e){setError((e as Error).message);}finally{setMappingBusy(false);}
  }
  return <section style={{...box,marginTop:20}}>
   <h2>Product details · {product.itemCode}</h2>
@@ -90,7 +107,7 @@ export default function ConnectedDetails({ product, request }: { product: Detail
   {tab==='Overview' && <dl><dt>Item Code</dt><dd>{product.itemCode}</dd><dt>Name</dt><dd>{product.name}</dd><dt>Unit</dt><dd>{product.baseUnit}</dd><dt>Status</dt><dd>{product.status}</dd><dt>Version</dt><dd>{product.version}</dd></dl>}
   {tab==='Barcodes & suppliers' && <>
    <h3>Barcodes</h3><ul>{product.barcodes.map(b=><li key={b.code}>{b.code}{b.isPrimary?' · Primary':''}</li>)}</ul>
-   <h3>Supplier mappings</h3>{product.suppliers?.length ? <table><thead><tr><th>Supplier</th><th>Supplier code</th><th>Pack size</th><th>Cost</th></tr></thead><tbody>{product.suppliers.map(s=><tr key={s.id}><td>{s.supplier.name}</td><td>{s.supplierCode}</td><td>{s.packSize}</td><td>{s.cost}</td></tr>)}</tbody></table> : <p>No supplier mappings found.</p>}
+   <h3>Supplier mappings</h3><form onSubmit={e=>void saveMapping(e)} style={{display:'grid',gap:10,maxWidth:560,padding:16,background:'#f5f8fc',borderRadius:12}}><strong>Add supplier mapping</strong><label>Supplier <select required value={supplierId} onChange={e=>setSupplierId(e.target.value)}><option value="">Select supplier</option>{supplierOptions.map(s=><option key={s.id} value={s.id}>{s.code} · {s.name}</option>)}</select></label><label>Supplier item code<input required maxLength={128} value={supplierCode} onChange={e=>setSupplierCode(e.target.value)}/></label><label>Pack size<input required inputMode="decimal" value={packSize} onChange={e=>setPackSize(e.target.value)}/></label><label>Unit cost<input required inputMode="decimal" value={cost} onChange={e=>setCost(e.target.value)}/></label><button type="submit" disabled={mappingBusy||!supplierOptions.length}>{mappingBusy?'Saving…':'Save supplier mapping'}</button>{mappingNotice&&<p role="status">{mappingNotice}</p>}{!supplierOptions.length&&<p>No suppliers found. Create a supplier through the supplier API first.</p>}</form>{product.suppliers?.length ? <table><thead><tr><th>Supplier</th><th>Supplier code</th><th>Pack size</th><th>Cost</th></tr></thead><tbody>{product.suppliers.map(s=><tr key={s.id}><td>{s.supplier.name}</td><td>{s.supplierCode}</td><td>{s.packSize}</td><td>{s.cost}</td></tr>)}</tbody></table> : <p>No supplier mappings found.</p>}
   </>}
   {tab==='Pricing & VAT' && <>
    <label>Price scope <select value={store} onChange={e=>setStore(e.target.value)}><option value="">Tenant default</option>{stores.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
