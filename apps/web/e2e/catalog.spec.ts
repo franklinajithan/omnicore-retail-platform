@@ -4,14 +4,14 @@ test('CAT-001: homepage links to catalogue', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('link', { name: /open product catalogue/i }).click();
   await expect(page).toHaveURL(/\/catalog$/);
-  await expect(page.getByRole('heading', { name: 'Product & Catalogue Management' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Product Catalogue' })).toBeVisible();
 });
 
 test('CAT-004 CAT-003: creating product updates table and totals', async ({ page }) => {
   await page.goto('/catalog');
   await page.getByRole('button', { name: /add product/i }).click();
   await page.getByText('Product name *').locator('input').fill('QA Product');
-  await page.getByText('SKU *').locator('input').fill('QA-001');
+  await page.getByText('Item code (SKU) *').locator('input').fill('QA-001');
   await page.getByRole('button', { name: 'Add to demo catalogue' }).click();
   await expect(page.getByRole('cell', { name: 'QA Product' })).toBeVisible();
   await expect(page.locator('section').first().getByText('4', { exact: true }).first()).toBeVisible();
@@ -28,9 +28,9 @@ test('CAT-006: duplicate SKU rejected', async ({ page }) => {
   await page.goto('/catalog');
   await page.getByRole('button', { name: /add product/i }).click();
   await page.getByText('Product name *').locator('input').fill('Another Milk');
-  await page.getByText('SKU *').locator('input').fill('MILK-001');
+  await page.getByText('Item code (SKU) *').locator('input').fill('MILK-001');
   await page.getByRole('button', { name: 'Add to demo catalogue' }).click();
-  await expect(page.locator('form').getByRole('alert')).toContainText('SKU already exists');
+  await expect(page.locator('form').getByRole('alert')).toContainText('Item code / SKU already exists');
 });
 
 test('CAT-007: search filters products', async ({ page }) => {
@@ -94,4 +94,31 @@ test('MOB-010: mobile home bottom tab navigates between overview and products', 
   await expect(page).toHaveURL(/\/$/);
   await page.getByRole('navigation', { name: 'Mobile navigation' }).getByRole('link', { name: 'Products' }).click();
   await expect(page).toHaveURL(/\/catalog$/);
+});
+
+test('CAT-021: second barcode resolves to the same demo item', async ({ page }) => {
+  await page.goto('/catalog');
+  await page.getByRole('button', { name: /add product/i }).click();
+  await page.getByText('Product name *').locator('input').fill('Multi Barcode Milk');
+  await page.getByText('Item code (SKU) *').locator('input').fill('10542');
+  await page.getByText('Primary barcode').locator('input').fill('5901234567890');
+  await page.getByText('Additional barcodes (comma separated)').locator('input').fill('5901234567891');
+  await page.getByRole('button', { name: 'Add to demo catalogue' }).click();
+  await page.getByRole('textbox', { name: 'Search products' }).fill('5901234567891');
+  await expect(page.getByRole('cell', { name: 'Multi Barcode Milk' })).toBeVisible();
+});
+
+test('CAT-022: a barcode cannot belong to two different items', async ({ page }) => {
+  await page.goto('/catalog');
+  await page.getByRole('button', { name: /add product/i }).click();
+  await page.getByText('Product name *').locator('input').fill('First item');
+  await page.getByText('Item code (SKU) *').locator('input').fill('10542');
+  await page.getByText('Primary barcode').locator('input').fill('5901234567890');
+  await page.getByRole('button', { name: 'Add to demo catalogue' }).click();
+  await page.getByRole('button', { name: /add product/i }).click();
+  await page.getByText('Product name *').locator('input').fill('Second item');
+  await page.getByText('Item code (SKU) *').locator('input').fill('10543');
+  await page.getByText('Primary barcode').locator('input').fill('5901234567890');
+  await page.getByRole('button', { name: 'Add to demo catalogue' }).click();
+  await expect(page.locator('form').getByRole('alert')).toContainText('Barcode already belongs');
 });
