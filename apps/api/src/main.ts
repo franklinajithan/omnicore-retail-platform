@@ -2,11 +2,12 @@ import 'reflect-metadata';
 import { CatalogueController } from './catalogue';
 import { SuppliersController } from './suppliers';
 import { ProductPricesController } from './product-prices';
+import { OperationsController } from './operations';
 import { TenantIdentity } from './identity';
 import { NestFactory } from '@nestjs/core';
 import { Module, Controller, Get } from '@nestjs/common';
 @Controller('health') class HealthController { @Get() health() { return { status: 'ok' }; } }
-@Module({ controllers: [HealthController, CatalogueController, SuppliersController, ProductPricesController], providers: [TenantIdentity] }) class AppModule {}
+@Module({ controllers: [HealthController, CatalogueController, SuppliersController, ProductPricesController, OperationsController], providers: [TenantIdentity] }) class AppModule {}
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   // Explicitly allow only configured web origins; never reflect arbitrary origins with bearer credentials.
