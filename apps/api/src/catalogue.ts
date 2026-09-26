@@ -141,6 +141,59 @@ export class CatalogueController {
       note:'Preview only. No records have been merged, deleted, reassigned or recalculated. Historical transactions and financial snapshots must be preserved.' };
   }
 
+  // Read-only reconciliation. Never infer missing balances as zero or rewrite source transactions.
+  @Get('products/:id/consolidation-ledger')
+  async consolidationLedger(
+    @Headers('authorization') authorization: string | undefined,
+    @Headers('x-tenant-id') selectedTenant: string | undefined,
+    @Param('id') id: string,
+    @Query('duplicateId') duplicateId?: string,
+  ) {
+    const tenantId = await this.identity.requireTenant(authorization, selectedTenant, ['OWNER','ADMIN','MANAGER']);
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuid.test(id) || !duplicateId || !uuid.test(duplicateId) || id === duplicateId)
+      throw new BadRequestException('Two distinct valid product IDs required');
+    const products = await db.product.findMany({ where: { tenantId, id: { in: [id, duplicateId] } },
+      select: { id:true, itemCode:true, baseUnit:true, balances: { where: { tenantId },
+        select: { storeId:true, quantity:true, store: { select: { code:true,name:true } } } } } });
+    if (products.length !== 2) throw new NotFoundException('Both products must belong to tenant');
+    const target = products.find(p=>p.id===id)!;
+    const source = products.find(p=>p.id===duplicateId)!;
+    const [movementRows, counts] = await Promise.all([
+      db.stockMovement.groupBy({ by:['productId','storeId'], where: { tenantId, productId: { in:[id,duplicateId] } },
+        _sum: { quantityDelta:true }, _count: { _all:true } }),
+      Promise.all([id,duplicateId].map(productId => Promise.all([
+        db.purchaseOrderLine.count({ where: { productId, product: { tenantId } } }),
+        db.goodsReceiptLine.count({ where: { productId, product: { tenantId } } }),
+        db.productPrice.count({ where: { tenantId,productId } }),
+        db.productActivity.count({ where: { tenantId,productId } }),
+      ]))),
+    ]);
+    const stores = await db.store.findMany({ where: { tenantId, OR:[
+      { balances: { some: { productId: { in:[id,duplicateId] } } } },
+      { movements: { some: { productId: { in:[id,duplicateId] } } } },
+    ] }, select:{id:true,code:true,name:true},orderBy:{code:'asc'} });
+    const rows = stores.map(store=>{
+      const targetBalance = target.balances.find(b=>b.storeId===store.id);
+      const sourceBalance = source.balances.find(b=>b.storeId===store.id);
+      const targetMovement = movementRows.find(m=>m.productId===id&&m.storeId===store.id);
+      const sourceMovement = movementRows.find(m=>m.productId===duplicateId&&m.storeId===store.id);
+      const bothKnown = !!targetBalance && !!sourceBalance;
+      return { store, original: { balance: targetBalance?.quantity.toString()??null,
+        recordedMovementSum: targetMovement?._sum.quantityDelta?.toString()??null, movementCount:targetMovement?._count._all??0 },
+        duplicate: { balance: sourceBalance?.quantity.toString()??null,
+          recordedMovementSum:sourceMovement?._sum.quantityDelta?.toString()??null,movementCount:sourceMovement?._count._all??0 },
+        proposedCombinedBalance:bothKnown ? targetBalance!.quantity.plus(sourceBalance!.quantity).toString() : null,
+        warning:bothKnown ? null : 'At least one balance is missing: physical quantity is unknown, not zero' };
+    });
+    return { original: {id:target.id,itemCode:target.itemCode,unit:target.baseUnit,
+        historicalCounts:{purchaseOrders:counts[0][0],receipts:counts[0][1],prices:counts[0][2],activity:counts[0][3]}},
+      duplicate:{id:source.id,itemCode:source.itemCode,unit:source.baseUnit,
+        historicalCounts:{purchaseOrders:counts[1][0],receipts:counts[1][1],prices:counts[1][2],activity:counts[1][3]}},
+      compatibleUnits:target.baseUnit===source.baseUnit, stores:rows,
+      executable:false,note:'Read-only reconciliation. Recorded movement sums may exclude opening stock or legacy imports. Combined balances are estimates only when both records exist. No stock or historical rows were changed.' };
+  }
+
   // Conservative executor: retains the source row and all historical financial/stock records.
   // Only conflict-free identity and supplier metadata are moved; historical views can resolve aliases.
   @Post('products/:id/consolidate')
