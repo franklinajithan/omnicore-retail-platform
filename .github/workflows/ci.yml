@@ -31,6 +31,9 @@ jobs:
       - run: pnpm --filter @omnicore/database validate
         env:
           DATABASE_URL: postgresql://omnicore:test@localhost:5432/omnicore
+      - run: pnpm --filter @omnicore/database typecheck
+        env:
+          DATABASE_URL: postgresql://omnicore:test@localhost:5432/omnicore
   web-regression:
     runs-on: ubuntu-latest
     timeout-minutes: 20
