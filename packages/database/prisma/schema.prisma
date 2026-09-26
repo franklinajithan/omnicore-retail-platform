@@ -80,6 +80,12 @@ model Product {
   name        String
   status      ProductStatus @default(ACTIVE)
   baseUnit    String @default("EACH")
+  imageUrl    String?
+  category    String?
+  vatApplicable Boolean?
+  caseSize    Decimal? @db.Decimal(18, 3)
+  casePrice   Decimal? @db.Decimal(18, 4)
+  eachPrice   Decimal? @db.Decimal(18, 4)
   createdAt   DateTime @default(now())
   version     Int @default(1)
   tenant      Tenant @relation(fields: [tenantId], references: [id])
