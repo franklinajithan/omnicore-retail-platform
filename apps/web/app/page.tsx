@@ -2,47 +2,52 @@ import Link from 'next/link';
 import styles from './home.module.css';
 import { MobileNavigation, StoreSelector } from './mobile-shell';
 
-const metrics = [
-  { label: 'Today’s sales', value: '£12,840', change: '+8.2%', tone: 'blue' },
-  { label: 'Transactions', value: '486', change: '+5.4%', tone: 'purple' },
-  { label: 'Low stock alerts', value: '18', change: 'Needs review', tone: 'orange' },
-  { label: 'Pending deliveries', value: '7', change: '3 arriving today', tone: 'green' },
+const workspaces = [
+ {icon:'▦',title:'Products',detail:'Search, maintain and review item records',href:'/catalog',enabled:true},
+ {icon:'◎',title:'Connected catalogue',detail:'Authenticated API integration workspace',href:'/catalog/connected',enabled:true},
+ {icon:'◫',title:'Inventory',detail:'Stock by store and stock movements',href:'#',enabled:false},
+ {icon:'⇣',title:'Deliveries',detail:'Purchase orders, receiving and claims',href:'#',enabled:false},
+ {icon:'◇',title:'Promotions',detail:'Retail pricing and multibuy management',href:'#',enabled:false},
+ {icon:'▤',title:'Reports',detail:'Sales, wastage and performance',href:'#',enabled:false},
 ];
-const activity = [
-  { title: 'Delivery received', detail: 'Hounslow · MASTER MEDIA · 24 items', time: '09:42', symbol: '↙' },
-  { title: 'Stock adjustment', detail: 'Hayes · Whole Milk 1L · -2 units', time: '09:18', symbol: '▤' },
-  { title: 'Low stock alert', detail: 'Perivale · Sourdough Bread', time: '08:56', symbol: '!' },
+const capabilities = [
+ {number:'01',title:'Product identity',detail:'Item codes, barcodes and supplier mappings'},
+ {number:'02',title:'Retail pricing',detail:'Effective-dated prices and VAT per store'},
+ {number:'03',title:'Store inventory',detail:'Recorded balances and transaction history'},
+ {number:'04',title:'Change control',detail:'Product versions and audit history'},
 ];
-export default function Home() {
-  return <div className={styles.shell}>
-    <aside className={styles.sidebar}>
-      <div className={styles.brand}>◈ OmniCore <small>RETAIL OPERATIONS</small></div>
-      <p className={styles.navHeading}>WORKSPACE</p>
-      <Link className={styles.active} href="/">⌂ &nbsp; Overview</Link>
-      <Link className={styles.nav} href="/catalog">▦ &nbsp; Product Catalogue</Link>
-      <p className={styles.navHeading}>COMING NEXT</p>
-      <span className={styles.muted}>Inventory</span><span className={styles.muted}>Suppliers</span><span className={styles.muted}>Deliveries</span><span className={styles.muted}>Reports</span>
-      <div className={styles.sideFoot}>Prototype workspace<br/>Demo data only</div>
-    </aside>
-    <main className={styles.main}>
-      <header className={styles.topbar}><div className={styles.logo}>◈ <strong>OmniCore</strong></div><StoreSelector /></header>
-      <div className={styles.heading}><div><span className={styles.eyebrow}>RETAIL OPERATIONS / OVERVIEW</span><h1>Good morning 👋</h1><p>Here’s what’s happening across your stores today.</p></div><span className={styles.demo}>DEMO DATA · STORE SELECTION IS VISUAL ONLY</span></div>
-      <section className={styles.metrics} aria-label="Demo business metrics">{metrics.map(m=><article className={styles.metric} key={m.label}><span>{m.label}</span><strong>{m.value}</strong><small className={styles[m.tone]}>{m.change}</small></article>)}</section>
-      <div className={styles.columns}>
-        <section className={styles.panel}><div className={styles.panelHead}><div><h2>Quick actions</h2><p>Jump into your daily operations</p></div></div>
-          <div className={styles.actions}>
-            <Link href="/catalog" className={styles.action} aria-label="Open product catalogue"><span className={styles.actionIcon}>▦</span><span><strong>Product catalogue</strong><small>Search and manage products</small></span><b aria-hidden="true">→</b></Link>
-            <div className={styles.actionDisabled}><span className={styles.actionIcon}>▥</span><span><strong>Receive delivery</strong><small>Coming soon</small></span><b>⌛</b></div>
-            <div className={styles.actionDisabled}><span className={styles.actionIcon}>▤</span><span><strong>Stock adjustment</strong><small>Coming soon</small></span><b>⌛</b></div>
-            <div className={styles.actionDisabled}><span className={styles.actionIcon}>▥</span><span><strong>Reports</strong><small>Coming soon</small></span><b>⌛</b></div>
-          </div>
-        </section>
-        <section className={styles.panel}><div className={styles.panelHead}><div><h2>Recent activity</h2><p>Illustrative activity feed</p></div><span className={styles.sample}>SAMPLE</span></div>
-          <div className={styles.activity}>{activity.map(a=><div className={styles.event} key={a.title}><span className={styles.eventIcon}>{a.symbol}</span><div><strong>{a.title}</strong><small>{a.detail}</small></div><time>{a.time}</time></div>)}</div>
-        </section>
-      </div>
-      <section className={styles.notice}><span>✦</span><div><strong>Your workspace is taking shape</strong><p>The dashboard is a visual demo. Product Catalogue is interactive; sales, stock, deliveries and activity shown here are sample data, not connected to your stores.</p></div><Link href="/catalog">Open catalogue →</Link></section>
-      <MobileNavigation />
-    </main>
-  </div>;
+export default function Home(){
+ return <div className={styles.shell}>
+  <aside className={styles.sidebar}>
+   <div className={styles.brand}>◈ OmniCore <small>RETAIL OPERATIONS</small></div>
+   <p className={styles.navHeading}>WORKSPACE</p>
+   <Link className={styles.active} href="/">⌂ &nbsp; Overview</Link>
+   <Link className={styles.nav} href="/catalog">▦ &nbsp; Products</Link>
+   <Link className={styles.nav} href="/catalog/connected">◎ &nbsp; Connected products</Link>
+   <p className={styles.navHeading}>IN DEVELOPMENT</p>
+   <span className={styles.muted}>Inventory</span><span className={styles.muted}>Deliveries</span><span className={styles.muted}>Promotions</span><span className={styles.muted}>Reports</span>
+   <div className={styles.sideFoot}>Multi-store workspace<br/>Development preview</div>
+  </aside>
+  <main className={styles.main}>
+   <header className={styles.topbar}><div className={styles.logo}>◈ <strong>OmniCore</strong><small> / Workspace</small></div><StoreSelector/></header>
+   <div className={styles.heading}><div><span className={styles.eyebrow}>YOUR RETAIL COMMAND CENTRE</span><h1>One workspace.<br/><em>Every store.</em></h1><p>Manage your product universe and build connected retail operations in one place.</p></div><span className={styles.demo}>DEVELOPMENT PREVIEW</span></div>
+   <section className={styles.hero} aria-label="Product management spotlight">
+    <div className={styles.heroText}><span className={styles.heroKicker}>FEATURED WORKSPACE · PRODUCT MANAGEMENT</span>
+     <h2>Built for a catalogue of 100,000+ products.</h2>
+     <p>Find the right item, manage multiple barcodes, review supplier mappings and connect pricing and inventory across stores.</p>
+     <div className={styles.heroActions}><Link className={styles.heroPrimary} href="/catalog">Explore products <span>↗</span></Link><Link className={styles.heroSecondary} href="/catalog/connected">Open API workspace →</Link></div>
+     <small>Scale target, not a verified benchmark. The main catalogue currently uses demo records.</small>
+    </div>
+    <div className={styles.heroArt} aria-hidden="true"><div className={styles.orbit}><div className={styles.orbitInner}>▦<span>PRODUCT<br/>HUB</span></div><i className={styles.dotOne}>⌗</i><i className={styles.dotTwo}>◈</i><i className={styles.dotThree}>↗</i></div></div>
+   </section>
+   <section className={styles.sectionHead}><div><span className={styles.eyebrow}>NAVIGATE</span><h2>Workspaces</h2><p>Jump directly into a task. Unavailable modules are clearly marked.</p></div></section>
+   <section className={styles.workspaceGrid} aria-label="Workspaces">{workspaces.map(w=>w.enabled?
+    <Link key={w.title} className={styles.workspace} href={w.href}><span className={styles.workspaceIcon}>{w.icon}</span><span className={styles.workspaceCopy}><strong>{w.title}</strong><small>{w.detail}</small></span><b>↗</b></Link>:
+    <div key={w.title} className={styles.workspaceDisabled}><span className={styles.workspaceIcon}>{w.icon}</span><span className={styles.workspaceCopy}><strong>{w.title}</strong><small>{w.detail}</small><span className={styles.soon}>IN DEVELOPMENT</span></span></div>)}</section>
+   <section className={styles.sectionHead}><div><span className={styles.eyebrow}>PRODUCT FOUNDATION</span><h2>Designed for complex retail</h2><p>Capabilities currently implemented in code; full production integration and verification remain in progress.</p></div></section>
+   <section className={styles.capabilityGrid}>{capabilities.map(c=><article key={c.number} className={styles.capability}><span>{c.number}</span><strong>{c.title}</strong><p>{c.detail}</p></article>)}</section>
+   <section className={styles.notice}><span>✧</span><div><strong>Live figures will appear when connected</strong><p>No invented sales totals, transaction counts or recent product activity. This preview prioritises useful navigation until authenticated store data is available.</p></div></section>
+   <MobileNavigation/>
+  </main>
+ </div>;
 }
