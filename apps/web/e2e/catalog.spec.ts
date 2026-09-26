@@ -48,7 +48,7 @@ test('CAT-012 CAT-013: category creation and duplicate rejection', async ({ page
   await expect(page.getByText('Frozen')).toBeVisible();
   await page.getByRole('textbox', { name: 'New category name' }).fill('frozen');
   await page.getByRole('button', { name: 'Add category' }).click();
-  await expect(page.locator('form').getByRole('alert')).toContainText('already exists');
+  await expect(page.locator('section').getByRole('alert')).toContainText('already exists');
 });
 
 test('CAT-014: manufacturer creation', async ({ page }) => {
