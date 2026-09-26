@@ -30,7 +30,7 @@ export default function Home() {
       <div className={styles.columns}>
         <section className={styles.panel}><div className={styles.panelHead}><div><h2>Quick actions</h2><p>Jump into your daily operations</p></div></div>
           <div className={styles.actions}>
-            <Link href="/catalog" className={styles.action}><span className={styles.actionIcon}>▦</span><span><strong>Product catalogue</strong><small>Search and manage products</small></span><b aria-hidden="true">→</b></Link>
+            <Link href="/catalog" className={styles.action} aria-label="Open product catalogue"><span className={styles.actionIcon}>▦</span><span><strong>Product catalogue</strong><small>Search and manage products</small></span><b aria-hidden="true">→</b></Link>
             <div className={styles.actionDisabled}><span className={styles.actionIcon}>▥</span><span><strong>Receive delivery</strong><small>Coming soon</small></span><b>⌛</b></div>
             <div className={styles.actionDisabled}><span className={styles.actionIcon}>▤</span><span><strong>Stock adjustment</strong><small>Coming soon</small></span><b>⌛</b></div>
             <div className={styles.actionDisabled}><span className={styles.actionIcon}>▥</span><span><strong>Reports</strong><small>Coming soon</small></span><b>⌛</b></div>
