@@ -3,13 +3,14 @@ import Link from 'next/link';
 import { useCallback, useState } from 'react';
 import styles from './home.module.css';
 import { MobileNavigation } from './mobile-shell';
+import { AppIcon, type IconName } from './app-icon';
 
 type Store = {id:string;code:string;name:string};
 type Product = {id:string;itemCode:string;name:string;status:string;createdAt:string};
 type Overview = {stores:Store[];metrics:{products:number;activeProducts:number;suppliers:number;stockRecords:number};recentProducts:Product[]};
-const modules = [
- {title:'Products',subtitle:'Item maintenance and barcode search',href:'/catalog',symbol:'▦'},
- {title:'Product records',subtitle:'Connected maintenance workspace',href:'/catalog/connected',symbol:'⌗'},
+const modules: {title:string;subtitle:string;href:string;symbol:IconName}[] = [
+ {title:'Products',subtitle:'Item maintenance and barcode search',href:'/catalog',symbol:'products'},
+ {title:'Product records',subtitle:'Connected maintenance workspace',href:'/catalog/connected',symbol:'inventory'},
 ];
 export default function Home(){
  const [token,setToken]=useState('');
@@ -35,16 +36,16 @@ export default function Home(){
  },[api]);
  const selectedName=overview?.stores.find(s=>s.id===storeId)?.name??'All stores';
  return <div className={styles.shell}>
-  <aside className={styles.sidebar}><div className={styles.brand}>◈ OmniCore <small>RETAIL OPERATIONS</small></div>
-   <p className={styles.navHeading}>OPERATIONS</p><Link className={styles.active} href="/">⌂ &nbsp; Dashboard</Link>
-   <Link className={styles.nav} href="/catalog">▦ &nbsp; Products</Link><Link className={styles.nav} href="/catalog/connected">⌗ &nbsp; Product records</Link>
+  <aside className={styles.sidebar}><div className={styles.brand}><span className={styles.brandMark}><AppIcon name="store" size={23}/></span> OmniCore <small>RETAIL OPERATIONS</small></div>
+   <p className={styles.navHeading}>OPERATIONS</p><Link className={styles.active} href="/"><AppIcon name="home" size={18}/> &nbsp; Dashboard</Link>
+   <Link className={styles.nav} href="/catalog"><AppIcon name="products" size={18}/> &nbsp; Products</Link><Link className={styles.nav} href="/catalog/connected"><AppIcon name="inventory" size={18}/> &nbsp; Product records</Link>
    <p className={styles.navHeading}>MODULES IN DEVELOPMENT</p>
    <span className={styles.muted}>Inventory</span><span className={styles.muted}>Purchasing & deliveries</span>
    <span className={styles.muted}>Promotions</span><span className={styles.muted}>Sales & reporting</span>
    <div className={styles.sideFoot}>Operational data only<br/>No estimated totals</div>
   </aside>
   <main className={styles.main}>
-   <header className={styles.topbar}><div className={styles.logo}>◈ <strong>OmniCore</strong><small> / Operations</small></div>
+   <header className={styles.topbar}><div className={styles.logo}><span className={styles.logoMark}><AppIcon name="store" size={21}/></span> <strong>OmniCore</strong><small> / Operations</small></div>
     <label className={styles.operationStore}>Store
      <select aria-label="Filter dashboard by store" value={storeId} onChange={e=>{setStoreId(e.target.value);if(token)void load(e.target.value,token,tenant);}} disabled={!overview}>
       <option value="">All stores</option>{overview?.stores.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
@@ -70,11 +71,11 @@ export default function Home(){
    <div className={styles.opsGrid}>
     <section className={styles.opsPanel}><div className={styles.opsPanelTitle}><div><h2>Recently added products</h2><p>Latest records across the selected tenant</p></div><Link href="/catalog/connected">Open products →</Link></div>
      {overview?.recentProducts.length?<div className={styles.opsProductList}>{overview.recentProducts.map(p=>
-      <div className={styles.opsProduct} key={p.id}><span className={styles.opsProductIcon}>▦</span><div><strong>{p.name}</strong><small>{p.itemCode} · {new Date(p.createdAt).toLocaleDateString()}</small></div><span className={styles.opsProductStatus}>{p.status}</span></div>)}</div>:
+      <div className={styles.opsProduct} key={p.id}><span className={styles.opsProductIcon}><AppIcon name="products" size={19}/></span><div><strong>{p.name}</strong><small>{p.itemCode} · {new Date(p.createdAt).toLocaleDateString()}</small></div><span className={styles.opsProductStatus}>{p.status}</span></div>)}</div>:
       <div className={styles.opsEmpty}>No recent products to display{overview?'.': ' until your data is connected.'}</div>}
     </section>
     <section className={styles.opsPanel}><div className={styles.opsPanelTitle}><div><h2>Quick actions</h2><p>Continue your daily work</p></div></div>
-     <div className={styles.opsActions}>{modules.map(m=><Link key={m.title} href={m.href} className={styles.opsAction}><span>{m.symbol}</span><div><strong>{m.title}</strong><small>{m.subtitle}</small></div><b>→</b></Link>)}</div>
+     <div className={styles.opsActions}>{modules.map(m=><Link key={m.title} href={m.href} className={styles.opsAction}><span><AppIcon name={m.symbol} size={20}/></span><div><strong>{m.title}</strong><small>{m.subtitle}</small></div><b><AppIcon name="arrow" size={17}/></b></Link>)}</div>
      <div className={styles.opsComing}><h3>Awaiting transaction integration</h3><p>Sales, low-stock alerts, deliveries and promotions will appear here when their real transaction services are connected.</p></div>
     </section>
    </div>
