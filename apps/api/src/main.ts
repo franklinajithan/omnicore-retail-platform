@@ -1,5 +1,6 @@
 import 'reflect-metadata';
-import { CatalogueController, TenantIdentity } from './catalogue';
+import { CatalogueController } from './catalogue';
+import { TenantIdentity } from './identity';
 import { NestFactory } from '@nestjs/core';
 import { Module, Controller, Get } from '@nestjs/common';
 @Controller('health') class HealthController { @Get() health() { return { status: 'ok' }; } }
