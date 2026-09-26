@@ -130,7 +130,7 @@ export class CatalogueController {
     }
     const supplierConflicts = source.suppliers.filter(m => target.suppliers.some(t => t.supplierId === m.supplierId && (t.supplierCode !== m.supplierCode || String(t.packSize) !== String(m.packSize) || String(t.cost) !== String(m.cost))));
     if (supplierConflicts.length) conflicts.push('Supplier mappings conflict: retain both original records for review');
-    if (source.balances.length) conflicts.push('Duplicate has store balances: stock ledger reconciliation required');
+    if (source.balances.some(b => !b.quantity.isZero())) conflicts.push('Duplicate has nonzero store balances: stock ledger reconciliation required');
     if (source._count.movements || source._count.orderLines || source._count.receiptLines || source._count.activities || source._count.prices) conflicts.push('Duplicate has transactional or price history: historical reporting must be reconciled');
     const summary = (p: typeof target) => ({ id:p.id,itemCode:p.itemCode,name:p.name,version:p.version,
       barcodes:p.barcodes.map(b=>({code:b.code,isPrimary:b.isPrimary})),
@@ -241,7 +241,7 @@ export class CatalogueController {
       where: {
         tenantId,
         ...(exactAlias ? { id: exactAlias.productId } : {}),
-        ...(query?.trim() ? { OR: [
+        ...(!exactAlias && query?.trim() ? { OR: [
           { itemCode: { equals: query.trim(), mode: 'insensitive' as const } },
           { itemCode: { contains: query.trim(), mode: 'insensitive' as const } },
           { aliases: { some: { tenantId, itemCode: { equals: query.trim(), mode: 'insensitive' as const } } } },
