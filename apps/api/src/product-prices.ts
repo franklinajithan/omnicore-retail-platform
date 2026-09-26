@@ -43,16 +43,19 @@ export class ProductPricesController {
     if (!product) throw new NotFoundException('Product not found');
     if (storeId && !await db.store.findFirst({ where: { id: storeId, tenantId }, select: { id: true } }))
       throw new NotFoundException('Store not found');
+    const aliases = await db.productAlias.findMany({ where: { tenantId, productId, sourceProductId: { not: null } }, select: { sourceProductId: true } });
+    const linkedIds = [productId, ...aliases.flatMap(a => a.sourceProductId ? [a.sourceProductId] : [])];
     const now = new Date();
     const [defaultPrice, storePrice, history] = await Promise.all([
       db.productPrice.findFirst({ where: { tenantId, productId, storeId: null, effectiveAt: { lte: now } },
         orderBy: [{ effectiveAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }] }),
       storeId ? db.productPrice.findFirst({ where: { tenantId, productId, storeId, effectiveAt: { lte: now } },
         orderBy: [{ effectiveAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }] }) : Promise.resolve(null),
-      db.productPrice.findMany({ where: { tenantId, productId, ...(storeId ? { OR: [{ storeId }, { storeId: null }] } : {}) },
+      db.productPrice.findMany({ where: { tenantId, productId: { in: linkedIds }, ...(storeId ? { OR: [{ storeId }, { storeId: null }] } : {}) },
         orderBy: [{ effectiveAt: 'desc' }, { id: 'desc' }], take: 100 }),
     ]);
-    return { effective: storePrice ?? defaultPrice, source: storePrice ? 'STORE' : defaultPrice ? 'TENANT' : 'UNKNOWN', history };
+    return { effective: storePrice ?? defaultPrice, source: storePrice ? 'STORE' : defaultPrice ? 'TENANT' : 'UNKNOWN', history,
+      historicalSourceProductIds: linkedIds.slice(1), note: 'Historical source prices are displayed for audit only and never override current target prices.' };
   }
   @Post()
   async create(
@@ -69,6 +72,8 @@ export class ProductPricesController {
       input.storeId ? db.store.findFirst({ where: { id: input.storeId, tenantId }, select: { id: true } }) : Promise.resolve(null),
     ]);
     if (!product) throw new NotFoundException('Product not found');
+    const retired = await db.productAlias.findFirst({ where: { tenantId, sourceProductId: productId }, select: { id: true } });
+    if (retired) throw new BadRequestException('Retired product is read-only; set pricing on its surviving item code');
     if (input.storeId && !store) throw new NotFoundException('Store not found');
     return db.productPrice.create({ data: { tenantId, productId, actorId, ...input } });
   }
