@@ -1,18 +1,8 @@
-import { BadRequestException, Controller, Get, Headers, Injectable, Param, Query, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Headers, Param, Query, } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { TenantIdentity } from './identity';
 
 const db = new PrismaClient();
-
-/**
- * Identity adapter boundary. The API is fail-closed until a verified authentication
- * provider is wired in. Do not trust x-tenant-id or any user-controlled tenant header.
- */
-@Injectable()
-export class TenantIdentity {
-  async requireTenant(_authorization?: string): Promise<string> {
-    throw new UnauthorizedException('Authenticated tenant identity is not configured');
-  }
-}
 
 @Controller('v1/catalogue')
 export class CatalogueController {
@@ -21,11 +11,12 @@ export class CatalogueController {
   @Get('products')
   async products(
     @Headers('authorization') authorization?: string,
+    @Headers('x-tenant-id') selectedTenant?: string,
     @Query('q') query?: string,
     @Query('cursor') cursor?: string,
     @Query('limit') rawLimit?: string,
   ) {
-    const tenantId = await this.identity.requireTenant(authorization);
+    const tenantId = await this.identity.requireTenant(authorization, selectedTenant);
     if (query && query.length > 128) throw new BadRequestException('Search too long');
     if (rawLimit && !/^\d+$/.test(rawLimit)) throw new BadRequestException('Invalid limit');
     const limit = Math.min(Math.max(Number(rawLimit ?? 50), 1), 100);
@@ -51,7 +42,7 @@ export class CatalogueController {
   }
 
   @Get('barcodes/:code')
-  async barcode(@Headers('authorization') authorization: string | undefined, @Param('code') code: string) {
+  async barcode(@Headers('authorization') authorization: string | undefined, @Headers('x-tenant-id') selectedTenant: string | undefined, @Param('code') code: string) {
     const tenantId = await this.identity.requireTenant(authorization);
     if (!code.trim() || code.length > 128) throw new BadRequestException('Invalid barcode');
     return db.productBarcode.findUnique({
