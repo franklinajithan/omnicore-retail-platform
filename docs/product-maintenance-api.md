@@ -35,3 +35,27 @@ the relevant source-event projector has not been connected yet.
 
 **Do not** expose authenticated endpoints via an unauthenticated Next.js
 proxy or seed fabricated stock values as live data.
+
+## Product write payload
+
+```json
+{
+  "itemCode": "001234",
+  "name": "Milk 1L",
+  "baseUnit": "EACH",
+  "status": "ACTIVE",
+  "barcodes": [{ "code": "5012345678900", "isPrimary": true }]
+}
+```
+
+POST and PUT validate complete payloads, reject unknown fields, preserve item
+code leading zeroes and require exactly one primary barcode when any barcode
+exists. PUT **replaces the entire barcode set**, not an individual barcode.
+The database's tenant-unique item-code and barcode constraints return HTTP
+409 on conflicts. Only verified OWNER/ADMIN/MANAGER tenant members can write.
+
+**Limitations before production:** write endpoints do not yet provide an
+optimistic concurrency token or a durable field-level audit event. Keep them
+behind the application's existing authentication and avoid production rollout
+until those protections and integration tests are implemented. The web demo
+still stores its changes only in memory.
