@@ -1,9 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import ConnectedDetails, { type Detail } from './connected-details';
 
 type Barcode = { code: string; isPrimary: boolean };
-type Product = { id: string; itemCode: string; name: string; baseUnit: string; status: 'ACTIVE' | 'INACTIVE'; version: number; barcodes: Barcode[] };
+type Product = Detail & { status: 'ACTIVE' | 'INACTIVE' };
 type Page = { items: Product[]; nextCursor: string | null };
 const api = process.env.NEXT_PUBLIC_OMNICORE_API_URL;
 
@@ -75,7 +76,8 @@ export default function ConnectedCatalogue() {
         method: selected ? 'PUT' : 'POST', headers: selected ? { 'If-Match': String(selected.version) } : {},
         body: JSON.stringify(payload),
       }) as Product;
-      setSelected(result); setMessage('Saved to API. Version ' + result.version);
+      await openProduct(result.id);
+      setMessage('Saved to API. Version ' + result.version);
       await load(null, true);
     } catch (error) { setMessage((error as Error).message); }
     finally { setBusy(false); }
@@ -121,6 +123,7 @@ export default function ConnectedCatalogue() {
           <p>Optimistic concurrency: {selected ? 'version ' + selected.version : 'new item'}. A conflicting edit is rejected.</p>
         </section>
       </div>
+      {selected && <ConnectedDetails product={selected} request={request} />}
     </>}
   </main>;
 }
