@@ -10,7 +10,7 @@ acceptance tests pass.
 | Identity & 50k search | Tenant-unique Item Code, indexed schema, paginated product API; demo web list | Server-backed web search, category/manufacturer filters, 50k load test |
 | Barcodes | Multi-barcode schema, uniqueness and validated create/replace API | Barcode type, active/inactive, effective dates, primary-history audit, inner/outer support |
 | Suppliers | Tenant-scoped supplier API and supplier/product mapping create | Preferred supplier, case/unit cost, effective dates, mapping edits and history, supplier UI |
-| Overview | Demo details, basic product create/edit API | Ingredients, weight, category hierarchy, images, VAT, retail and margin |
+| Overview | Demo details, basic product create/edit API | Ingredients, weight, category hierarchy, images, pricing UI and margin; effective-dated VAT/retail API now added |
 | Parameters | Reference-only demo table | Typed tenant defaults, store overrides, inheritance display, RBAC and audit |
 | Promotions | Reference-only demo cards | Rules, eligibility, overlap resolution, store targeting, POS simulation |
 | Store stock | Tenant-scoped balance read in product detail | On-order, stocktake, last sale, forecasts, per-store live UI |
@@ -20,7 +20,7 @@ acceptance tests pass.
 | Audit trail | Reference-only tab | Audit table and write-time before/after snapshots added; field-level diff presentation, reason capture and integration tests remain |
 | Documents | Reference-only tab | Secure upload, metadata, access control and attachment UI |
 | Responsive UX | Split desktop/mobile demo workspace | Live authenticated integration, accessible save/back, 50k pagination |
-| Security | Verified JWT tenant membership and role-gated writes | Store-level permissions and audited write integration tests; optimistic concurrency now implemented in API |
+| Security | Verified JWT tenant membership and role-gated writes | Store-level permissions and audited write integration tests; optimistic concurrency implemented in API |
 | QA | Product validation unit tests and browser regression suite | End-to-end database tests for PM-001 through PM-011 |
 
 ## Non-negotiable business rules
@@ -62,3 +62,16 @@ Run database-backed integration tests and CI before any production release.
 - **Not yet complete:** audit stores before/after structured snapshots rather
   than a normalized per-field change list; the editor must pass the version
   and handle HTTP 409; migration and end-to-end tests still need verification.
+
+## Effective-dated retail and VAT update
+
+- Added tenant-default and store-specific product retail price records with
+  currency, VAT rate, effective timestamp, actor and reason.
+- Added authenticated `GET /v1/catalogue/products/:productId/prices`
+  with optional `storeId`: returns current effective price, inheritance
+  source (`STORE`, `TENANT` or `UNKNOWN`) and up to 100 history rows.
+- Added role-gated `POST /v1/catalogue/products/:productId/prices`
+  with decimal-safe price and VAT validation and verified store ownership.
+- **Remaining:** pricing UI, pagination of price history, currency/store
+  policy, retail price approval workflow, promotion override integration,
+  migration verification and integration tests.
