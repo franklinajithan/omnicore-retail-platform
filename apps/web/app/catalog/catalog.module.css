@@ -64,3 +64,5 @@
  .pagination{padding:14px 0}
  .footnote{line-height:1.5}
 }
+
+.productLink{background:transparent;border:0;padding:0;color:#225e99;text-align:left;cursor:pointer;font:inherit}.productLink:hover{text-decoration:underline}
