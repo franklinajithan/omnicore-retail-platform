@@ -50,7 +50,7 @@ export class CatalogueController {
     @Param('id') id: string,
   ) {
     const tenantId = await this.identity.requireTenant(authorization, selectedTenant);
-    if (!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(id)) throw new BadRequestException('Invalid product id');
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) throw new BadRequestException('Invalid product id');
     const product = await db.product.findFirst({
       where: { id, tenantId },
       select: {
@@ -66,6 +66,55 @@ export class CatalogueController {
     });
     if (!product) throw new NotFoundException('Product not found');
     return product;
+  }
+
+
+  @Get('products/:id/activity')
+  async productActivity(
+    @Headers('authorization') authorization: string | undefined,
+    @Headers('x-tenant-id') selectedTenant: string | undefined,
+    @Param('id') id: string,
+    @Query('storeId') storeId?: string,
+    @Query('barcode') barcode?: string,
+    @Query('module') module?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('limit') rawLimit?: string,
+  ) {
+    const tenantId = await this.identity.requireTenant(authorization, selectedTenant);
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))
+      throw new BadRequestException('Invalid product id');
+    if (rawLimit && !/^\d+$/.test(rawLimit)) throw new BadRequestException('Invalid limit');
+    const limit = Math.min(Math.max(Number(rawLimit ?? 50), 1), 100);
+    if ((from && !/^\d{4}-\d{2}-\d{2}$/.test(from)) || (to && !/^\d{4}-\d{2}-\d{2}$/.test(to)))
+      throw new BadRequestException('Dates must be YYYY-MM-DD');
+    const fromDate = from ? new Date(from + 'T00:00:00.000Z') : undefined;
+    const toDate = to ? new Date(to + 'T23:59:59.999Z') : undefined;
+    if ((fromDate && Number.isNaN(fromDate.getTime())) || (toDate && Number.isNaN(toDate.getTime())) ||
+        (fromDate && toDate && fromDate > toDate)) throw new BadRequestException('Invalid date range');
+    if (barcode && barcode.length > 128) throw new BadRequestException('Invalid barcode');
+    if (module && module.length > 64) throw new BadRequestException('Invalid module');
+    const product = await db.product.findFirst({ where: { id, tenantId }, select: { id: true } });
+    if (!product) throw new NotFoundException('Product not found');
+    if (storeId) {
+      const store = await db.store.findFirst({ where: { id: storeId, tenantId }, select: { id: true } });
+      if (!store) throw new BadRequestException('Invalid store for tenant');
+    }
+    const items = await db.productActivity.findMany({
+      where: {
+        tenantId, productId: id,
+        ...(storeId ? { storeId } : {}),
+        ...(barcode ? { scannedBarcode: barcode } : {}),
+        ...(module ? { sourceModule: module } : {}),
+        ...(fromDate || toDate ? { occurredAt: { ...(fromDate ? { gte: fromDate } : {}), ...(toDate ? { lte: toDate } : {}) } } : {}),
+      },
+      orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
+      take: limit,
+      select: { id: true, occurredAt: true, type: true, sourceModule: true, reference: true,
+        scannedBarcode: true, quantityDelta: true, unitCost: true, actualSalePrice: true,
+        currency: true, reason: true, store: { select: { id: true, code: true, name: true } } },
+    });
+    return { items };
   }
 
   @Get('barcodes/:code')
