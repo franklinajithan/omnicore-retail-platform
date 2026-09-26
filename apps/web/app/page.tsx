@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import styles from './home.module.css';
+import { MobileNavigation, StoreSelector } from './mobile-shell';
 
 const metrics = [
   { label: 'Today’s sales', value: '£12,840', change: '+8.2%', tone: 'blue' },
@@ -24,8 +25,8 @@ export default function Home() {
       <div className={styles.sideFoot}>Prototype workspace<br/>Demo data only</div>
     </aside>
     <main className={styles.main}>
-      <header className={styles.topbar}><div className={styles.logo}>◈ <strong>OmniCore</strong></div><div className={styles.store}>⌖ &nbsp; All stores <span>⌄</span></div></header>
-      <div className={styles.heading}><div><span className={styles.eyebrow}>RETAIL OPERATIONS / OVERVIEW</span><h1>Good morning 👋</h1><p>Here’s what’s happening across your stores today.</p></div><span className={styles.demo}>DEMO DATA · NOT LIVE</span></div>
+      <header className={styles.topbar}><div className={styles.logo}>◈ <strong>OmniCore</strong></div><StoreSelector /></header>
+      <div className={styles.heading}><div><span className={styles.eyebrow}>RETAIL OPERATIONS / OVERVIEW</span><h1>Good morning 👋</h1><p>Here’s what’s happening across your stores today.</p></div><span className={styles.demo}>DEMO DATA · STORE SELECTION IS VISUAL ONLY</span></div>
       <section className={styles.metrics} aria-label="Demo business metrics">{metrics.map(m=><article className={styles.metric} key={m.label}><span>{m.label}</span><strong>{m.value}</strong><small className={styles[m.tone]}>{m.change}</small></article>)}</section>
       <div className={styles.columns}>
         <section className={styles.panel}><div className={styles.panelHead}><div><h2>Quick actions</h2><p>Jump into your daily operations</p></div></div>
@@ -41,7 +42,7 @@ export default function Home() {
         </section>
       </div>
       <section className={styles.notice}><span>✦</span><div><strong>Your workspace is taking shape</strong><p>The dashboard is a visual demo. Product Catalogue is interactive; sales, stock, deliveries and activity shown here are sample data, not connected to your stores.</p></div><Link href="/catalog">Open catalogue →</Link></section>
-      <nav className={styles.bottomNav} aria-label="Mobile navigation"><Link href="/" aria-current="page"><span aria-hidden="true">⌂</span>Home</Link><Link href="/catalog"><span aria-hidden="true">▦</span>Products</Link><span aria-disabled="true"><span aria-hidden="true">▣</span>Scan</span><span aria-disabled="true"><span aria-hidden="true">☷</span>Tasks</span><span aria-disabled="true"><span aria-hidden="true">•••</span>More</span></nav>
+      <MobileNavigation />
     </main>
   </div>;
 }
