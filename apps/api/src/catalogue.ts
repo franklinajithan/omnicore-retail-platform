@@ -24,9 +24,11 @@ export class CatalogueController {
           audits: { create: { tenantId, actorId, action: 'CREATED', changes: { after: input } } },
           tenantId, itemCode: input.itemCode, name: input.name,
           status: input.status, baseUnit: input.baseUnit,
+          imageUrl: input.imageUrl, category: input.category, vatApplicable: input.vatApplicable,
+          caseSize: input.caseSize, casePrice: input.casePrice, eachPrice: input.eachPrice,
           barcodes: { create: input.barcodes.map(b => ({ tenantId, ...b })) },
         },
-        select: { id: true, itemCode: true, name: true, status: true, baseUnit: true, version: true,
+        select: { id: true, itemCode: true, name: true, status: true, baseUnit: true, version: true, imageUrl: true, category: true, vatApplicable: true, caseSize: true, casePrice: true, eachPrice: true,
           barcodes: { select: { code: true, isPrimary: true } } },
       });
     } catch (error) {
@@ -51,7 +53,7 @@ export class CatalogueController {
     const input = parseProductWrite(body);
     try {
       return await db.$transaction(async tx => {
-        const existing = await tx.product.findFirst({ where: { id, tenantId }, select: { id: true, itemCode: true, name: true, baseUnit: true, status: true, version: true,
+        const existing = await tx.product.findFirst({ where: { id, tenantId }, select: { id: true, itemCode: true, name: true, baseUnit: true, status: true, version: true, imageUrl: true, category: true, vatApplicable: true, caseSize: true, casePrice: true, eachPrice: true,
           barcodes: { select: { code: true, isPrimary: true } } } });
         if (!existing) throw new NotFoundException('Product not found');
         if (existing.itemCode !== input.itemCode)
@@ -65,7 +67,7 @@ export class CatalogueController {
           data: {
             audits: { create: { tenantId, actorId, action: 'UPDATED', changes: {
               fields: [
-                ...(['name', 'baseUnit', 'status'] as const)
+                ...(['name', 'baseUnit', 'status', 'imageUrl', 'category', 'vatApplicable', 'caseSize', 'casePrice', 'eachPrice'] as const)
                   .filter(field => existing[field] !== input[field])
                   .map(field => ({ field, before: existing[field], after: input[field] })),
                 ...(JSON.stringify(existing.barcodes.map(b => ({ code: b.code, isPrimary: b.isPrimary }))
@@ -76,7 +78,8 @@ export class CatalogueController {
               ],
             } } },
             itemCode: input.itemCode, name: input.name, status: input.status,
-            baseUnit: input.baseUnit,
+            baseUnit: input.baseUnit, imageUrl: input.imageUrl, category: input.category,
+            vatApplicable: input.vatApplicable, caseSize: input.caseSize, casePrice: input.casePrice, eachPrice: input.eachPrice,
             barcodes: { create: input.barcodes.map(b => ({ tenantId, ...b })) },
           },
           select: { id: true, itemCode: true, name: true, status: true, baseUnit: true, version: true,
@@ -116,7 +119,7 @@ export class CatalogueController {
       orderBy: [{ itemCode: 'asc' }, { id: 'asc' }],
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       take: limit + 1,
-      select: { id: true, itemCode: true, name: true, status: true, baseUnit: true,
+      select: { id: true, itemCode: true, name: true, status: true, baseUnit: true, imageUrl: true, category: true, vatApplicable: true, caseSize: true, casePrice: true, eachPrice: true,
         barcodes: { select: { code: true, isPrimary: true } } },
     });
     const items = rows.slice(0, limit);
@@ -136,7 +139,7 @@ export class CatalogueController {
     const product = await db.product.findFirst({
       where: { id, tenantId },
       select: {
-        id: true, itemCode: true, name: true, status: true, baseUnit: true, createdAt: true, version: true,
+        id: true, itemCode: true, name: true, status: true, baseUnit: true, createdAt: true, version: true, imageUrl: true, category: true, vatApplicable: true, caseSize: true, casePrice: true, eachPrice: true,
         barcodes: { where: { tenantId }, select: { id: true, code: true, isPrimary: true },
           orderBy: [{ isPrimary: 'desc' }, { code: 'asc' }] },
         suppliers: { where: { supplier: { tenantId } },
