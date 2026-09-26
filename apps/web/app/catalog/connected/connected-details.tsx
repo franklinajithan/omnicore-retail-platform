@@ -17,7 +17,7 @@ const tabs = ['Overview','Barcodes & suppliers','Pricing & VAT','Store stock','A
 type Tab = typeof tabs[number];
 const box = { border: '1px solid #dce4ed', padding: 12, borderRadius: 8, overflowX: 'auto' as const };
 const format = (v: unknown) => v == null ? 'Unknown' : typeof v === 'object' ? JSON.stringify(v) : String(v);
-export default function ConnectedDetails({ product, request }: { product: Detail; request: Request }) {
+export default function ConnectedDetails({ product, request, onRefresh }: { product: Detail; request: Request; onRefresh: () => Promise<void> }) {
  const [tab,setTab] = useState<Tab>('Overview');
  const [price,setPrice] = useState<{ effective: Price | null; source: string; history: Price[] } | null>(null);
  const [store,setStore] = useState('');
@@ -93,7 +93,7 @@ export default function ConnectedDetails({ product, request }: { product: Detail
   setMappingBusy(true);
   try{
    await request('/v1/suppliers/'+supplierId+'/products',{method:'POST',body:JSON.stringify({productId:product.id,supplierCode:supplierCode.trim(),packSize,cost})});
-   setMappingNotice('Supplier mapping saved. Reload this product to see the updated mapping.');setSupplierCode('');setCost('');
+   await onRefresh();setMappingNotice('Supplier mapping saved and product details refreshed.');setSupplierCode('');setCost('');
   }catch(e){setError((e as Error).message);}finally{setMappingBusy(false);}
  }
  return <section style={{...box,marginTop:20}}>
