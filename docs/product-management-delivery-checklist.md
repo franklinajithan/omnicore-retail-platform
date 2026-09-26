@@ -75,3 +75,18 @@ Run database-backed integration tests and CI before any production release.
 - **Remaining:** pricing UI, pagination of price history, currency/store
   policy, retail price approval workflow, promotion override integration,
   migration verification and integration tests.
+
+## Connected catalogue integration screen
+
+- Added `/catalog/connected` as a separate **developer-only** integration
+  screen. It searches the authenticated API in 50-row server pages and
+  supports create/replace with `If-Match` product versions.
+- The temporary bearer token exists only in React memory; never paste
+  production tokens into a shared development environment.
+- Set `NEXT_PUBLIC_OMNICORE_API_URL` to the API origin on the web app.
+  Set `WEB_ALLOWED_ORIGINS` on the API to a comma-separated list of
+  explicitly trusted web origins when the apps are cross-origin.
+- The original `/catalog` remains a demo prototype. The new route is
+  **not** production authentication: session login, server-side credential
+  handling, permission-aware controls, detail tabs and comprehensive E2E
+  testing must be completed before replacing the demo.
