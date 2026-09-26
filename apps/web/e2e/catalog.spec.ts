@@ -13,7 +13,7 @@ test('CAT-004 CAT-003: creating product updates table and totals', async ({ page
   await page.getByText('Product name *').locator('input').fill('QA Product');
   await page.getByText('Item code (SKU) *').locator('input').fill('QA-001');
   await page.getByRole('button', { name: 'Add to demo catalogue' }).click();
-  await expect(page.getByRole('cell', { name: 'QA Product' })).toBeVisible();
+  await expect(page.getByText('QA Product').first()).toBeVisible();
   await expect(page.locator('section').first().getByText('4', { exact: true }).first()).toBeVisible();
 });
 
@@ -36,8 +36,8 @@ test('CAT-006: duplicate SKU rejected', async ({ page }) => {
 test('CAT-007: search filters products', async ({ page }) => {
   await page.goto('/catalog');
   await page.getByRole('textbox', { name: 'Search products' }).fill('BREAD-001');
-  await expect(page.getByRole('cell', { name: 'Sourdough Bread' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Whole Milk 1L' })).toHaveCount(0);
+  await expect(page.getByText('Sourdough Bread').first()).toBeVisible();
+  await expect(page.getByText('Whole Milk 1L')).toHaveCount(0);
 });
 
 test('CAT-012 CAT-013: category creation and duplicate rejection', async ({ page }) => {
@@ -105,7 +105,7 @@ test('CAT-021: second barcode resolves to the same demo item', async ({ page }) 
   await page.getByText('Additional barcodes (comma separated)').locator('input').fill('5901234567891');
   await page.getByRole('button', { name: 'Add to demo catalogue' }).click();
   await page.getByRole('textbox', { name: 'Search products' }).fill('5901234567891');
-  await expect(page.getByRole('cell', { name: 'Multi Barcode Milk' })).toBeVisible();
+  await expect(page.getByText('Multi Barcode Milk').first()).toBeVisible();
 });
 
 test('CAT-022: a barcode cannot belong to two different items', async ({ page }) => {
@@ -121,4 +121,17 @@ test('CAT-022: a barcode cannot belong to two different items', async ({ page })
   await page.getByText('Primary barcode').locator('input').fill('5901234567890');
   await page.getByRole('button', { name: 'Add to demo catalogue' }).click();
   await expect(page.locator('form').getByRole('alert')).toContainText('Barcode already belongs');
+});
+
+test('MOB-011: compact mobile product rows expand to reveal barcodes', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'Mobile viewport only');
+  await page.goto('/catalog');
+  const list = page.getByLabel('Compact product list');
+  await expect(list).toBeVisible();
+  await expect(page.locator('table')).toBeHidden();
+  const row = list.getByRole('button', { name: /MILK-001/ });
+  await expect(row).toBeVisible();
+  await row.click();
+  await expect(row).toHaveAttribute('aria-expanded', 'true');
+  await expect(list.getByText('5901234123457')).toBeVisible();
 });
