@@ -21,7 +21,7 @@ test('CAT-005: required fields are validated', async ({ page }) => {
   await page.goto('/catalog');
   await page.getByRole('button', { name: /add product/i }).click();
   await page.getByRole('button', { name: 'Add to demo catalogue' }).click();
-  await expect(page.getByRole('alert')).toContainText('required');
+  await expect(page.locator('form').getByRole('alert')).toContainText('required');
 });
 
 test('CAT-006: duplicate SKU rejected', async ({ page }) => {
@@ -30,7 +30,7 @@ test('CAT-006: duplicate SKU rejected', async ({ page }) => {
   await page.getByText('Product name *').locator('input').fill('Another Milk');
   await page.getByText('SKU *').locator('input').fill('MILK-001');
   await page.getByRole('button', { name: 'Add to demo catalogue' }).click();
-  await expect(page.getByRole('alert')).toContainText('SKU already exists');
+  await expect(page.locator('form').getByRole('alert')).toContainText('SKU already exists');
 });
 
 test('CAT-007: search filters products', async ({ page }) => {
@@ -48,7 +48,7 @@ test('CAT-012 CAT-013: category creation and duplicate rejection', async ({ page
   await expect(page.getByText('Frozen')).toBeVisible();
   await page.getByRole('textbox', { name: 'New category name' }).fill('frozen');
   await page.getByRole('button', { name: 'Add category' }).click();
-  await expect(page.getByRole('alert')).toContainText('already exists');
+  await expect(page.locator('form').getByRole('alert')).toContainText('already exists');
 });
 
 test('CAT-014: manufacturer creation', async ({ page }) => {
