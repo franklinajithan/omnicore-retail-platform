@@ -21,7 +21,7 @@ export default function ConnectedCatalogue() {
   const [currentCursor, setCurrentCursor] = useState<string | null>(null);
   const [history, setHistory] = useState<(string | null)[]>([]);
   const [selected, setSelected] = useState<Product | null>(null);
-  const [draft, setDraft] = useState({ itemCode: '', name: '', baseUnit: 'EACH', status: 'ACTIVE' as Product['status'], barcodes: '' });
+  const [draft, setDraft] = useState({ itemCode: '', name: '', baseUnit: 'EACH', status: 'ACTIVE' as Product['status'], barcodes: '', imageUrl: '', category: '', vatApplicable: '' as ''|'yes'|'no', caseSize: '', casePrice: '', eachPrice: '' });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [configured, setConfigured] = useState(false);
@@ -61,7 +61,7 @@ export default function ConnectedCatalogue() {
       const product = await request('/v1/catalogue/products/' + id) as Product;
       setSelected(product);
       setDraft({ itemCode: product.itemCode, name: product.name, baseUnit: product.baseUnit,
-        status: product.status, barcodes: product.barcodes.map(b => b.code).join('\n') });
+        status: product.status, barcodes: product.barcodes.map(b => b.code).join('\n'), imageUrl: product.imageUrl??'', category: product.category??'', vatApplicable: product.vatApplicable==null?'':product.vatApplicable?'yes':'no', caseSize: product.caseSize??'', casePrice: product.casePrice??'', eachPrice: product.eachPrice??'' });
     } catch (error) { setMessage((error as Error).message); }
     finally { setBusy(false); }
   }
@@ -74,7 +74,7 @@ export default function ConnectedCatalogue() {
     setBusy(true); setMessage('');
     try {
       const payload = { itemCode: draft.itemCode, name: draft.name, baseUnit: draft.baseUnit,
-        status: draft.status, barcodes: codes.map((code, index) => ({ code, isPrimary: index === 0 })) };
+        status: draft.status, imageUrl:draft.imageUrl||null, category:draft.category||null, vatApplicable:draft.vatApplicable===''?null:draft.vatApplicable==='yes', caseSize:draft.caseSize||null, casePrice:draft.casePrice||null, eachPrice:draft.eachPrice||null, barcodes: codes.map((code, index) => ({ code, isPrimary: index === 0 })) };
       const result = await request(selected ? '/v1/catalogue/products/' + selected.id : '/v1/catalogue/products', {
         method: selected ? 'PUT' : 'POST', headers: selected ? { 'If-Match': String(selected.version) } : {},
         body: JSON.stringify(payload),
@@ -100,7 +100,7 @@ export default function ConnectedCatalogue() {
       <form onSubmit={e => { e.preventDefault(); void load(null, true); }} className={styles.toolbar}>
         <input style={{ ...field, flex: 1, minWidth: 220 }} aria-label="Search live products" placeholder="Search Item Code, name or barcode" value={query} onChange={e => setQuery(e.target.value)} />
         <button className={styles.btn+' '+styles.primary} type="submit" disabled={busy || !token}>Search</button>
-        <button className={styles.btn} type="button" disabled={busy} onClick={() => { setSelected(null); setDraft({ itemCode: '', name: '', baseUnit: 'EACH', status: 'ACTIVE', barcodes: '' }); }}>New product</button>
+        <button className={styles.btn} type="button" disabled={busy} onClick={() => { setSelected(null); setDraft({ itemCode: '', name: '', baseUnit: 'EACH', status: 'ACTIVE', barcodes: '', imageUrl: '', category: '', vatApplicable: '', caseSize: '', casePrice: '', eachPrice: '' }); }}>New product</button>
       </form>
       {message && <p role="status" style={{ padding: 10, background: '#f2f6fa' }}>{message}</p>}
       <div className={styles.grid}>
@@ -120,6 +120,13 @@ export default function ConnectedCatalogue() {
             <label>Name<input style={field} value={draft.name} onChange={e => setDraft(v => ({ ...v, name: e.target.value }))} /></label>
             <label>Base unit<input style={field} value={draft.baseUnit} onChange={e => setDraft(v => ({ ...v, baseUnit: e.target.value }))} /></label>
             <label>Status<select style={field} value={draft.status} onChange={e => setDraft(v => ({ ...v, status: e.target.value as Product['status'] }))}><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option></select></label>
+            <label>Product image (HTTPS URL)<input style={field} type="url" value={draft.imageUrl} onChange={e=>setDraft(v=>({...v,imageUrl:e.target.value}))} placeholder="https://..." /></label>
+            {draft.imageUrl.startsWith('https://')&&<img src={draft.imageUrl} alt="Product preview" style={{width:125,height:125,objectFit:'contain',borderRadius:12,border:'1px solid #dce4ed'}} />}
+            <label>Category<input style={field} maxLength={128} value={draft.category} onChange={e=>setDraft(v=>({...v,category:e.target.value}))}/></label>
+            <label>VAT applicable<select style={field} value={draft.vatApplicable} onChange={e=>setDraft(v=>({...v,vatApplicable:e.target.value as ''|'yes'|'no'}))}><option value="">Not specified</option><option value="yes">Yes</option><option value="no">No</option></select></label>
+            <label>Case size<input style={field} inputMode="decimal" value={draft.caseSize} onChange={e=>setDraft(v=>({...v,caseSize:e.target.value}))}/></label>
+            <label>Case cost<input style={field} inputMode="decimal" value={draft.casePrice} onChange={e=>setDraft(v=>({...v,casePrice:e.target.value}))}/></label>
+            <label>Each cost<input style={field} inputMode="decimal" value={draft.eachPrice} onChange={e=>setDraft(v=>({...v,eachPrice:e.target.value}))}/></label>
             <label>Barcodes (one per line; first is primary)<textarea style={field} rows={6} value={draft.barcodes} onChange={e => setDraft(v => ({ ...v, barcodes: e.target.value }))} /></label>
             <button className={styles.btn+' '+styles.primary} disabled={busy || !token} onClick={() => void save()}>{busy ? 'Working…' : selected ? 'Save changes to API' : 'Create in API'}</button>
           </div>
