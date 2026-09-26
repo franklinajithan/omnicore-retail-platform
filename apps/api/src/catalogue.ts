@@ -18,6 +18,10 @@ export class CatalogueController {
   ) {
     const { tenantId, actorId } = await this.identity.requireContext(authorization, selectedTenant, ['OWNER', 'ADMIN', 'MANAGER']);
     const input = parseProductWrite(body);
+    const retired = await db.productAlias.findUnique({ where: { tenantId_itemCode: { tenantId, itemCode: input.itemCode } } });
+    if (retired) throw new ConflictException('Item code belongs to a consolidated product and cannot be reused');
+    const candidates = await db.product.findMany({ where: { tenantId, name: { equals: input.name, mode: 'insensitive' } }, select: { id: true, itemCode: true, name: true }, take: 5 });
+    if (candidates.length) throw new ConflictException({ message: 'Possible duplicate product: review consolidation before creating another item code', candidates });
     try {
       return await db.product.create({
         data: {
@@ -94,6 +98,42 @@ export class CatalogueController {
     }
   }
 
+  // Preview is read-only. Stock, financial and historical records must never be silently rewritten.
+  @Get('products/:id/consolidation-preview')
+  async consolidationPreview(
+    @Headers('authorization') auth: string | undefined,
+    @Headers('x-tenant-id') tenant: string | undefined,
+    @Param('id') id: string,
+    @Query('duplicateId') duplicateId?: string,
+  ) {
+    const tenantId = await this.identity.requireTenant(auth, tenant, ['OWNER', 'ADMIN', 'MANAGER']);
+    const valid = (v: string | undefined) => Boolean(v && /^[0-9a-f-]{36}$/i.test(v));
+    if (!valid(id) || !valid(duplicateId) || id === duplicateId) throw new BadRequestException('Two distinct product IDs required');
+    const products = await db.product.findMany({
+      where: { tenantId, id: { in: [id, duplicateId!] } },
+      include: { barcodes: true, suppliers: { include: { supplier: { select: { name: true, code: true } } } },
+        balances: { include: { store: { select: { code: true, name: true } } } },
+        _count: { select: { movements: true, orderLines: true, receiptLines: true, activities: true, prices: true, audits: true } } },
+    });
+    if (products.length !== 2) throw new NotFoundException('Product not found in tenant');
+    const target = products.find(p => p.id === id)!;
+    const source = products.find(p => p.id === duplicateId)!;
+    const conflicts: string[] = [];
+    if (target.baseUnit !== source.baseUnit) conflicts.push('Base units differ: manual stock conversion required');
+    for (const field of ['category','vatApplicable','caseSize','casePrice','eachPrice'] as const) {
+      if (target[field] != null && source[field] != null && String(target[field]) !== String(source[field])) conflicts.push(field + ' differs');
+    }
+    const supplierConflicts = source.suppliers.filter(m => target.suppliers.some(t => t.supplierId === m.supplierId && (t.supplierCode !== m.supplierCode || String(t.packSize) !== String(m.packSize) || String(t.cost) !== String(m.cost))));
+    if (supplierConflicts.length) conflicts.push('Supplier mappings conflict: retain both original records for review');
+    const summary = (p: typeof target) => ({ id:p.id,itemCode:p.itemCode,name:p.name,version:p.version,
+      barcodes:p.barcodes.map(b=>({code:b.code,isPrimary:b.isPrimary})),
+      suppliers:p.suppliers.map(m=>({supplier:m.supplier.name,code:m.supplierCode,packSize:m.packSize,cost:m.cost})),
+      balances:p.balances.map(b=>({store:b.store.name,quantity:b.quantity})), historicalRecords:p._count,
+      imageUrl:p.imageUrl,category:p.category,vatApplicable:p.vatApplicable,caseSize:p.caseSize,casePrice:p.casePrice,eachPrice:p.eachPrice });
+    return { target:summary(target), duplicate:summary(source), conflicts,
+      note:'Preview only. No records have been merged, deleted, reassigned or recalculated. Historical transactions and financial snapshots must be preserved.' };
+  }
+
   @Get('products')
   async products(
     @Headers('authorization') authorization?: string,
@@ -113,6 +153,7 @@ export class CatalogueController {
         ...(query?.trim() ? { OR: [
           { itemCode: { equals: query.trim(), mode: 'insensitive' as const } },
           { itemCode: { contains: query.trim(), mode: 'insensitive' as const } },
+          { aliases: { some: { tenantId, itemCode: { equals: query.trim(), mode: 'insensitive' as const } } } },
           { name: { contains: query.trim(), mode: 'insensitive' as const } },
           { barcodes: { some: { tenantId, code: query.trim() } } },
         ] } : {}),
