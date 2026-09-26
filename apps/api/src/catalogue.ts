@@ -1,12 +1,73 @@
-import { BadRequestException, Controller, Get, NotFoundException, Headers, Param, Query, } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { BadRequestException, Body, ConflictException, Controller, Get, NotFoundException, Headers, Param, Post, Put, Query, } from '@nestjs/common';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { TenantIdentity } from './identity';
+import { parseProductWrite } from './product-write';
 
 const db = new PrismaClient();
 
 @Controller('v1/catalogue')
 export class CatalogueController {
   constructor(private readonly identity: TenantIdentity) {}
+
+
+  @Post('products')
+  async createProduct(
+    @Headers('authorization') authorization: string | undefined,
+    @Headers('x-tenant-id') selectedTenant: string | undefined,
+    @Body() body: unknown,
+  ) {
+    const tenantId = await this.identity.requireTenant(authorization, selectedTenant, ['OWNER', 'ADMIN', 'MANAGER']);
+    const input = parseProductWrite(body);
+    try {
+      return await db.product.create({
+        data: {
+          tenantId, itemCode: input.itemCode, name: input.name,
+          status: input.status, baseUnit: input.baseUnit,
+          barcodes: { create: input.barcodes.map(b => ({ tenantId, ...b })) },
+        },
+        select: { id: true, itemCode: true, name: true, status: true, baseUnit: true,
+          barcodes: { select: { code: true, isPrimary: true } } },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002')
+        throw new ConflictException('Item code or barcode already exists in this tenant');
+      throw error;
+    }
+  }
+
+  @Put('products/:id')
+  async replaceProduct(
+    @Headers('authorization') authorization: string | undefined,
+    @Headers('x-tenant-id') selectedTenant: string | undefined,
+    @Param('id') id: string,
+    @Body() body: unknown,
+  ) {
+    const tenantId = await this.identity.requireTenant(authorization, selectedTenant, ['OWNER', 'ADMIN', 'MANAGER']);
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))
+      throw new BadRequestException('Invalid product id');
+    const input = parseProductWrite(body);
+    try {
+      return await db.$transaction(async tx => {
+        const existing = await tx.product.findFirst({ where: { id, tenantId }, select: { id: true } });
+        if (!existing) throw new NotFoundException('Product not found');
+        await tx.productBarcode.deleteMany({ where: { tenantId, productId: id } });
+        return tx.product.update({
+          where: { id },
+          data: {
+            itemCode: input.itemCode, name: input.name, status: input.status,
+            baseUnit: input.baseUnit,
+            barcodes: { create: input.barcodes.map(b => ({ tenantId, ...b })) },
+          },
+          select: { id: true, itemCode: true, name: true, status: true, baseUnit: true,
+            barcodes: { select: { code: true, isPrimary: true } } },
+        });
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002')
+        throw new ConflictException('Item code or barcode already exists in this tenant');
+      throw error;
+    }
+  }
 
   @Get('products')
   async products(
