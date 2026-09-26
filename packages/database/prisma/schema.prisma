@@ -44,6 +44,7 @@ model Tenant {
   activities ProductActivity[]
   productAudits ProductAudit[]
   prices ProductPrice[]
+  productAliases ProductAlias[]
   users     TenantUser[]
 }
 
@@ -98,6 +99,7 @@ model Product {
   orderLines  PurchaseOrderLine[]
   receiptLines GoodsReceiptLine[]
   activities ProductActivity[]
+  aliases ProductAlias[]
   @@unique([tenantId, itemCode])
   @@unique([id, tenantId])
 }
@@ -310,4 +312,19 @@ model ProductPrice {
   product     Product  @relation(fields: [productId, tenantId], references: [id, tenantId])
   store       Store?   @relation(fields: [storeId, tenantId], references: [id, tenantId])
   @@index([tenantId, productId, storeId, effectiveAt, id])
+}
+
+/// A retired item code resolves to the surviving product; never recycle it.
+model ProductAlias {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  itemCode String
+  productId String @db.Uuid
+  sourceProductId String? @db.Uuid
+  createdAt DateTime @default(now())
+  actorId String
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  product Product @relation(fields: [productId, tenantId], references: [id, tenantId])
+  @@unique([tenantId, itemCode])
+  @@index([tenantId, productId])
 }
