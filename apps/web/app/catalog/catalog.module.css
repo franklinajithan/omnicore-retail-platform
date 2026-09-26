@@ -31,3 +31,36 @@
 .tableWrap td:last-child{text-align:right}
 }
 @media(max-width:360px){.main{padding-left:10px;padding-right:10px}.tabs button{padding:8px;font-size:12px}.demo{white-space:normal}}
+
+/* Compact, high-density mobile catalogue: no giant product cards. */
+.compactList{display:none}.catalogControls{display:flex;align-items:center;gap:10px;padding:0 20px}.catalogControls .search{margin:0;flex:1;width:auto}.categoryFilter{min-height:44px;border:1px solid #dce4ed;background:#fff;border-radius:8px;padding:0 10px;max-width:150px}.resultSummary{padding:14px 20px;color:#6d7c91;font-size:12px}.resultSummary span{float:right;font-size:10px;color:#a47926}.pagination{display:flex;align-items:center;justify-content:center;gap:14px;padding:16px;font-size:12px;color:#718098}.pagination button{background:#fff;border:1px solid #dce4ed;border-radius:7px;padding:9px 12px;color:#225e99}.pagination button:disabled{opacity:.35}
+@media(max-width:850px){
+ .stats{display:none}
+ .header{margin-bottom:12px}
+ .header h1{font-size:22px;margin:5px 0}
+ .header p{font-size:12px;line-height:1.4;margin:4px 0}
+ .panel{border:0;background:transparent;overflow:visible}
+ .toolbar{padding:0 0 12px;display:flex;align-items:center;gap:8px}
+ .tabs{width:auto;flex:1;min-width:0}
+ .tabs button{padding:10px 7px;font-size:12px}
+ .primary{padding:10px 12px;font-size:12px;white-space:nowrap}
+ .catalogControls{padding:0;gap:8px}
+ .catalogControls .search{width:100%;min-width:0;padding:12px;font-size:16px}
+ .categoryFilter{max-width:102px;font-size:12px}
+ .resultSummary{padding:12px 2px}
+ .compactList{display:block;background:white;border:1px solid #e4eaf1;border-radius:12px;overflow:hidden}
+ .compactItem+.compactItem{border-top:1px solid #edf0f4}
+ .compactRow{display:flex;width:100%;align-items:center;text-align:left;gap:10px;padding:13px 14px;min-height:75px;background:#fff;border:0;cursor:pointer;color:#17283d}
+ .compactIdentity{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}
+ .compactIdentity small{font-size:11px;color:#76879a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .compactIdentity strong{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .compactEnd{display:flex;align-items:center;gap:12px;color:#8a99aa;font-size:22px}
+ .compactStatus{font-size:10px;background:#e5f5ec;color:#26764c;border-radius:14px;padding:5px 8px}
+ .compactDetail{padding:4px 14px 16px;background:#f7faff;border-top:1px solid #e7eff9}
+ .compactDetail>div{display:flex;justify-content:space-between;gap:12px;padding:8px 0;font-size:12px;border-bottom:1px solid #e4eaf1;overflow-wrap:anywhere}
+ .compactDetail b{flex-shrink:0}.compactDetail span{text-align:right}
+ .compactDetail p{font-size:11px;line-height:1.5;color:#718098}
+ .tableWrap{display:none}
+ .pagination{padding:14px 0}
+ .footnote{line-height:1.5}
+}
