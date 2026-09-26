@@ -70,3 +70,28 @@
 /* Dense, always-visible master/detail workstation on desktop. */
 .main{max-width:none;padding:20px 24px}.header h1{font-size:23px}.header p{margin:4px 0}.stats{display:none}.panel{border-radius:8px}.toolbar{padding:10px 14px}.catalogControls{padding:0 14px}.resultSummary{padding:8px 14px}.workbench{display:grid;grid-template-columns:minmax(260px,31%) minmax(0,1fr);gap:0;min-height:640px;border-top:1px solid #e4eaf1}.listPane{min-width:0;border-right:1px solid #dce4ed;max-height:calc(100vh - 300px);min-height:580px;overflow:auto}.listPaneTitle{display:flex;justify-content:space-between;padding:10px 14px;font-size:11px;background:#f3f6fa;color:#52657b}.listPaneTitle span{font-weight:400}.detailPane,.detailPaneEmpty{min-width:0;overflow:auto;max-height:calc(100vh - 300px);min-height:580px;background:#fff}.detailPaneEmpty{display:grid;place-items:center}.selectHint{font-size:13px;color:#8795a5}.workbench .tableWrap{display:none}.workbench .compactList{display:block;border:0;border-radius:0}.workbench .compactRow{min-height:57px;padding:9px 12px}.workbench .compactIdentity strong{font-size:12px}.workbench .compactIdentity small{font-size:10px}.workbench .compactEnd{gap:4px}.workbench .compactStatus{font-size:9px}.workbench .pagination{padding:9px}.workbench .compactItem:has(.compactRow[aria-expanded=true]){background:#edf4fc}.workbench .compactRow[aria-expanded=true]{background:#e9f2fc;border-left:3px solid #225e99}.detailPane>section{border:0;border-radius:0;margin:0}.detailPane>section>header{padding:15px}
 @media(max-width:850px){.main{padding:12px 12px calc(108px + env(safe-area-inset-bottom))}.workbench{display:block;min-height:0}.listPane{max-height:none;min-height:0;border-right:0}.detailPane{position:fixed;inset:0 0 calc(68px + env(safe-area-inset-bottom));z-index:25;overflow-y:auto;max-height:none;min-height:0;background:#fff}.detailPaneEmpty{display:none}.detailPane>section{margin:0}.workbench .compactRow{min-height:64px}.workbench .compactIdentity strong{font-size:13px}.listPaneTitle{border-top:1px solid #e4eaf1}}
+
+
+/* Consistent premium product workstation visual language */
+.shell{background:#f4f6fb;font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#192b44}
+.sidebar{background:linear-gradient(160deg,#101e37,#192e4c)}
+.main{padding:27px 34px calc(100px + env(safe-area-inset-bottom))}
+.header{padding:8px 0 22px;border-bottom:1px solid #e0e7f0;align-items:center}
+.header h1{font-size:clamp(25px,2.7vw,37px);letter-spacing:-1px;margin:8px 0}
+.header p{line-height:1.55;max-width:600px}
+.eyebrow{letter-spacing:2px;color:#4a78ad}
+.panel{border-radius:17px;border-color:#dfe7f1;box-shadow:0 10px 32px #203c5c0b}
+.toolbar{padding:14px 17px;border-bottom:1px solid #e8edf4}
+.primary{background:linear-gradient(135deg,#315e98,#224c80);border-radius:10px;box-shadow:0 5px 14px #2e5a8c24}
+.search,.categoryFilter{border-radius:11px;border-color:#dbe4ef;background:#fff}
+.search:focus,.categoryFilter:focus,.fields input:focus{outline:2px solid #729bd0;outline-offset:2px}
+.workbench{border-top-color:#e8edf4}.listPaneTitle{background:#f2f6fc;letter-spacing:.7px}
+.compactRow:hover{background:#f7faff}.workbench .compactRow[aria-expanded=true]{background:#eaf2fc;border-left:3px solid #2d659f}
+@media(max-width:850px){
+.main{padding:15px 13px calc(105px + env(safe-area-inset-bottom))}
+.header{align-items:flex-start;gap:14px;padding-bottom:18px}
+.header h1{font-size:27px}.header p{font-size:13px}
+.panel{box-shadow:none;border:0;background:transparent}
+.workbench{border:1px solid #e0e8f2;border-radius:15px;overflow:hidden;background:#fff}
+.compactList{border:0}.listPaneTitle{padding:13px 15px}
+}
