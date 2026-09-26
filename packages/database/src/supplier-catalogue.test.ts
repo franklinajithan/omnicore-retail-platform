@@ -9,7 +9,7 @@ test('SUP-001: maps a supplier-specific code to a verified tenant product', asyn
     product: { findUnique: async () => ({ id: 'product-a' }) },
     supplierProduct: { create: async (args: unknown) => { created = args; return args; } },
   };
-  const db = { $transaction: async (fn: (tx: typeof tx) => Promise<unknown>) => fn(tx) };
+  const db = { $transaction: async (fn: (client: any) => Promise<unknown>) => fn(tx) };
   await mapSupplierItem(db as never, {
     tenantId: 'tenant-a', supplierId: 'supplier-a', productId: 'product-a',
     supplierCode: ' MLK-100 ', packSize: '12', cost: '8.2500',
@@ -24,7 +24,7 @@ test('SUP-002: rejects a supplier or product from another tenant before writing'
     product: { findUnique: async () => null },
     supplierProduct: { create: async () => { writes++; } },
   };
-  const db = { $transaction: async (fn: (tx: typeof tx) => Promise<unknown>) => fn(tx) };
+  const db = { $transaction: async (fn: (client: any) => Promise<unknown>) => fn(tx) };
   await assert.rejects(mapSupplierItem(db as never, {
     tenantId: 'tenant-a', supplierId: 'supplier-a', productId: 'foreign-product',
     supplierCode: 'MLK-100', packSize: '12', cost: '8.25',
