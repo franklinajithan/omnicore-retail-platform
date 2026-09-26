@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import styles from './home.module.css';
 import { MobileNavigation } from './mobile-shell';
 
@@ -33,7 +33,6 @@ export default function Home(){
   }catch(e){setOverview(null);setError((e as Error).message);}
   finally{setLoading(false);}
  },[api]);
- useEffect(()=>{if(token)void load(storeId,token,tenant);},[storeId,token,tenant,load]);
  const selectedName=overview?.stores.find(s=>s.id===storeId)?.name??'All stores';
  return <div className={styles.shell}>
   <aside className={styles.sidebar}><div className={styles.brand}>◈ OmniCore <small>RETAIL OPERATIONS</small></div>
@@ -47,12 +46,12 @@ export default function Home(){
   <main className={styles.main}>
    <header className={styles.topbar}><div className={styles.logo}>◈ <strong>OmniCore</strong><small> / Operations</small></div>
     <label className={styles.operationStore}>Store
-     <select aria-label="Filter dashboard by store" value={storeId} onChange={e=>setStoreId(e.target.value)} disabled={!overview}>
+     <select aria-label="Filter dashboard by store" value={storeId} onChange={e=>{setStoreId(e.target.value);if(token)void load(e.target.value,token,tenant);}} disabled={!overview}>
       <option value="">All stores</option>{overview?.stores.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
      </select>
     </label>
    </header>
-   <div className={styles.opsHeading}><div><span className={styles.eyebrow}>RETAIL OPERATIONS</span><h1>Dashboard</h1><p>{selectedName} · Product and master-data overview</p></div>
+   <div className={styles.opsHeading}><div><span className={styles.eyebrow}>RETAIL OPERATIONS</span><h1>Dashboard</h1><p>{selectedName} · Tenant-wide master data and store-filtered stock records</p></div>
     <span className={styles.opsBadge}>{overview?'CONNECTED':'NOT CONNECTED'}</span></div>
    {!overview&&<section className={styles.connectPanel} aria-label="Connect operational data">
     <div><strong>Connect your retail data</strong><p>Operational metrics will appear when authenticated API access is configured. No demonstration figures are displayed.</p></div>
@@ -69,7 +68,7 @@ export default function Home(){
         <small>{overview?'From connected database':'Awaiting connection'}</small></article>)}
    </section>
    <div className={styles.opsGrid}>
-    <section className={styles.opsPanel}><div className={styles.opsPanelTitle}><div><h2>Recently added products</h2><p>Latest records in the selected tenant</p></div><Link href="/catalog/connected">Open products →</Link></div>
+    <section className={styles.opsPanel}><div className={styles.opsPanelTitle}><div><h2>Recently added products</h2><p>Latest records across the selected tenant</p></div><Link href="/catalog/connected">Open products →</Link></div>
      {overview?.recentProducts.length?<div className={styles.opsProductList}>{overview.recentProducts.map(p=>
       <div className={styles.opsProduct} key={p.id}><span className={styles.opsProductIcon}>▦</span><div><strong>{p.name}</strong><small>{p.itemCode} · {new Date(p.createdAt).toLocaleDateString()}</small></div><span className={styles.opsProductStatus}>{p.status}</span></div>)}</div>:
       <div className={styles.opsEmpty}>No recent products to display{overview?'.': ' until your data is connected.'}</div>}
