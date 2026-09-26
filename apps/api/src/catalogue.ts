@@ -48,8 +48,10 @@ export class CatalogueController {
     const input = parseProductWrite(body);
     try {
       return await db.$transaction(async tx => {
-        const existing = await tx.product.findFirst({ where: { id, tenantId }, select: { id: true } });
+        const existing = await tx.product.findFirst({ where: { id, tenantId }, select: { id: true, itemCode: true } });
         if (!existing) throw new NotFoundException('Product not found');
+        if (existing.itemCode !== input.itemCode)
+          throw new BadRequestException('Item Code is immutable; use a controlled migration');
         await tx.productBarcode.deleteMany({ where: { tenantId, productId: id } });
         return tx.product.update({
           where: { id },
