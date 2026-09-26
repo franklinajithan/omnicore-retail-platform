@@ -11,6 +11,7 @@ type Product = Detail & { status: 'ACTIVE' | 'INACTIVE' };
 type Page = { items: Product[]; nextCursor: string | null };
 type MergeProduct = {id:string;itemCode:string;name:string;version:number;barcodes:{code:string}[];suppliers:{supplier:string;code:string;packSize:string;cost:string}[];balances:{store:string;quantity:string}[];historicalRecords:Record<string,number>};
 type MergePreview = {target:MergeProduct;duplicate:MergeProduct;conflicts:string[];note:string};
+type Ledger = { compatibleUnits:boolean; executable:boolean; stores:{store:{id:string;code:string;name:string};original:{balance:string|null;recordedMovementSum:string|null;movementCount:number};duplicate:{balance:string|null;recordedMovementSum:string|null;movementCount:number};proposedCombinedBalance:string|null;warning:string|null}[];note:string };
 const api = process.env.NEXT_PUBLIC_OMNICORE_API_URL;
 
 export default function ConnectedCatalogue() {
@@ -31,6 +32,7 @@ export default function ConnectedCatalogue() {
   const [mergePreview,setMergePreview] = useState<MergePreview|null>(null);
   const [mergeError,setMergeError] = useState('');
   const [mergeBusy,setMergeBusy] = useState(false);
+  const [ledger,setLedger] = useState<Ledger|null>(null);
   const [mergeReason,setMergeReason] = useState('');
   const [mergeConfirmed,setMergeConfirmed] = useState(false);
 
@@ -67,7 +69,7 @@ export default function ConnectedCatalogue() {
     setBusy(true); setMessage('');
     try {
       const product = await request('/v1/catalogue/products/' + id) as Product;
-      setSelected(product);setMergePreview(null);setDuplicateId('');setMergeConfirmed(false);setMergeReason('');
+      setSelected(product);setMergePreview(null);setLedger(null);setDuplicateId('');setMergeConfirmed(false);setMergeReason('');
       setDraft({ itemCode: product.itemCode, name: product.name, baseUnit: product.baseUnit,
         status: product.status, barcodes: product.barcodes.map(b => b.code).join('\n'), imageUrl: product.imageUrl??'', category: product.category??'', vatApplicable: product.vatApplicable==null?'':product.vatApplicable?'yes':'no', caseSize: product.caseSize??'', casePrice: product.casePrice??'', eachPrice: product.eachPrice??'' });
     } catch (error) { setMessage((error as Error).message); }
@@ -97,7 +99,10 @@ export default function ConnectedCatalogue() {
   async function previewMerge(){
     if(!selected||!duplicateId||selected.id===duplicateId){setMergeError('Choose a different duplicate product.');return;}
     setMergeBusy(true);setMergeError('');setMergePreview(null);
-    try{setMergePreview(await request('/v1/catalogue/products/'+selected.id+'/consolidation-preview?duplicateId='+encodeURIComponent(duplicateId)) as MergePreview);}
+    try{const [preview,stock]=await Promise.all([
+      request('/v1/catalogue/products/'+selected.id+'/consolidation-preview?duplicateId='+encodeURIComponent(duplicateId)),
+      request('/v1/catalogue/products/'+selected.id+'/consolidation-ledger?duplicateId='+encodeURIComponent(duplicateId))
+    ]);setMergePreview(preview as MergePreview);setLedger(stock as Ledger);}
     catch(error){setMergeError((error as Error).message);}finally{setMergeBusy(false);}
   }
 
@@ -109,7 +114,7 @@ export default function ConnectedCatalogue() {
         method:'POST',body:JSON.stringify({duplicateId:mergePreview.duplicate.id,targetVersion:mergePreview.target.version,
           duplicateVersion:mergePreview.duplicate.version,reason:mergeReason.trim()})
       }) as {itemCode:string;retiredItemCode:string};
-      setMergePreview(null);setMergeConfirmed(false);setMergeReason('');
+      setMergePreview(null);setLedger(null);setMergeConfirmed(false);setMergeReason('');
       await openProduct(result.itemCode===mergePreview.target.itemCode?mergePreview.target.id:mergePreview.target.id);
       await load(null,true);
       setMessage('Consolidated '+result.retiredItemCode+' into '+result.itemCode+'. Historical records preserved.');
@@ -187,6 +192,14 @@ export default function ConnectedCatalogue() {
             </article>)}
           </div>
           <p role="status" style={{padding:12,background:'#edf4fc',borderRadius:10}}>{mergePreview.note}</p>
+          {ledger&&<section style={{marginTop:18,overflowX:'auto'}}>
+            <h4>Stock and ledger reconciliation (read only)</h4>
+            {!ledger.compatibleUnits&&<p role="alert">Base units differ. Stock cannot be combined without a verified conversion.</p>}
+            <table style={{width:'100%',minWidth:630}}><thead><tr><th>Store</th><th>Original balance</th><th>Duplicate balance</th><th>Potential combined</th><th>Recorded movement sums (original / duplicate)</th></tr></thead>
+              <tbody>{ledger.stores.map(row=><tr key={row.store.id}><td>{row.store.name}</td><td>{row.original.balance??'Unknown'}</td><td>{row.duplicate.balance??'Unknown'}</td><td>{row.proposedCombinedBalance??'Not calculable'}</td><td>{row.original.recordedMovementSum??'Unknown'} / {row.duplicate.recordedMovementSum??'Unknown'}{row.warning&&<p role="alert">{row.warning}</p>}</td></tr>)}</tbody></table>
+            {!ledger.stores.length&&<p>No stock balances or movements were found for either product.</p>}
+            <p>{ledger.note}</p>
+          </section>}
           <h4>Confirm consolidation</h4>
           <p>Only conflict-free products without transaction or price history or outstanding stock can merge here.</p>
           <label style={{display:'grid',gap:6,maxWidth:540}}>Required audit reason
