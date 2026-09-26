@@ -1,52 +1,84 @@
+'use client';
 import Link from 'next/link';
+import { useCallback, useEffect, useState } from 'react';
 import styles from './home.module.css';
-import { MobileNavigation, StoreSelector } from './mobile-shell';
+import { MobileNavigation } from './mobile-shell';
 
-const workspaces = [
- {icon:'▦',title:'Products',detail:'Search, maintain and review item records',href:'/catalog',enabled:true},
- {icon:'◎',title:'Connected catalogue',detail:'Authenticated API integration workspace',href:'/catalog/connected',enabled:true},
- {icon:'◫',title:'Inventory',detail:'Stock by store and stock movements',href:'#',enabled:false},
- {icon:'⇣',title:'Deliveries',detail:'Purchase orders, receiving and claims',href:'#',enabled:false},
- {icon:'◇',title:'Promotions',detail:'Retail pricing and multibuy management',href:'#',enabled:false},
- {icon:'▤',title:'Reports',detail:'Sales, wastage and performance',href:'#',enabled:false},
-];
-const capabilities = [
- {number:'01',title:'Product identity',detail:'Item codes, barcodes and supplier mappings'},
- {number:'02',title:'Retail pricing',detail:'Effective-dated prices and VAT per store'},
- {number:'03',title:'Store inventory',detail:'Recorded balances and transaction history'},
- {number:'04',title:'Change control',detail:'Product versions and audit history'},
+type Store = {id:string;code:string;name:string};
+type Product = {id:string;itemCode:string;name:string;status:string;createdAt:string};
+type Overview = {stores:Store[];metrics:{products:number;activeProducts:number;suppliers:number;stockRecords:number};recentProducts:Product[]};
+const modules = [
+ {title:'Products',subtitle:'Item maintenance and barcode search',href:'/catalog',symbol:'▦'},
+ {title:'Product records',subtitle:'Connected maintenance workspace',href:'/catalog/connected',symbol:'⌗'},
 ];
 export default function Home(){
+ const [token,setToken]=useState('');
+ const [tenant,setTenant]=useState('');
+ const [storeId,setStoreId]=useState('');
+ const [overview,setOverview]=useState<Overview|null>(null);
+ const [loading,setLoading]=useState(false);
+ const [error,setError]=useState('');
+ const api=process.env.NEXT_PUBLIC_OMNICORE_API_URL;
+ const load=useCallback(async (selectedStore:string,accessToken:string,selectedTenant:string)=>{
+  if(!api){setError('API is not configured for this deployment.');return;}
+  if(!accessToken){setOverview(null);setError('Sign-in integration is pending. Connect with a temporary development token to view real data.');return;}
+  setLoading(true);setError('');
+  try{
+   const params=new URLSearchParams();if(selectedStore)params.set('storeId',selectedStore);
+   const response=await fetch(api.replace(/\/$/,'')+'/v1/operations/overview'+(params.size?'?'+params:''),{
+    headers:{Authorization:'Bearer '+accessToken,...(selectedTenant?{'x-tenant-id':selectedTenant}:{})},cache:'no-store'
+   });
+   if(!response.ok)throw Error(response.status===401||response.status===403?'Access denied: check your credentials and tenant membership.':'Overview request failed ('+response.status+')');
+   setOverview(await response.json() as Overview);
+  }catch(e){setOverview(null);setError((e as Error).message);}
+  finally{setLoading(false);}
+ },[api]);
+ useEffect(()=>{if(token)void load(storeId,token,tenant);},[storeId,token,tenant,load]);
+ const selectedName=overview?.stores.find(s=>s.id===storeId)?.name??'All stores';
  return <div className={styles.shell}>
-  <aside className={styles.sidebar}>
-   <div className={styles.brand}>◈ OmniCore <small>RETAIL OPERATIONS</small></div>
-   <p className={styles.navHeading}>WORKSPACE</p>
-   <Link className={styles.active} href="/">⌂ &nbsp; Overview</Link>
-   <Link className={styles.nav} href="/catalog">▦ &nbsp; Products</Link>
-   <Link className={styles.nav} href="/catalog/connected">◎ &nbsp; Connected products</Link>
-   <p className={styles.navHeading}>IN DEVELOPMENT</p>
-   <span className={styles.muted}>Inventory</span><span className={styles.muted}>Deliveries</span><span className={styles.muted}>Promotions</span><span className={styles.muted}>Reports</span>
-   <div className={styles.sideFoot}>Multi-store workspace<br/>Development preview</div>
+  <aside className={styles.sidebar}><div className={styles.brand}>◈ OmniCore <small>RETAIL OPERATIONS</small></div>
+   <p className={styles.navHeading}>OPERATIONS</p><Link className={styles.active} href="/">⌂ &nbsp; Dashboard</Link>
+   <Link className={styles.nav} href="/catalog">▦ &nbsp; Products</Link><Link className={styles.nav} href="/catalog/connected">⌗ &nbsp; Product records</Link>
+   <p className={styles.navHeading}>MODULES IN DEVELOPMENT</p>
+   <span className={styles.muted}>Inventory</span><span className={styles.muted}>Purchasing & deliveries</span>
+   <span className={styles.muted}>Promotions</span><span className={styles.muted}>Sales & reporting</span>
+   <div className={styles.sideFoot}>Operational data only<br/>No estimated totals</div>
   </aside>
   <main className={styles.main}>
-   <header className={styles.topbar}><div className={styles.logo}>◈ <strong>OmniCore</strong><small> / Workspace</small></div><StoreSelector/></header>
-   <div className={styles.heading}><div><span className={styles.eyebrow}>YOUR RETAIL COMMAND CENTRE</span><h1>One workspace.<br/><em>Every store.</em></h1><p>Manage your product universe and build connected retail operations in one place.</p></div><span className={styles.demo}>DEVELOPMENT PREVIEW</span></div>
-   <section className={styles.hero} aria-label="Product management spotlight">
-    <div className={styles.heroText}><span className={styles.heroKicker}>FEATURED WORKSPACE · PRODUCT MANAGEMENT</span>
-     <h2>Built for a catalogue of 100,000+ products.</h2>
-     <p>Find the right item, manage multiple barcodes, review supplier mappings and connect pricing and inventory across stores.</p>
-     <div className={styles.heroActions}><Link className={styles.heroPrimary} href="/catalog">Explore products <span>↗</span></Link><Link className={styles.heroSecondary} href="/catalog/connected">Open API workspace →</Link></div>
-     <small>Scale target, not a verified benchmark. The main catalogue currently uses demo records.</small>
-    </div>
-    <div className={styles.heroArt} aria-hidden="true"><div className={styles.orbit}><div className={styles.orbitInner}>▦<span>PRODUCT<br/>HUB</span></div><i className={styles.dotOne}>⌗</i><i className={styles.dotTwo}>◈</i><i className={styles.dotThree}>↗</i></div></div>
+   <header className={styles.topbar}><div className={styles.logo}>◈ <strong>OmniCore</strong><small> / Operations</small></div>
+    <label className={styles.operationStore}>Store
+     <select aria-label="Filter dashboard by store" value={storeId} onChange={e=>setStoreId(e.target.value)} disabled={!overview}>
+      <option value="">All stores</option>{overview?.stores.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+     </select>
+    </label>
+   </header>
+   <div className={styles.opsHeading}><div><span className={styles.eyebrow}>RETAIL OPERATIONS</span><h1>Dashboard</h1><p>{selectedName} · Product and master-data overview</p></div>
+    <span className={styles.opsBadge}>{overview?'CONNECTED':'NOT CONNECTED'}</span></div>
+   {!overview&&<section className={styles.connectPanel} aria-label="Connect operational data">
+    <div><strong>Connect your retail data</strong><p>Operational metrics will appear when authenticated API access is configured. No demonstration figures are displayed.</p></div>
+    <div className={styles.connectionFields}><label>Development access token<input type="password" autoComplete="off" value={token} onChange={e=>setToken(e.target.value)} placeholder="Temporary bearer token"/></label>
+     <label>Tenant ID<input value={tenant} onChange={e=>setTenant(e.target.value)} placeholder="Only if needed"/></label>
+     <button type="button" disabled={loading||!token} onClick={()=>void load(storeId,token,tenant)}>Connect</button></div>
+    <small>Developer-only connection. Credentials are held in this page's memory, never stored. Production authentication is still required.</small>
+   </section>}
+   {error&&<p className={styles.opsError} role="alert">{error}</p>}
+   <section className={styles.opsMetrics} aria-label="Operational metrics">
+    {([{label:'Total products',value:overview?.metrics.products},{label:'Active products',value:overview?.metrics.activeProducts},
+       {label:'Suppliers',value:overview?.metrics.suppliers},{label:'Stock records',value:overview?.metrics.stockRecords}] as {label:string;value:number|undefined}[])
+       .map(m=><article key={m.label} className={styles.opsMetric}><span>{m.label}</span><strong>{m.value===undefined?'—':m.value.toLocaleString()}</strong>
+        <small>{overview?'From connected database':'Awaiting connection'}</small></article>)}
    </section>
-   <section className={styles.sectionHead}><div><span className={styles.eyebrow}>NAVIGATE</span><h2>Workspaces</h2><p>Jump directly into a task. Unavailable modules are clearly marked.</p></div></section>
-   <section className={styles.workspaceGrid} aria-label="Workspaces">{workspaces.map(w=>w.enabled?
-    <Link key={w.title} className={styles.workspace} href={w.href}><span className={styles.workspaceIcon}>{w.icon}</span><span className={styles.workspaceCopy}><strong>{w.title}</strong><small>{w.detail}</small></span><b>↗</b></Link>:
-    <div key={w.title} className={styles.workspaceDisabled}><span className={styles.workspaceIcon}>{w.icon}</span><span className={styles.workspaceCopy}><strong>{w.title}</strong><small>{w.detail}</small><span className={styles.soon}>IN DEVELOPMENT</span></span></div>)}</section>
-   <section className={styles.sectionHead}><div><span className={styles.eyebrow}>PRODUCT FOUNDATION</span><h2>Designed for complex retail</h2><p>Capabilities currently implemented in code; full production integration and verification remain in progress.</p></div></section>
-   <section className={styles.capabilityGrid}>{capabilities.map(c=><article key={c.number} className={styles.capability}><span>{c.number}</span><strong>{c.title}</strong><p>{c.detail}</p></article>)}</section>
-   <section className={styles.notice}><span>✧</span><div><strong>Live figures will appear when connected</strong><p>No invented sales totals, transaction counts or recent product activity. This preview prioritises useful navigation until authenticated store data is available.</p></div></section>
+   <div className={styles.opsGrid}>
+    <section className={styles.opsPanel}><div className={styles.opsPanelTitle}><div><h2>Recently added products</h2><p>Latest records in the selected tenant</p></div><Link href="/catalog/connected">Open products →</Link></div>
+     {overview?.recentProducts.length?<div className={styles.opsProductList}>{overview.recentProducts.map(p=>
+      <div className={styles.opsProduct} key={p.id}><span className={styles.opsProductIcon}>▦</span><div><strong>{p.name}</strong><small>{p.itemCode} · {new Date(p.createdAt).toLocaleDateString()}</small></div><span className={styles.opsProductStatus}>{p.status}</span></div>)}</div>:
+      <div className={styles.opsEmpty}>No recent products to display{overview?'.': ' until your data is connected.'}</div>}
+    </section>
+    <section className={styles.opsPanel}><div className={styles.opsPanelTitle}><div><h2>Quick actions</h2><p>Continue your daily work</p></div></div>
+     <div className={styles.opsActions}>{modules.map(m=><Link key={m.title} href={m.href} className={styles.opsAction}><span>{m.symbol}</span><div><strong>{m.title}</strong><small>{m.subtitle}</small></div><b>→</b></Link>)}</div>
+     <div className={styles.opsComing}><h3>Awaiting transaction integration</h3><p>Sales, low-stock alerts, deliveries and promotions will appear here when their real transaction services are connected.</p></div>
+    </section>
+   </div>
    <MobileNavigation/>
   </main>
  </div>;
