@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react';
 import styles from './catalog.module.css';
 import ProductWorkspace from './product-workspace';
 import { MobileNavigation, StoreSelector } from '../mobile-shell';
+import { AppIcon } from '../app-icon';
+import Link from 'next/link';
 
 type Product = { id: string; sku: string; name: string; category: string; manufacturer: string; barcodes: string[]; unit: string; status: 'Active' | 'Inactive' };
 const initialProducts: Product[] = [
@@ -71,7 +73,7 @@ export default function CatalogPage() {
     setNewName(''); setError('');
   }
   return <div className={styles.shell}>
-    <aside className={styles.sidebar}><div className={styles.brand}>◈ OmniCore <small>RETAIL OPERATIONS</small></div><div className={styles.navTitle}>WORKSPACE</div><a href="/" className={styles.nav}>Overview</a><a href="/catalog" className={styles.active}>▦ Products</a><div className={styles.navTitle}>COMING NEXT</div><span className={styles.navMuted}>Inventory</span><span className={styles.navMuted}>Suppliers</span><span className={styles.navMuted}>Deliveries</span><span className={styles.navMuted}>Ordering</span></aside>
+    <aside className={styles.sidebar}><div className={styles.brand}><span className={styles.brandMark}><AppIcon name="store" size={21}/></span> OmniCore <small>RETAIL OPERATIONS</small></div><div className={styles.navTitle}>WORKSPACE</div><Link href="/" className={styles.nav}><AppIcon name="home" size={18}/> Dashboard</Link><Link href="/catalog" className={styles.active} aria-current="page"><AppIcon name="products" size={18}/> Products</Link><Link href="/catalog/connected" className={styles.nav}><AppIcon name="inventory" size={18}/> Product records</Link><div className={styles.navTitle}>IN DEVELOPMENT</div><span className={styles.navMuted}><AppIcon name="inventory" size={17}/> Inventory</span><span className={styles.navMuted}><AppIcon name="suppliers" size={17}/> Suppliers</span><span className={styles.navMuted}><AppIcon name="truck" size={17}/> Deliveries</span><span className={styles.navMuted}><AppIcon name="tasks" size={17}/> Ordering</span></aside>
     <main className={styles.main}><header className={styles.header}><div><span className={styles.eyebrow}>PRODUCT MANAGEMENT / WORKSPACE</span><h1>Products</h1><p>Find and manage products by item code, barcode or name. Built for multi-store retail.</p></div><div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}><StoreSelector/><span className={styles.demo}>DEMO RECORDS · NOT PERSISTED</span></div></header>
     <section className={styles.stats}><div><span>Total products</span><strong>{products.length}</strong></div><div><span>Active products</span><strong>{products.filter(p => p.status === 'Active').length}</strong></div><div><span>Categories</span><strong>{categories.length}</strong></div><div><span>Manufacturers</span><strong>{manufacturers.length}</strong></div></section>
     <section className={styles.panel}><div className={styles.toolbar}><div className={styles.tabs}>{(['Products','Categories','Manufacturers'] as Tab[]).map(t => <button key={t} className={tab === t ? styles.selected : ''} onClick={() => {setTab(t);setError('');setShowForm(false);}}>{t}</button>)}</div>{tab === 'Products' && <button className={styles.primary} onClick={() => {setEditingProduct(null);setName('');setSku('');setBarcode('');setExtraBarcodes('');setError('');setShowForm(v => !v);}}>{showForm ? 'Cancel' : '+ Add product'}</button>}</div>
