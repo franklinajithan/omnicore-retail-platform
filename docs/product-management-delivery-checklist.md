@@ -90,3 +90,20 @@ Run database-backed integration tests and CI before any production release.
   **not** production authentication: session login, server-side credential
   handling, permission-aware controls, detail tabs and comprehensive E2E
   testing must be completed before replacing the demo.
+
+## September 26: connected product UI and pricing editor
+
+- Connected product maintenance now has a consistent responsive list/editor layout,
+  SVG product icons and the shared mobile navigation.
+- The Pricing & VAT detail tab reads the full tenant store directory from the
+  secured operations overview endpoint rather than only stores with stock rows.
+- Authorised product managers can schedule tenant-default or store-specific
+  retail prices with VAT, currency, effective date/time and optional reason.
+  The UI refreshes pricing history after a successful API write.
+- The operations overview currently returns tenant-wide product/supplier counts;
+  selecting a store only scopes stock-record counts. Do not label all cards
+  as store-filtered until authoritative store-level data is available.
+- Still incomplete: production authentication, full 10-tab data-backed product
+  workspace, barcode history/types, complete supplier editing, inherited
+  parameters, promotions, deliveries, linked items, documents and 100k-item
+  performance testing. Changes committed; CI and database E2E not yet verified.
