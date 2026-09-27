@@ -9,7 +9,7 @@ type Store = {id:string;code:string;name:string};
 type Product = {id:string;itemCode:string;name:string;status:string;createdAt:string};
 type Overview = {stores:Store[];metrics:{products:number;activeProducts:number;suppliers:number;stockRecords:number};recentProducts:Product[]};
 const modules: {title:string;subtitle:string;href:string;symbol:IconName}[] = [
- {title:'Products',subtitle:'Item maintenance and barcode search',href:'/catalog',symbol:'products'},
+ {title:'Products',subtitle:'Item maintenance and barcode search',href:'/catalog/connected',symbol:'products'},
  {title:'Product records',subtitle:'Connected maintenance workspace',href:'/catalog/connected',symbol:'inventory'},
 ];
 export default function Home(){
@@ -38,7 +38,7 @@ export default function Home(){
  return <div className={styles.shell}>
   <aside className={styles.sidebar}><div className={styles.brand}><span className={styles.brandMark}><AppIcon name="store" size={23}/></span> OmniCore <small>RETAIL OPERATIONS</small></div>
    <p className={styles.navHeading}>OPERATIONS</p><Link className={styles.active} href="/"><AppIcon name="home" size={18}/> &nbsp; Dashboard</Link>
-   <Link className={styles.nav} href="/catalog"><AppIcon name="products" size={18}/> &nbsp; Products</Link><Link className={styles.nav} href="/catalog/connected"><AppIcon name="inventory" size={18}/> &nbsp; Product records</Link>
+   <Link className={styles.nav} href="/catalog/connected"><AppIcon name="products" size={18}/> &nbsp; Products</Link><Link className={styles.nav} href="/catalog/connected"><AppIcon name="inventory" size={18}/> &nbsp; Product records</Link>
    <p className={styles.navHeading}>MODULES IN DEVELOPMENT</p>
    <span className={styles.muted}>Inventory</span><span className={styles.muted}>Purchasing & deliveries</span>
    <span className={styles.muted}>Promotions</span><span className={styles.muted}>Sales & reporting</span>
