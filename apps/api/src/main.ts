@@ -8,11 +8,16 @@ import { NestFactory } from '@nestjs/core';
 import { Module, Controller, Get } from '@nestjs/common';
 @Controller('health') class HealthController { @Get() health() { return { status: 'ok' }; } }
 @Module({ controllers: [HealthController, CatalogueController, SuppliersController, ProductPricesController, OperationsController], providers: [TenantIdentity] }) class AppModule {}
-async function bootstrap() {
+export async function createApp() {
   const app = await NestFactory.create(AppModule);
   // Explicitly allow only configured web origins; never reflect arbitrary origins with bearer credentials.
   const origins = (process.env.WEB_ALLOWED_ORIGINS ?? '').split(',').map(v => v.trim()).filter(Boolean);
   if (origins.length) app.enableCors({ origin: origins, methods: ['GET', 'POST', 'PUT', 'OPTIONS'], allowedHeaders: ['Authorization', 'Content-Type', 'x-tenant-id', 'If-Match'] });
-  await app.listen(process.env.PORT ?? 3001);
+  await app.init();
+  return app;
 }
-void bootstrap();
+
+// Local development entrypoint. Serverless deployment imports createApp instead.
+if (require.main === module) {
+  void createApp().then(app => app.listen(process.env.PORT ?? 3001));
+}
