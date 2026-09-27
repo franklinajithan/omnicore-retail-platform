@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "nest start --watch",
     "build": "nest build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "vercel-build": "prisma generate --schema ../../packages/database/prisma/schema.prisma && nest build"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
@@ -18,6 +19,7 @@
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",
     "@types/node": "^22.0.0",
-    "typescript": "^5.8.0"
+    "typescript": "^5.8.0",
+    "prisma": "^6.0.0"
   }
 }
