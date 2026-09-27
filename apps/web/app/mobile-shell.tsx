@@ -6,7 +6,7 @@ import styles from './mobile-shell.module.css';
 import { AppIcon, type IconName } from './app-icon';
 
 const stores = ['All stores','Hounslow','Hayes','Perivale','Eastham','Gravesend','Streatham','Watford','Mitcham','Sudbury Hill'];
-const links: {href:string;label:string;icon:IconName}[] = [{href:'/',label:'Home',icon:'home'},{href:'/catalog',label:'Products',icon:'products'}];
+const links: {href:string;label:string;icon:IconName}[] = [{href:'/',label:'Home',icon:'home'},{href:'/catalog/connected',label:'Products',icon:'products'}];
 export function StoreSelector() {
  const [store,setStore] = useState('All stores');
  useEffect(() => {
