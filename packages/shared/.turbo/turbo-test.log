@@ -1,0 +1,104 @@
+
+> @omnicore/shared@ test /workspace/packages/shared
+> tsx --test src/*.test.ts
+
+TAP version 13
+# Subtest: only flagged shortages enter shop recheck
+ok 1 - only flagged shortages enter shop recheck
+  ---
+  duration_ms: 0.559614
+  ...
+# Subtest: shop can confirm recheck, but cannot send claims
+ok 2 - shop can confirm recheck, but cannot send claims
+  ---
+  duration_ms: 0.499421
+  ...
+# Subtest: head office can send a reviewed claim with reference
+ok 3 - head office can send a reviewed claim with reference
+  ---
+  duration_ms: 0.083536
+  ...
+# Subtest: cannot send claim without reference or note
+ok 4 - cannot send claim without reference or note
+  ---
+  duration_ms: 0.127752
+  ...
+# Subtest: resolved reviews cannot be reopened without explicit future workflow
+ok 5 - resolved reviews cannot be reopened without explicit future workflow
+  ---
+  duration_ms: 0.07516
+  ...
+# Subtest: flags only shortage lines for shop recheck
+ok 6 - flags only shortage lines for shop recheck
+  ---
+  duration_ms: 0.612637
+  ...
+# Subtest: reports over-delivery separately
+ok 7 - reports over-delivery separately
+  ---
+  duration_ms: 0.128581
+  ...
+# Subtest: FOC is excluded from charged invoice matching
+ok 8 - FOC is excluded from charged invoice matching
+  ---
+  duration_ms: 0.081973
+  ...
+# Subtest: rejects FOC exceeding scanned quantity
+ok 9 - rejects FOC exceeding scanned quantity
+  ---
+  duration_ms: 0.309745
+  ...
+# Subtest: PAL-001/PAL-002: filter barcode, date, category, type and authorized stores
+ok 10 - PAL-001/PAL-002: filter barcode, date, category, type and authorized stores
+  ---
+  duration_ms: 2.01112
+  ...
+# Subtest: PAL-003: event price/cost snapshots are independent
+ok 11 - PAL-003: event price/cost snapshots are independent
+  ---
+  duration_ms: 0.130307
+  ...
+# Subtest: PAL-005: supplier claim must not change stock
+ok 12 - PAL-005: supplier claim must not change stock
+  ---
+  duration_ms: 0.386681
+  ...
+# Subtest: PAL-006: RTC label has zero impact; RTC sale deducts once
+ok 13 - PAL-006: RTC label has zero impact; RTC sale deducts once
+  ---
+  duration_ms: 0.163876
+  ...
+# Subtest: PAL-007: counting without approved adjustment does not change stock
+ok 14 - PAL-007: counting without approved adjustment does not change stock
+  ---
+  duration_ms: 0.139053
+  ...
+# Subtest: PAL-008: paired transfers cancel in consolidated stock
+ok 15 - PAL-008: paired transfers cancel in consolidated stock
+  ---
+  duration_ms: 0.106968
+  ...
+# Subtest: PAL-009: unknown cost remains null, not zero
+ok 16 - PAL-009: unknown cost remains null, not zero
+  ---
+  duration_ms: 0.312155
+  ...
+# Subtest: PAL-010: disallow querying stores outside authorization
+ok 17 - PAL-010: disallow querying stores outside authorization
+  ---
+  duration_ms: 0.318633
+  ...
+# Subtest: PAL-012: stable chronological ordering uses occurrence time then ID
+ok 18 - PAL-012: stable chronological ordering uses occurrence time then ID
+  ---
+  duration_ms: 14.677489
+  ...
+1..18
+# tests 18
+# suites 0
+# pass 18
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 389.612352

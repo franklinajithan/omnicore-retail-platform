@@ -5,7 +5,9 @@
     "generate": "prisma generate",
     "validate": "prisma validate",
     "migrate": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
     "studio": "prisma studio",
+    "seed": "tsx src/seed.ts",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test src/*.test.ts"
   },

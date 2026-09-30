@@ -37,6 +37,8 @@ jobs:
         working-directory: .
       - name: Generate Prisma client
         run: pnpm exec prisma generate --schema ../../packages/database/prisma/schema.prisma
+      - name: Run tests
+        run: pnpm --recursive test
       - name: Typecheck API
         run: pnpm exec tsc --noEmit
       - name: Build API
