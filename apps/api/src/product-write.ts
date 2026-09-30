@@ -53,9 +53,7 @@ export function parseProductWrite(body: unknown): ProductWrite {
   const decimal = (value: unknown, label: string, scale: number) => {
     if (value == null || value === '') return null;
     const v = String(value);
-    if (!Number.isFinite(Number(v)) || Number(v) < 0 || v.length > 20 || !new RegExp('^[0-9]+(?:[.][0-9]{1,' + scale + '})?
-}
-).test(v)) throw new BadRequestException('Invalid ' + label);
+    if (!Number.isFinite(Number(v)) || Number(v) < 0 || v.length > 20 || !new RegExp('^[0-9]+(?:[.][0-9]{1,' + scale + '})?$').test(v)) throw new BadRequestException('Invalid ' + label);
     return v;
   };
   const imageUrl = optionalText(input.imageUrl, 'image URL', 2048);

@@ -25,7 +25,7 @@ export class CatalogueController {
     try {
       return await db.product.create({
         data: {
-          audits: { create: { tenantId, actorId, action: 'CREATED', changes: { after: input } } },
+          audits: { create: { actorId, action: 'CREATED', changes: { after: input } } },
           tenantId, itemCode: input.itemCode, name: input.name,
           status: input.status, baseUnit: input.baseUnit,
           imageUrl: input.imageUrl, category: input.category, vatApplicable: input.vatApplicable,
@@ -71,7 +71,7 @@ export class CatalogueController {
         return tx.product.update({
           where: { id },
           data: {
-            audits: { create: { tenantId, actorId, action: 'UPDATED', changes: {
+            audits: { create: { actorId, action: 'UPDATED', changes: {
               fields: [
                 ...(['name', 'baseUnit', 'status', 'imageUrl', 'category', 'vatApplicable', 'caseSize', 'casePrice', 'eachPrice'] as const)
                   .filter(field => String(existing[field] ?? '') !== String(input[field] ?? ''))
@@ -256,11 +256,11 @@ export class CatalogueController {
         await tx.product.update({ where: { id }, data: { ...fill, imageUrl: target.imageUrl ?? source.imageUrl } });
         await tx.productAlias.create({ data: { tenantId, itemCode: source.itemCode, productId: target.id, sourceProductId: source.id, actorId } });
         await tx.product.update({ where: { id: source.id }, data: { status: 'INACTIVE' } });
-        await tx.productAudit.create({ data: { tenantId, productId: target.id, actorId, action: 'CONSOLIDATED', reason: body.reason.trim(),
+        await tx.productAudit.create({ data: { tenantId, productId: target.id, actorId, action: 'CONSOLIDATED', reason: body.reason!.trim(),
           changes: { sourceProductId: source.id, sourceItemCode: source.itemCode, targetItemCode: target.itemCode,
             movedBarcodes: source.barcodes.map(b => b.code), movedSupplierMappingIds: source.suppliers.map(m => m.id),
             preservedSourceProduct: true, historicalRecordsMoved: false } } });
-        await tx.productAudit.create({ data: { tenantId, productId: source.id, actorId, action: 'CONSOLIDATED_INTO', reason: body.reason.trim(),
+        await tx.productAudit.create({ data: { tenantId, productId: source.id, actorId, action: 'CONSOLIDATED_INTO', reason: body.reason!.trim(),
           changes: { targetProductId: target.id, targetItemCode: target.itemCode } } });
         const remainingBarcodes = await tx.productBarcode.count({ where: { tenantId, productId: source.id } });
         const remainingSuppliers = await tx.supplierProduct.count({ where: { productId: source.id } });
