@@ -69,3 +69,6 @@
 .opsProductStatus{padding:5px 8px;border-radius:7px;background:#eaf7ef;color:#278052;font-size:9px}
 .operationStore select{box-shadow:0 2px 8px #1b3e6108}
 @media(max-width:850px){.main{padding:13px 13px calc(112px + env(safe-area-inset-bottom))}.topbar{border-radius:13px;padding:10px 12px}.logo{font-size:16px;gap:7px}.logoMark{width:31px;height:31px}.opsHeading h1{font-size:27px}.opsMetric{padding:15px;border-radius:14px}.opsMetric strong{font-size:24px}.opsPanel{border-radius:15px}.opsBadge{font-size:9px}}
+
+.sessionUser{display:flex;align-items:center;gap:10px;font-size:11px;color:#61758e}.sessionUser span{max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sessionUser button{border:1px solid #dbe5f0;background:#fff;color:#294f7d;border-radius:9px;padding:9px 12px;font-weight:750;cursor:pointer}.sessionUser button:hover{background:#f2f6fb}
+@media(max-width:600px){.sessionUser span{display:none}.sessionUser button{padding:8px 10px}.connectionFields{display:grid;grid-template-columns:1fr}.connectionFields label{min-width:0}}
