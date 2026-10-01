@@ -5,10 +5,11 @@ import { ProductPricesController } from './product-prices';
 import { OperationsController } from './operations';
 import { TenantIdentity } from './identity';
 import { HealthController } from './health';
+import { SessionController } from './session';
 import { NestFactory } from '@nestjs/core';
 import { Module } from '@nestjs/common';
 
-@Module({ controllers: [HealthController, CatalogueController, SuppliersController, ProductPricesController, OperationsController], providers: [TenantIdentity] }) 
+@Module({ controllers: [HealthController, SessionController, CatalogueController, SuppliersController, ProductPricesController, OperationsController], providers: [TenantIdentity] }) 
 class AppModule {}
 
 /**
