@@ -5,6 +5,7 @@ import ConnectedDetails, { type Detail } from './connected-details';
 import styles from './connected.module.css';
 import { AppIcon } from '../../app-icon';
 import { MobileNavigation } from '../../mobile-shell';
+import { supabase } from '../../auth-client';
 
 type Barcode = { code: string; isPrimary: boolean };
 type Product = Detail & { status: 'ACTIVE' | 'INACTIVE' };
@@ -15,9 +16,9 @@ type Ledger = { compatibleUnits:boolean; executable:boolean; stores:{store:{id:s
 const api = process.env.NEXT_PUBLIC_OMNICORE_API_URL;
 
 export default function ConnectedCatalogue() {
-  // Developer integration screen only. Never persist credentials to browser storage.
   const [token, setToken] = useState('');
-  const [tenant, setTenant] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [authReady, setAuthReady] = useState(false);
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<Product[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -36,12 +37,18 @@ export default function ConnectedCatalogue() {
   const [mergeReason,setMergeReason] = useState('');
   const [mergeConfirmed,setMergeConfirmed] = useState(false);
 
-  useEffect(() => setConfigured(Boolean(api && /^https?:\/\//.test(api))), []);
+  useEffect(() => {
+    setConfigured(Boolean(api && /^https?:\/\//.test(api)));
+    if (!supabase) { setMessage('Authentication is not configured for this deployment.'); setAuthReady(true); return; }
+    void supabase.auth.getSession().then(({ data }) => { setToken(data.session?.access_token ?? ''); setUserEmail(data.session?.user.email ?? ''); setAuthReady(true); });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => { setToken(session?.access_token ?? ''); setUserEmail(session?.user.email ?? ''); setAuthReady(true); });
+    return () => subscription.unsubscribe();
+  }, []);
   const request = useCallback(async (path: string, options: RequestInit = {}) => {
     if (!api) throw new Error('API URL is not configured');
     const response = await fetch(api.replace(/\/$/, '') + path, {
       ...options, cache: 'no-store',
-      headers: { Authorization: 'Bearer ' + token, ...(tenant ? { 'x-tenant-id': tenant } : {}),
+      headers: { Authorization: 'Bearer ' + token,
         ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...options.headers },
     });
     if (!response.ok) {
@@ -50,7 +57,7 @@ export default function ConnectedCatalogue() {
       throw new Error('API request failed (' + response.status + ')');
     }
     return response.json();
-  }, [token, tenant]);
+  }, [token]);
 
   async function load(next: string | null = null, reset = false) {
     setBusy(true); setMessage('');
@@ -125,13 +132,10 @@ export default function ConnectedCatalogue() {
   return <main className={styles.shell}>
     <a className={styles.back} href="/catalog">← Products</a>
     <h1 className={styles.heading}>Product Management</h1>
-    <p className={styles.sub}>Connected product records · Tenant-scoped data · Version-controlled editing</p><p className={styles.banner}>Development access only. Production sign-in is not yet integrated; temporary credentials are cleared when you reload.</p>
+    <p className={styles.sub}>Connected product records · Tenant-scoped data · Version-controlled editing</p><p className={styles.banner}>{token ? 'Signed in as '+userEmail+' · Company access is resolved automatically.' : 'Sign in from the OmniCore dashboard to access product records.'}</p>
     {!configured ? <p role="alert">Set NEXT_PUBLIC_OMNICORE_API_URL to the authenticated API origin to enable this screen.</p> :
     <>
-      <section className={styles.credentials}>
-        <label>Temporary access token<input style={field} type="password" autoComplete="off" value={token} onChange={e => setToken(e.target.value)} /></label>
-        <label>Tenant ID (required for multi-tenant users)<input style={field} value={tenant} onChange={e => setTenant(e.target.value)} /></label>
-      </section>
+      {!authReady ? <p className={styles.banner}>Checking your session…</p> : !token ? <section className={styles.credentials}><p>Authentication required. <a href="/">Return to dashboard and sign in</a>.</p></section> : null}
       <form onSubmit={e => { e.preventDefault(); void load(null, true); }} className={styles.toolbar}>
         <input style={{ ...field, flex: 1, minWidth: 220 }} aria-label="Search live products" placeholder="Search Item Code, name or barcode" value={query} onChange={e => setQuery(e.target.value)} />
         <button className={styles.btn+' '+styles.primary} type="submit" disabled={busy || !token}>Search</button>
