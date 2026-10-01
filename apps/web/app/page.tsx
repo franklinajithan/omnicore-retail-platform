@@ -18,7 +18,7 @@ export default function Home(){
  const [token,setToken]=useState(''); const [email,setEmail]=useState(''); const [password,setPassword]=useState('');
  const [userEmail,setUserEmail]=useState(''); const [storeId,setStoreId]=useState('');
  const [overview,setOverview]=useState<Overview|null>(null); const [loading,setLoading]=useState(false); const [error,setError]=useState('');
- const api=process.env.NEXT_PUBLIC_OMNICORE_API_URL;
+ const api=process.env.NEXT_PUBLIC_OMNICORE_API_URL ?? 'https://omnicore-api.vercel.app';
 
  const load=useCallback(async(selectedStore:string,accessToken:string)=>{
   if(!api){setError('API is not configured for this deployment.');return;}
