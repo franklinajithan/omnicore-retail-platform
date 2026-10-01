@@ -13,7 +13,7 @@ type Page = { items: Product[]; nextCursor: string | null };
 type MergeProduct = {id:string;itemCode:string;name:string;version:number;barcodes:{code:string}[];suppliers:{supplier:string;code:string;packSize:string;cost:string}[];balances:{store:string;quantity:string}[];historicalRecords:Record<string,number>};
 type MergePreview = {target:MergeProduct;duplicate:MergeProduct;conflicts:string[];note:string};
 type Ledger = { compatibleUnits:boolean; executable:boolean; stores:{store:{id:string;code:string;name:string};original:{balance:string|null;recordedMovementSum:string|null;movementCount:number};duplicate:{balance:string|null;recordedMovementSum:string|null;movementCount:number};proposedCombinedBalance:string|null;warning:string|null}[];note:string };
-const api = process.env.NEXT_PUBLIC_OMNICORE_API_URL;
+const api = process.env.NEXT_PUBLIC_OMNICORE_API_URL ?? 'https://omnicore-api.vercel.app';
 
 export default function ConnectedCatalogue() {
   const [token, setToken] = useState('');
