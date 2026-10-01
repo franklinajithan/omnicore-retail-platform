@@ -1,0 +1,36 @@
+'use client';
+
+import { useState } from 'react';
+import styles from './product-workspace.module.css';
+
+type Product = { id: string; sku: string; name: string; category: string; manufacturer: string; barcodes: string[]; unit: string; status: string };
+type Section = 'Overview' | 'Barcodes & suppliers' | 'Parameters' | 'Promotions' | 'Store stock' | 'Deliveries' | 'Linked items' | 'Activity' | 'Audit trail' | 'Documents';
+const sections: Section[] = ['Overview','Barcodes & suppliers','Parameters','Promotions','Store stock','Deliveries','Linked items','Activity','Audit trail','Documents'];
+const stores = ['Hounslow','Perivale','Hayes','Eastham','Gravesend','Streatham','Watford'];
+const params = [
+ ['VAT rate','Configured per product'],['Sales type','Fixed price / weighed'],['Weight type','Weighted / each'],['Stock control','Enabled'],['Suggested order','Enabled'],['Minimum stock','Store-specific'],['Maximum stock','Store-specific'],
+ ['Minimum order cases','Supplier-specific'],['Shelf life','Configurable'],['Price override','Permission controlled'],['Returns','Permission controlled'],['Void / hold','Permission controlled'],['General discount','Configurable'],['Staff discount','Configurable'],['Label required','Configurable'],['Label type / format','Store-specific'],['Weight tolerance','Configurable'],['Auto-delete protection','Configurable']
+];
+export default function ProductWorkspace({ product, onClose, onEdit }: { product: Product; onClose: () => void; onEdit: () => void }) {
+ const [section,setSection]=useState<Section>('Overview');
+ const [barcodeQuery,setBarcodeQuery]=useState('');
+ const [moduleFilter,setModuleFilter]=useState('All modules');
+ const [fromDate,setFromDate]=useState('');
+ const [toDate,setToDate]=useState('');
+ return <section className={styles.workspace} aria-label={'Product workspace for '+product.name}>
+  <header className={styles.header}><div><span className={styles.eyebrow}>ITEM MAINTENANCE · {product.sku}</span><h2>{product.name}</h2><p>{product.category} · {product.unit} · {product.status}</p></div><div style={{display:"flex",gap:8,alignItems:"center"}}><button type="button" onClick={onEdit} aria-label="Edit selected product">Edit item</button><button type="button" onClick={onClose} aria-label="Close product workspace">✕</button></div></header>
+  <nav className={styles.tabs} aria-label="Product detail sections">{sections.map(s=><button type="button" key={s} aria-current={section===s?'page':undefined} onClick={()=>setSection(s)}>{s}</button>)}</nav>
+  <div className={styles.body}>
+   {section==='Overview'&&<><h3>Product identity</h3><dl className={styles.facts}><dt>Item Code</dt><dd>{product.sku}</dd><dt>Product name</dt><dd>{product.name}</dd><dt>Category</dt><dd>{product.category}</dd><dt>Manufacturer</dt><dd>{product.manufacturer}</dd><dt>Base unit</dt><dd>{product.unit}</dd><dt>Status</dt><dd>{product.status}</dd><dt>Barcode count</dt><dd>{product.barcodes.length}</dd></dl><p className={styles.note}>Item Code is the business identity; one item can have multiple barcodes and multiple supplier codes. Pricing, VAT and cost will come from the database.</p></>}
+   {section==='Barcodes & suppliers'&&<><h3>Barcodes</h3><div className={styles.scroll}><table><thead><tr><th>Barcode</th><th>Primary</th><th>Type</th><th>Retail</th></tr></thead><tbody>{product.barcodes.map((b,i)=><tr key={b}><td>{b}</td><td>{i===0?'Yes':'No'}</td><td>Consumer / inner / outer</td><td>—</td></tr>)}</tbody></table></div><h3>Supplier item mappings</h3><p className={styles.note}>Each supplier has its own supplier item code, pack size, cost and preferred-supplier setting. These are separate from the product's Item Code and barcodes.</p><div className={styles.empty}>No supplier records connected in this prototype.</div></>}
+   {section==='Parameters'&&<><h3>Item parameters</h3><div className={styles.scroll}><table><thead><tr><th>Setting</th><th>Value / rule</th><th>Inheritance</th></tr></thead><tbody>{params.map(([k,v])=><tr key={k}><td>{k}</td><td>{v}</td><td>Tenant → store override</td></tr>)}</tbody></table></div></>}
+   {section==='Promotions'&&<><h3>Product promotions</h3><div className={styles.tiles}>{['Single-item fixed retail','Quantity multibuy','Mix & match'].map(v=><div key={v}><strong>{v}</strong><p>No active demo offers</p></div>)}</div><p className={styles.note}>Promotion rules must resolve overlapping offers consistently at POS, including the same barcode in single-item and multibuy offers.</p></>}
+   {section==='Store stock'&&<><h3>Stock and sales by store</h3><div className={styles.scroll}><table><thead><tr><th>Store</th><th>On hand</th><th>On order</th><th>Last sale</th><th>Stockout</th></tr></thead><tbody>{stores.map(s=><tr key={s}><td>{s}</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>)}</tbody></table></div><p className={styles.note}>Stock is store-specific; do not confuse network totals with individual store balances.</p></>}
+   {section==='Deliveries'&&<><h3>Previous and expected deliveries</h3><div className={styles.scroll}><table><thead><tr><th>Store</th><th>Supplier</th><th>Supplier code</th><th>Last received</th><th>Qty</th><th>Cost</th><th>Next expected</th></tr></thead><tbody>{stores.map(s=><tr key={s}><td>{s}</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>)}</tbody></table></div></>}
+   {section==='Linked items'&&<><h3>Linked items</h3><p className={styles.note}>Related packs, substitutions, recipe components and linked stock products will be maintained here with separate Item Codes.</p><div className={styles.empty}>No linked products in this prototype.</div></>}
+   {section==='Activity'&&<><h3>Product activity</h3><div className={styles.filters}><label>Barcode <select value={barcodeQuery} onChange={e=>setBarcodeQuery(e.target.value)}><option value="">All barcodes</option>{product.barcodes.map(b=><option key={b}>{b}</option>)}</select></label><label>Module <select value={moduleFilter} onChange={e=>setModuleFilter(e.target.value)}>{['All modules','Delivery','Sales','Stocktake','Stock adjustment','Ordering','Returns','Wastage','Transfers','Supplier claims'].map(m=><option key={m}>{m}</option>)}</select></label><label>From <input type="date" value={fromDate} onChange={e=>setFromDate(e.target.value)}/></label><label>To <input type="date" value={toDate} onChange={e=>setToDate(e.target.value)}/></label></div><div className={styles.scroll}><table><thead><tr><th>Date</th><th>Store</th><th>Module</th><th>Barcode</th><th>Reference</th><th>Before</th><th>Change</th><th>After</th><th>Cost</th></tr></thead><tbody><tr><td colSpan={9}>No activity records connected yet.</td></tr></tbody></table></div></>}
+   {section==='Audit trail'&&<><h3>Field-level audit history</h3><div className={styles.scroll}><table><thead><tr><th>Timestamp</th><th>Module</th><th>Field</th><th>Old value</th><th>New value</th><th>Changed by</th></tr></thead><tbody><tr><td colSpan={6}>Audit records will be populated from verified database events.</td></tr></tbody></table></div></>}
+   {section==='Documents'&&<><h3>Product documents</h3><div className={styles.empty}>Product images, supplier specifications, invoices and compliance documents will appear here.</div></>}
+  </div><footer className={styles.footer}>Interactive UI prototype · Data not connected · No records are modified</footer>
+ </section>;
+}

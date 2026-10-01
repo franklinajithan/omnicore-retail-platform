@@ -41,6 +41,10 @@ model Tenant {
   movements StockMovement[]
   balances  StockBalance[]
   receipts  GoodsReceipt[]
+  activities ProductActivity[]
+  productAudits ProductAudit[]
+  prices ProductPrice[]
+  productAliases ProductAlias[]
   users     TenantUser[]
 }
 
@@ -63,6 +67,8 @@ model Store {
   balances  StockBalance[]
   movements StockMovement[]
   receipts  GoodsReceipt[]
+  activities ProductActivity[]
+  prices ProductPrice[]
   @@unique([tenantId, code])
   @@unique([id, tenantId])
 }
@@ -70,29 +76,44 @@ model Store {
 model Product {
   id          String @id @default(uuid()) @db.Uuid
   tenantId    String @db.Uuid
-  sku         String
+  /// Required, tenant-unique business Item Code. Internal id remains the relational primary key.
+  itemCode    String
   name        String
   status      ProductStatus @default(ACTIVE)
   baseUnit    String @default("EACH")
+  imageUrl    String?
+  category    String?
+  vatApplicable Boolean?
+  caseSize    Decimal? @db.Decimal(18, 3)
+  casePrice   Decimal? @db.Decimal(18, 4)
+  eachPrice   Decimal? @db.Decimal(18, 4)
   createdAt   DateTime @default(now())
+  version     Int @default(1)
   tenant      Tenant @relation(fields: [tenantId], references: [id])
+  audits      ProductAudit[]
+  prices      ProductPrice[]
   barcodes    ProductBarcode[]
   suppliers   SupplierProduct[]
   balances    StockBalance[]
   movements   StockMovement[]
   orderLines  PurchaseOrderLine[]
   receiptLines GoodsReceiptLine[]
-  @@unique([tenantId, sku])
+  activities ProductActivity[]
+  aliases ProductAlias[]
+  @@unique([tenantId, itemCode])
   @@unique([id, tenantId])
 }
 
 model ProductBarcode {
   id        String @id @default(uuid()) @db.Uuid
+  tenantId  String @db.Uuid
   productId String @db.Uuid
   code      String
-  product   Product @relation(fields: [productId], references: [id])
-  @@unique([productId, code])
-  @@index([code])
+  isPrimary Boolean @default(false)
+  product   Product @relation(fields: [productId, tenantId], references: [id, tenantId])
+  /// A barcode cannot resolve to two products in the same tenant.
+  @@unique([tenantId, code])
+  @@index([tenantId, productId])
 }
 
 model Supplier {
@@ -197,4 +218,113 @@ model GoodsReceiptLine {
   receivedQuantity Decimal @db.Decimal(18, 3)
   receipt          GoodsReceipt @relation(fields: [receiptId], references: [id])
   product          Product @relation(fields: [productId], references: [id])
+}
+
+enum ProductActivityType {
+  DELIVERY_RECEIVED
+  SALE
+  RTC_SALE
+  RTC_LABEL
+  STOCKTAKE_COUNT
+  STOCK_ADJUSTMENT
+  WASTAGE
+  STORE_USE
+  TRANSFER_IN
+  TRANSFER_OUT
+  SUPPLIER_CLAIM_OPENED
+  CLAIM_CREDITED
+  REPORTED_THEFT
+  CONFIRMED_LOSS
+  PRICE_CHANGED
+  SUPPLIER_COST_CHANGED
+}
+
+/// Read-only activity projection. Source transactions remain authoritative.
+/// Monetary values are snapshots, not today's prices; null means unknown.
+/// This table must be populated idempotently from verified source events.
+model ProductActivity {
+  id                   String @id @default(uuid()) @db.Uuid
+  tenantId             String @db.Uuid
+  storeId              String @db.Uuid
+  productId            String @db.Uuid
+  type                 ProductActivityType
+  sourceModule         String
+  sourceEventId        String
+  reference            String
+  scannedBarcode       String?
+  categoryIdSnapshot   String?
+  productNameSnapshot  String
+  skuSnapshot          String
+  occurredAt           DateTime
+  recordedAt           DateTime @default(now())
+  quantityDelta        Decimal @db.Decimal(18, 3)
+  sourceQuantity       Decimal? @db.Decimal(18, 3)
+  sourceUnit           String?
+  unitCost             Decimal? @db.Decimal(18, 4)
+  listPrice            Decimal? @db.Decimal(18, 4)
+  actualSalePrice      Decimal? @db.Decimal(18, 4)
+  currency             String @db.VarChar(3)
+  costBasis            String?
+  reason               String?
+  actorId              String?
+  metadata             Json?
+  tenant               Tenant @relation(fields: [tenantId], references: [id])
+  store                Store @relation(fields: [storeId, tenantId], references: [id, tenantId])
+  product              Product @relation(fields: [productId, tenantId], references: [id, tenantId])
+
+  @@unique([tenantId, sourceModule, sourceEventId])
+  @@index([tenantId, productId, occurredAt, id])
+  @@index([tenantId, storeId, occurredAt, id])
+  @@index([tenantId, scannedBarcode, occurredAt])
+  @@index([tenantId, type, occurredAt])
+}
+
+/// Immutable configuration-change history; distinct from physical stock movements.
+model ProductAudit {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  productId String   @db.Uuid
+  actorId   String
+  action    String
+  changes   Json
+  reason    String?
+  createdAt DateTime @default(now())
+  tenant    Tenant  @relation(fields: [tenantId], references: [id])
+  product   Product @relation(fields: [productId, tenantId], references: [id, tenantId])
+  @@index([tenantId, productId, createdAt, id])
+}
+
+/// Per-store effective-dated retail prices. Historical rows are never overwritten.
+/// Null storeId means the tenant-wide default price.
+model ProductPrice {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  productId   String   @db.Uuid
+  storeId     String?  @db.Uuid
+  currency    String   @db.VarChar(3)
+  retail      Decimal  @db.Decimal(18, 4)
+  vatRate     Decimal  @db.Decimal(5, 2)
+  effectiveAt DateTime
+  createdAt   DateTime @default(now())
+  actorId     String
+  reason      String?
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  product     Product  @relation(fields: [productId, tenantId], references: [id, tenantId])
+  store       Store?   @relation(fields: [storeId, tenantId], references: [id, tenantId])
+  @@index([tenantId, productId, storeId, effectiveAt, id])
+}
+
+/// A retired item code resolves to the surviving product; never recycle it.
+model ProductAlias {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  itemCode String
+  productId String @db.Uuid
+  sourceProductId String? @db.Uuid
+  createdAt DateTime @default(now())
+  actorId String
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  product Product @relation(fields: [productId, tenantId], references: [id, tenantId])
+  @@unique([tenantId, itemCode])
+  @@index([tenantId, productId])
 }

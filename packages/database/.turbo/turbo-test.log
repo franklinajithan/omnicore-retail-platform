@@ -1,0 +1,89 @@
+
+> @omnicore/database@ test /workspace/packages/database
+> tsx --test src/*.test.ts
+
+TAP version 13
+# Subtest: CAT-023: item code required and preserves leading zeros
+ok 1 - CAT-023: item code required and preserves leading zeros
+  ---
+  duration_ms: 0.946046
+  ...
+# Subtest: CAT-024: barcode duplicates rejected before writes
+ok 2 - CAT-024: barcode duplicates rejected before writes
+  ---
+  duration_ms: 0.50349
+  ...
+# Subtest: CAT-025: search scopes tenant, limits pages and searches all barcodes
+ok 3 - CAT-025: search scopes tenant, limits pages and searches all barcodes
+  ---
+  duration_ms: 0.337137
+  ...
+# Subtest: CAT-026: barcode lookup always uses tenant compound identity
+ok 4 - CAT-026: barcode lookup always uses tenant compound identity
+  ---
+  duration_ms: 0.159822
+  ...
+# Subtest: CAT-027: item creation attaches all barcodes to the same product
+ok 5 - CAT-027: item creation attaches all barcodes to the same product
+  ---
+  duration_ms: 1.704488
+  ...
+# Subtest: delivery accepts fractional historical cost without rounding
+ok 6 - delivery accepts fractional historical cost without rounding
+  ---
+  duration_ms: 0.732728
+  ...
+# Subtest: claims and stocktake counts never alter physical stock
+ok 7 - claims and stocktake counts never alter physical stock
+  ---
+  duration_ms: 0.509385
+  ...
+# Subtest: outbound sales require negative quantity and prices cannot be negative
+ok 8 - outbound sales require negative quantity and prices cannot be negative
+  ---
+  duration_ms: 0.166045
+  ...
+# Subtest: projection uses immutable source-event idempotency key
+ok 9 - projection uses immutable source-event idempotency key
+  ---
+  duration_ms: 0.582646
+  ...
+# Subtest: ledger rejects unauthorized store without querying database
+ok 10 - ledger rejects unauthorized store without querying database
+  ---
+  duration_ms: 0.414113
+  ...
+# Subtest: ledger scopes tenant, stores, barcode, dates and page size
+ok 11 - ledger scopes tenant, stores, barcode, dates and page size
+  ---
+  duration_ms: 0.368668
+  ...
+# Subtest: SUP-001: maps a supplier-specific code to a verified tenant product
+ok 12 - SUP-001: maps a supplier-specific code to a verified tenant product
+  ---
+  duration_ms: 0.888601
+  ...
+# Subtest: SUP-002: rejects a supplier or product from another tenant before writing
+ok 13 - SUP-002: rejects a supplier or product from another tenant before writing
+  ---
+  duration_ms: 0.39266
+  ...
+# Subtest: SUP-003: validates positive pack sizes and nonnegative costs
+ok 14 - SUP-003: validates positive pack sizes and nonnegative costs
+  ---
+  duration_ms: 0.279448
+  ...
+# Subtest: SUP-004: resolves codes only after supplier tenant ownership check
+ok 15 - SUP-004: resolves codes only after supplier tenant ownership check
+  ---
+  duration_ms: 0.155646
+  ...
+1..15
+# tests 15
+# suites 0
+# pass 15
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 438.352932

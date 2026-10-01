@@ -1,0 +1,6 @@
+ALTER TABLE "Product" ADD COLUMN "imageUrl" TEXT;
+ALTER TABLE "Product" ADD COLUMN "category" TEXT;
+ALTER TABLE "Product" ADD COLUMN "vatApplicable" BOOLEAN;
+ALTER TABLE "Product" ADD COLUMN "caseSize" DECIMAL(18,3);
+ALTER TABLE "Product" ADD COLUMN "casePrice" DECIMAL(18,4);
+ALTER TABLE "Product" ADD COLUMN "eachPrice" DECIMAL(18,4);
