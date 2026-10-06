@@ -16,6 +16,7 @@ import { ManufacturersService } from './manufacturers/manufacturers.service';
 import { ManufacturersController } from './manufacturers/manufacturers.controller';
 import { ProductsService } from './products/products.service';
 import { ProductsController } from './products/products.controller';
+import { ProductImportService } from './products/product-import.service';
 import { BrandsService } from './brands/brands.service';
 import { BrandsController } from './brands/brands.controller';
 import { CategoriesService } from './categories/categories.service';
@@ -54,6 +55,7 @@ class HealthController {
     OrganisationService,
     ManufacturersService,
     ProductsService,
+    ProductImportService,
     BrandsService,
     CategoriesService,
     SuppliersService,

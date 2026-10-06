@@ -14,12 +14,17 @@ import { CurrentTenant } from '../auth/current-tenant.decorator';
 import { RequirePermissions } from '../auth/decorators';
 import { TenantContext } from '../auth/types';
 import { ProductsService } from './products.service';
+import { ProductImportService } from './product-import.service';
 import { CreateProductDto, UpdateProductDto, AddBarcodeDto, AddTranslationDto, AddAliasDto, AddProductPriceDto, MergeProductDto } from './dto';
+import { ImportPreviewDto, ExecuteImportDto } from './import.dto';
 
 @Controller('api/v1/products')
 @UseGuards(AuthGuard)
 export class ProductsController {
-  constructor(private productsService: ProductsService) {}
+  constructor(
+    private productsService: ProductsService,
+    private importService: ProductImportService,
+  ) {}
 
   @Get()
   @RequirePermissions('product.read')
@@ -177,5 +182,51 @@ export class ProductsController {
       sourceId,
       dto.targetProductId,
     );
+  }
+
+  @Post('import/preview')
+  @RequirePermissions('product.import')
+  async importPreview(
+    @CurrentTenant() tenant: TenantContext,
+    @Body(ValidationPipe) dto: ImportPreviewDto,
+  ) {
+    return this.importService.previewImport(tenant.tenantId, dto.content);
+  }
+
+  @Post('import/execute')
+  @RequirePermissions('product.import')
+  async importExecute(
+    @CurrentTenant() tenant: TenantContext,
+    @Body(ValidationPipe) dto: ExecuteImportDto,
+  ) {
+    return this.importService.executeImport(
+      tenant.tenantId,
+      tenant.userId,
+      dto.content,
+    );
+  }
+
+  @Get('export')
+  @RequirePermissions('product.export')
+  async exportProducts(
+    @CurrentTenant() tenant: TenantContext,
+    @Query('status') status?: string,
+    @Query('categoryId') categoryId?: string,
+    @Query('brandId') brandId?: string,
+    @Query('manufacturerId') manufacturerId?: string,
+  ) {
+    const hasPermission = (perm: string) => tenant.permissions.includes(perm);
+    
+    const csv = await this.importService.exportProducts(
+      tenant.tenantId,
+      hasPermission,
+      { status, categoryId, brandId, manufacturerId },
+    );
+
+    return {
+      content: csv,
+      filename: 'products-export.csv',
+      contentType: 'text/csv',
+    };
   }
 }
