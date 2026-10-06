@@ -14,7 +14,7 @@ import { CurrentTenant } from '../auth/current-tenant.decorator';
 import { RequirePermissions } from '../auth/decorators';
 import { TenantContext } from '../auth/types';
 import { ProductsService } from './products.service';
-import { CreateProductDto, UpdateProductDto, AddBarcodeDto } from './dto';
+import { CreateProductDto, UpdateProductDto, AddBarcodeDto, AddTranslationDto, AddAliasDto, AddProductPriceDto, MergeProductDto } from './dto';
 
 @Controller('api/v1/products')
 @UseGuards(AuthGuard)
@@ -98,5 +98,84 @@ export class ProductsController {
     @Param('id') id: string,
   ) {
     return this.productsService.archive(tenant.tenantId, tenant.userId, id);
+  }
+
+  @Get(':id/translations')
+  @RequirePermissions('product.read')
+  async getTranslations(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id') id: string,
+  ) {
+    return this.productsService.getTranslations(tenant.tenantId, id);
+  }
+
+  @Post(':id/translations')
+  @RequirePermissions('product.update')
+  async addTranslation(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id') id: string,
+    @Body(ValidationPipe) dto: AddTranslationDto,
+  ) {
+    return this.productsService.addTranslation(tenant.tenantId, tenant.userId, id, dto);
+  }
+
+  @Post(':id/aliases')
+  @RequirePermissions('product.update')
+  async addAlias(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id') id: string,
+    @Body(ValidationPipe) dto: AddAliasDto,
+  ) {
+    return this.productsService.addAlias(tenant.tenantId, tenant.userId, id, dto);
+  }
+
+  @Get(':id/prices')
+  @RequirePermissions('pricing.read')
+  async getPrices(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id') id: string,
+    @Query('storeId') storeId?: string,
+  ) {
+    return this.productsService.getPrices(tenant.tenantId, id, storeId);
+  }
+
+  @Post(':id/prices')
+  @RequirePermissions('pricing.update')
+  async addPrice(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id') id: string,
+    @Body(ValidationPipe) dto: AddProductPriceDto,
+  ) {
+    return this.productsService.addPrice(tenant.tenantId, tenant.userId, id, dto);
+  }
+
+  @Post('detect-duplicates')
+  @RequirePermissions('product.read')
+  async detectDuplicates(
+    @CurrentTenant() tenant: TenantContext,
+    @Body() dto: {
+      itemCode?: string;
+      name?: string;
+      barcode?: string;
+      brandId?: string;
+      manufacturerId?: string;
+    },
+  ) {
+    return this.productsService.detectDuplicates(tenant.tenantId, dto);
+  }
+
+  @Post(':id/merge')
+  @RequirePermissions('product.merge')
+  async mergeProduct(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id') sourceId: string,
+    @Body(ValidationPipe) dto: MergeProductDto,
+  ) {
+    return this.productsService.mergeProducts(
+      tenant.tenantId,
+      tenant.userId,
+      sourceId,
+      dto.targetProductId,
+    );
   }
 }

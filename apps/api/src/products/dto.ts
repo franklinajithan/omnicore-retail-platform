@@ -183,3 +183,48 @@ export class AddBarcodeDto {
   @IsOptional()
   isPrimary?: boolean;
 }
+
+export class AddTranslationDto {
+  @IsString()
+  locale!: string;
+
+  @IsString()
+  name!: string;
+
+  @IsOptional()
+  @IsString()
+  shortName?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+}
+
+export class AddAliasDto {
+  @IsString()
+  alias!: string;
+
+  @IsOptional()
+  @IsString()
+  source?: string;
+}
+
+export class AddProductPriceDto {
+  @IsString()
+  storeId!: string;
+
+  @IsNumber()
+  retailPrice!: number;
+
+  @IsOptional()
+  effectiveFrom?: Date;
+
+  @IsOptional()
+  @IsString()
+  source?: string;
+}
+
+export class MergeProductDto {
+  @IsString()
+  targetProductId!: string;
+}
