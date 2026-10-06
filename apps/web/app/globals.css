@@ -33,3 +33,30 @@
   .kpi{min-height:108px}
   .integrations{grid-template-columns:1fr}
 }
+.menuButton,.mobileBrand,.drawerClose,.bottomNav{display:none}
+@media(max-width:760px){
+ .side{display:block;position:fixed;z-index:50;left:0;top:0;width:min(86vw,340px);height:100dvh;padding:16px 12px;transform:translateX(-105%);transition:transform .22s ease;box-shadow:20px 0 45px #00142d35}
+ .side.open{transform:translateX(0)}
+ .side .brand div:last-child,.side .section,.side .nav span{display:block}
+ .side .nav{justify-content:flex-start;font-size:13px;padding:10px}
+ .side .section{font-size:10px}
+ .drawerClose{display:grid;place-items:center;position:absolute;right:10px;top:10px;width:34px;height:34px;border:0;border-radius:9px;background:#132b48;color:#fff;font-size:25px;z-index:2}
+ .drawerBackdrop{display:none;position:fixed;inset:0;background:#03101f80;z-index:40;backdrop-filter:blur(2px)}
+ .drawerBackdrop.open{display:block}
+ .menuButton{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;border:0;border-radius:10px;background:#eef5ff;color:#0b4bc4;font-size:20px}
+ .mobileBrand{display:flex;align-items:center;gap:7px;color:#0b1736;margin-right:2px}
+ .mobileMark{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,#27d7f1,#0876ef 58%,#1232a8);display:grid;place-items:center;color:white;font-size:11px;font-weight:900}
+ .mobileBrand b{font-size:14px}
+ .top>.glyph:first-of-type{display:none}
+ .search{font-size:0;padding:0;width:38px;flex:0 0 38px;height:38px;background:#f2f6fb}
+ .search:after{content:'⌕';font-size:19px;display:grid;place-items:center;height:100%;color:#27476d}
+ .top>.glyph:last-child{margin-left:auto}
+ .content{padding-bottom:92px}
+ .bottomNav{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;z-index:30;left:10px;right:10px;bottom:max(10px,env(safe-area-inset-bottom));height:66px;background:#fff;border:1px solid #dbe5ef;border-radius:20px;box-shadow:0 12px 36px #0b23462b;padding:5px 4px}
+ .bottomNav button{border:0;background:transparent;color:#71829a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10px;font-weight:700;border-radius:14px}
+ .bottomNav button.selected{color:#1266e8;background:#f0f6ff}
+ .bottomNav .glyph{font-size:18px}
+ .bottomNav .scanAction{background:#1266e8;color:#fff;margin:-17px 3px 4px;border-radius:18px;box-shadow:0 7px 18px #1266e84d}
+ .bottomNav .scanAction .glyph{font-size:23px}
+ .moreDots{font-size:18px;line-height:14px;letter-spacing:1px}
+}
