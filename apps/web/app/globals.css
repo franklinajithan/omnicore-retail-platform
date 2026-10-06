@@ -81,3 +81,26 @@
 .mobileBrand .logoMark{width:36px;height:36px;border-radius:10px;flex:0 0 36px}
 .pBrand>.logoMark{width:40px;height:40px;border-radius:10px;flex:0 0 40px}
 .pMobileLogo.logoMark{width:36px;height:36px;border-radius:10px;flex:0 0 36px}
+
+.bottomNav a.bottomNavLink{border:0;background:transparent;color:#71829a;text-decoration:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10px;font-weight:700;border-radius:14px}
+.bottomNav a.bottomNavLink:visited{color:#71829a}
+.productMenuButton{display:none}
+.quickViews{display:flex;gap:6px}
+.quickViews button{white-space:nowrap}
+@media(max-width:760px){
+ .bottomNav a.bottomNavLink{font-size:10px!important;text-decoration:none!important}
+ .bottomNav a.bottomNavLink .glyph{font-size:18px}
+ .productMenuButton{display:grid!important;place-items:center!important;flex:0 0 38px!important;width:38px!important;height:38px!important;border:0!important;border-radius:10px!important;background:#eef5ff!important;color:#0b4bc4!important;font-size:20px!important;margin:0!important}
+ .productSide{display:block;position:fixed;z-index:50;left:0;top:0;width:min(86vw,340px);height:100dvh;transform:translateX(-105%);transition:transform .22s ease;overflow:auto}
+ .productSide.open{transform:translateX(0)}
+ .productSide .drawerClose{display:grid}
+ .pTop{gap:8px}
+ .pMobileLogo{width:44px!important;height:36px!important}
+ .pStats{margin-bottom:10px}
+ .pStats>div{min-width:155px}
+ .catalogHead{position:sticky;top:58px;z-index:4;background:#fff}
+ .productSearch{flex-basis:calc(100% - 58px)}
+ .quickViews{order:0;flex-basis:100%;overflow-x:auto;scrollbar-width:none}
+ .quickViews::-webkit-scrollbar{display:none}
+ .quickViews button{flex:0 0 auto!important;min-width:auto!important}
+}
