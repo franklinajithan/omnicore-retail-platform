@@ -50,83 +50,19 @@ enum SupplierStatus {
 enum PurchaseOrderStatus {
   DRAFT
   SUBMITTED
-  APPROVED
-  SENT
   PARTIALLY_RECEIVED
   RECEIVED
   CANCELLED
 }
 
 enum MovementType {
-  OPENING_BALANCE
-  GOODS_RECEIPT
+  RECEIPT
   SALE
   WASTAGE
-  ADJUSTMENT_IN
-  ADJUSTMENT_OUT
+  ADJUSTMENT
   TRANSFER_IN
   TRANSFER_OUT
-  STOCK_COUNT_GAIN
-  STOCK_COUNT_LOSS
   RETURN
-}
-
-enum DeliveryStatus {
-  EXPECTED
-  ARRIVED
-  RECEIVING
-  DISCREPANCY
-  COMPLETED
-  CANCELLED
-}
-
-enum DiscrepancyType {
-  SHORTAGE
-  OVER_DELIVERY
-  UNEXPECTED_PRODUCT
-  DAMAGED
-  WEIGHT_MISMATCH
-  PRICE_MISMATCH
-  PACKAGING_MISMATCH
-  OTHER
-}
-
-enum DiscrepancyStatus {
-  OPEN
-  VERIFICATION_REQUIRED
-  VERIFIED
-  CLAIM_READY
-  CLAIMED
-  RESOLVED
-  REJECTED
-}
-
-enum TransferStatus {
-  DRAFT
-  SUBMITTED
-  DISPATCHED
-  PARTIALLY_RECEIVED
-  RECEIVED
-  CANCELLED
-}
-
-enum StockCountStatus {
-  DRAFT
-  IN_PROGRESS
-  REVIEW
-  APPROVED
-  POSTED
-  CANCELLED
-}
-
-enum ClaimStatus {
-  DRAFT
-  READY
-  SENT
-  ACKNOWLEDGED
-  CREDITED
-  REJECTED
-  CLOSED
 }
 
 enum TenantStatus {
@@ -167,12 +103,6 @@ model Tenant {
   movements           StockMovement[]
   balances            StockBalance[]
   receipts            GoodsReceipt[]
-  deliveries          Delivery[]
-  discrepancies       Discrepancy[]
-  transfers           Transfer[]
-  stockCounts         StockCount[]
-  claims              Claim[]
-  sequences           Sequence[]
   users               TenantUser[]
   usersV2             User[]
   auditLogs           AuditLog[]
@@ -332,12 +262,7 @@ model Store {
   tenant        Tenant                @relation(fields: [tenantId], references: [id])
   balances      StockBalance[]
   movements     StockMovement[]
-  purchaseOrders PurchaseOrder[]
-  deliveries    Delivery[]
   receipts      GoodsReceipt[]
-  transfersSource Transfer[]          @relation("TransferSource")
-  transfersDest Transfer[]            @relation("TransferDest")
-  stockCounts   StockCount[]
   userDefaults  User[]                @relation("UserDefaultStore")
   assignments   UserStoreAssignment[]
   prices        ProductPrice[]
@@ -476,10 +401,6 @@ model Product {
   movements       StockMovement[]
   orderLines      PurchaseOrderLine[]
   receiptLines    GoodsReceiptLine[]
-  discrepancies   Discrepancy[]
-  transferLines   TransferLine[]
-  stockCountLines StockCountLine[]
-  claimLines      ClaimLine[]
 
   @@unique([tenantId, itemCode])
   @@unique([id, tenantId])
@@ -588,9 +509,6 @@ model Supplier {
   tenant        Tenant            @relation(fields: [tenantId], references: [id])
   products      SupplierProduct[]
   orders        PurchaseOrder[]
-  deliveries    Delivery[]
-  receipts      GoodsReceipt[]
-  claims        Claim[]
 
   @@unique([tenantId, code])
   @@unique([id, tenantId])
@@ -679,334 +597,53 @@ model StockMovement {
 }
 
 model PurchaseOrder {
-  id                  String              @id @default(uuid()) @db.Uuid
-  tenantId            String              @db.Uuid
-  orderNumber         String
-  supplierId          String              @db.Uuid
-  storeId             String              @db.Uuid
-  status              PurchaseOrderStatus @default(DRAFT)
-  orderDate           DateTime            @default(now())
-  expectedDeliveryDate DateTime?
-  currency            String              @default("GBP")
-  subtotal            Decimal             @default(0) @db.Decimal(18, 4)
-  taxTotal            Decimal             @default(0) @db.Decimal(18, 4)
-  total               Decimal             @default(0) @db.Decimal(18, 4)
-  notes               String?
-  createdBy           String?             @db.Uuid
-  submittedBy         String?             @db.Uuid
-  submittedAt         DateTime?
-  approvedBy          String?             @db.Uuid
-  approvedAt          DateTime?
-  sentBy              String?             @db.Uuid
-  sentAt              DateTime?
-  cancelledBy         String?             @db.Uuid
-  cancelledAt         DateTime?
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-  tenant              Tenant              @relation(fields: [tenantId], references: [id])
-  supplier            Supplier            @relation(fields: [supplierId, tenantId], references: [id, tenantId])
-  store               Store               @relation(fields: [storeId, tenantId], references: [id, tenantId])
-  lines               PurchaseOrderLine[]
-  deliveries          Delivery[]
-  receipts            GoodsReceipt[]
+  id         String              @id @default(uuid()) @db.Uuid
+  tenantId   String              @db.Uuid
+  supplierId String              @db.Uuid
+  number     String
+  status     PurchaseOrderStatus @default(DRAFT)
+  createdAt  DateTime            @default(now())
+  tenant     Tenant              @relation(fields: [tenantId], references: [id])
+  supplier   Supplier            @relation(fields: [supplierId, tenantId], references: [id, tenantId])
+  lines      PurchaseOrderLine[]
+  receipts   GoodsReceipt[]
 
-  @@unique([tenantId, orderNumber])
+  @@unique([tenantId, number])
   @@unique([id, tenantId])
-  @@index([tenantId, status])
-  @@index([tenantId, supplierId])
-  @@index([tenantId, storeId])
-  @@index([tenantId, expectedDeliveryDate])
 }
 
 model PurchaseOrderLine {
-  id                    String        @id @default(uuid()) @db.Uuid
-  tenantId              String        @db.Uuid
-  orderId               String        @db.Uuid
-  productId             String        @db.Uuid
-  supplierProductId     String?       @db.Uuid
-  itemCodeSnapshot      String
-  productNameSnapshot   String
-  supplierCodeSnapshot  String?
-  caseSizeSnapshot      Decimal       @db.Decimal(18, 3)
-  casesOrdered          Decimal       @db.Decimal(18, 3)
-  unitsOrdered          Decimal       @db.Decimal(18, 3)
-  unitCostSnapshot      Decimal       @db.Decimal(18, 4)
-  caseCostSnapshot      Decimal       @db.Decimal(18, 4)
-  taxRateSnapshot       Decimal       @db.Decimal(5, 2)
-  netTotal              Decimal       @db.Decimal(18, 4)
-  taxTotal              Decimal       @db.Decimal(18, 4)
-  grossTotal            Decimal       @db.Decimal(18, 4)
-  order                 PurchaseOrder @relation(fields: [orderId, tenantId], references: [id, tenantId])
-  product               Product       @relation(fields: [productId, tenantId], references: [id, tenantId])
-  discrepancies         Discrepancy[]
-
-  @@index([tenantId, orderId])
-  @@index([tenantId, productId])
+  id              String        @id @default(uuid()) @db.Uuid
+  orderId         String        @db.Uuid
+  productId       String        @db.Uuid
+  orderedQuantity Decimal       @db.Decimal(18, 3)
+  unitCost        Decimal       @db.Decimal(18, 4)
+  order           PurchaseOrder @relation(fields: [orderId], references: [id])
+  product         Product       @relation(fields: [productId], references: [id])
 }
 
 model GoodsReceipt {
   id             String             @id @default(uuid()) @db.Uuid
   tenantId       String             @db.Uuid
-  receiptNumber  String
-  deliveryId     String?            @db.Uuid
-  orderId        String?            @db.Uuid
-  supplierId     String             @db.Uuid
+  orderId        String             @db.Uuid
   storeId        String             @db.Uuid
-  status         String             @default("DRAFT")
-  receivedBy     String?            @db.Uuid
-  receivedAt     DateTime?
-  subtotal       Decimal            @default(0) @db.Decimal(18, 4)
-  taxTotal       Decimal            @default(0) @db.Decimal(18, 4)
-  total          Decimal            @default(0) @db.Decimal(18, 4)
-  notes          String?
   idempotencyKey String
   createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
   tenant         Tenant             @relation(fields: [tenantId], references: [id])
-  delivery       Delivery?          @relation(fields: [deliveryId, tenantId], references: [id, tenantId])
-  order          PurchaseOrder?     @relation(fields: [orderId, tenantId], references: [id, tenantId])
-  supplier       Supplier           @relation(fields: [supplierId, tenantId], references: [id, tenantId])
+  order          PurchaseOrder      @relation(fields: [orderId, tenantId], references: [id, tenantId])
   store          Store              @relation(fields: [storeId, tenantId], references: [id, tenantId])
   lines          GoodsReceiptLine[]
-  discrepancies  Discrepancy[]
 
-  @@unique([tenantId, receiptNumber])
-  @@unique([id, tenantId])
   @@unique([tenantId, idempotencyKey])
-  @@index([tenantId, deliveryId])
-  @@index([tenantId, orderId])
-  @@index([tenantId, storeId])
 }
 
 model GoodsReceiptLine {
-  id                String       @id @default(uuid()) @db.Uuid
-  tenantId          String       @db.Uuid
-  receiptId         String       @db.Uuid
-  productId         String       @db.Uuid
-  expectedQuantity  Decimal?     @db.Decimal(18, 3)
-  receivedQuantity  Decimal      @db.Decimal(18, 3)
-  differenceQuantity Decimal     @default(0) @db.Decimal(18, 3)
-  unitCostSnapshot  Decimal      @db.Decimal(18, 4)
-  taxRateSnapshot   Decimal      @db.Decimal(5, 2)
-  netTotal          Decimal      @db.Decimal(18, 4)
-  taxTotal          Decimal      @db.Decimal(18, 4)
-  grossTotal        Decimal      @db.Decimal(18, 4)
-  discrepancyStatus String?
-  receipt           GoodsReceipt @relation(fields: [receiptId, tenantId], references: [id, tenantId])
-  product           Product      @relation(fields: [productId, tenantId], references: [id, tenantId])
-
-  @@index([tenantId, receiptId])
-  @@index([tenantId, productId])
-}
-
-model Delivery {
-  id                 String              @id @default(uuid()) @db.Uuid
-  tenantId           String              @db.Uuid
-  deliveryNumber     String
-  supplierId         String              @db.Uuid
-  storeId            String              @db.Uuid
-  status             DeliveryStatus      @default(EXPECTED)
-  expectedDate       DateTime?
-  arrivedAt          DateTime?
-  receivingStartedAt DateTime?
-  completedAt        DateTime?
-  qrIdentifier       String              @unique
-  notes              String?
-  createdBy          String?             @db.Uuid
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  tenant             Tenant              @relation(fields: [tenantId], references: [id])
-  supplier           Supplier            @relation(fields: [supplierId, tenantId], references: [id, tenantId])
-  store              Store               @relation(fields: [storeId, tenantId], references: [id, tenantId])
-  purchaseOrders     PurchaseOrder[]
-  receipts           GoodsReceipt[]
-  discrepancies      Discrepancy[]
-  claims             Claim[]
-
-  @@unique([tenantId, deliveryNumber])
-  @@unique([id, tenantId])
-  @@index([tenantId, status])
-  @@index([tenantId, supplierId])
-  @@index([tenantId, storeId])
-  @@index([qrIdentifier])
-}
-
-model Discrepancy {
-  id                  String            @id @default(uuid()) @db.Uuid
-  tenantId            String            @db.Uuid
-  deliveryId          String?           @db.Uuid
-  goodsReceiptId      String?           @db.Uuid
-  purchaseOrderLineId String?           @db.Uuid
-  productId           String            @db.Uuid
-  type                DiscrepancyType
-  status              DiscrepancyStatus @default(OPEN)
-  expectedQuantity    Decimal?          @db.Decimal(18, 3)
-  actualQuantity      Decimal?          @db.Decimal(18, 3)
-  differenceQuantity  Decimal?          @db.Decimal(18, 3)
-  expectedCost        Decimal?          @db.Decimal(18, 4)
-  actualCost          Decimal?          @db.Decimal(18, 4)
-  reason              String?
-  notes               String?
-  verifiedAt          DateTime?
-  verifiedBy          String?           @db.Uuid
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
-  tenant              Tenant            @relation(fields: [tenantId], references: [id])
-  delivery            Delivery?         @relation(fields: [deliveryId, tenantId], references: [id, tenantId])
-  goodsReceipt        GoodsReceipt?     @relation(fields: [goodsReceiptId, tenantId], references: [id, tenantId])
-  purchaseOrderLine   PurchaseOrderLine? @relation(fields: [purchaseOrderLineId], references: [id])
-  product             Product           @relation(fields: [productId, tenantId], references: [id, tenantId])
-
-  @@index([tenantId, deliveryId])
-  @@index([tenantId, goodsReceiptId])
-  @@index([tenantId, status])
-  @@index([tenantId, type])
-}
-
-model Transfer {
-  id              String         @id @default(uuid()) @db.Uuid
-  tenantId        String         @db.Uuid
-  transferNumber  String
-  sourceStoreId   String         @db.Uuid
-  destStoreId     String         @db.Uuid
-  status          TransferStatus @default(DRAFT)
-  expectedDate    DateTime?
-  dispatchedAt    DateTime?
-  dispatchedBy    String?        @db.Uuid
-  receivedAt      DateTime?
-  receivedBy      String?        @db.Uuid
-  notes           String?
-  createdBy       String?        @db.Uuid
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  tenant          Tenant         @relation(fields: [tenantId], references: [id])
-  sourceStore     Store          @relation("TransferSource", fields: [sourceStoreId, tenantId], references: [id, tenantId])
-  destStore       Store          @relation("TransferDest", fields: [destStoreId, tenantId], references: [id, tenantId])
-  lines           TransferLine[]
-
-  @@unique([tenantId, transferNumber])
-  @@unique([id, tenantId])
-  @@index([tenantId, status])
-  @@index([tenantId, sourceStoreId])
-  @@index([tenantId, destStoreId])
-}
-
-model TransferLine {
-  id               String    @id @default(uuid()) @db.Uuid
-  tenantId         String    @db.Uuid
-  transferId       String    @db.Uuid
-  productId        String    @db.Uuid
-  sentQuantity     Decimal   @db.Decimal(18, 3)
-  receivedQuantity Decimal?  @db.Decimal(18, 3)
-  transfer         Transfer  @relation(fields: [transferId, tenantId], references: [id, tenantId])
-  product          Product   @relation(fields: [productId, tenantId], references: [id, tenantId])
-
-  @@index([tenantId, transferId])
-  @@index([tenantId, productId])
-}
-
-model StockCount {
-  id          String           @id @default(uuid()) @db.Uuid
-  tenantId    String           @db.Uuid
-  countNumber String
-  storeId     String           @db.Uuid
-  status      StockCountStatus @default(DRAFT)
-  blindCount  Boolean          @default(false)
-  countedBy   String?          @db.Uuid
-  countedAt   DateTime?
-  approvedBy  String?          @db.Uuid
-  approvedAt  DateTime?
-  postedBy    String?          @db.Uuid
-  postedAt    DateTime?
-  notes       String?
-  createdBy   String?          @db.Uuid
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  tenant      Tenant           @relation(fields: [tenantId], references: [id])
-  store       Store            @relation(fields: [storeId, tenantId], references: [id, tenantId])
-  lines       StockCountLine[]
-
-  @@unique([tenantId, countNumber])
-  @@unique([id, tenantId])
-  @@index([tenantId, status])
-  @@index([tenantId, storeId])
-}
-
-model StockCountLine {
-  id              String     @id @default(uuid()) @db.Uuid
-  tenantId        String     @db.Uuid
-  countId         String     @db.Uuid
-  productId       String     @db.Uuid
-  systemQuantity  Decimal    @db.Decimal(18, 3)
-  countedQuantity Decimal?   @db.Decimal(18, 3)
-  differenceQuantity Decimal? @db.Decimal(18, 3)
-  notes           String?
-  count           StockCount @relation(fields: [countId, tenantId], references: [id, tenantId])
-  product         Product    @relation(fields: [productId, tenantId], references: [id, tenantId])
-
-  @@index([tenantId, countId])
-  @@index([tenantId, productId])
-}
-
-model Claim {
-  id          String      @id @default(uuid()) @db.Uuid
-  tenantId    String      @db.Uuid
-  claimNumber String
-  supplierId  String      @db.Uuid
-  deliveryId  String?     @db.Uuid
-  status      ClaimStatus @default(DRAFT)
-  claimDate   DateTime    @default(now())
-  sentAt      DateTime?
-  sentBy      String?     @db.Uuid
-  subtotal    Decimal     @default(0) @db.Decimal(18, 4)
-  taxTotal    Decimal     @default(0) @db.Decimal(18, 4)
-  total       Decimal     @default(0) @db.Decimal(18, 4)
-  notes       String?
-  createdBy   String?     @db.Uuid
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  tenant      Tenant      @relation(fields: [tenantId], references: [id])
-  supplier    Supplier    @relation(fields: [supplierId, tenantId], references: [id, tenantId])
-  delivery    Delivery?   @relation(fields: [deliveryId, tenantId], references: [id, tenantId])
-  lines       ClaimLine[]
-
-  @@unique([tenantId, claimNumber])
-  @@unique([id, tenantId])
-  @@index([tenantId, status])
-  @@index([tenantId, supplierId])
-  @@index([tenantId, deliveryId])
-}
-
-model ClaimLine {
-  id          String  @id @default(uuid()) @db.Uuid
-  tenantId    String  @db.Uuid
-  claimId     String  @db.Uuid
-  productId   String  @db.Uuid
-  quantity    Decimal @db.Decimal(18, 3)
-  unitCost    Decimal @db.Decimal(18, 4)
-  taxRate     Decimal @db.Decimal(5, 2)
-  netAmount   Decimal @db.Decimal(18, 4)
-  taxAmount   Decimal @db.Decimal(18, 4)
-  grossAmount Decimal @db.Decimal(18, 4)
-  description String?
-  claim       Claim   @relation(fields: [claimId, tenantId], references: [id, tenantId])
-  product     Product @relation(fields: [productId, tenantId], references: [id, tenantId])
-
-  @@index([tenantId, claimId])
-  @@index([tenantId, productId])
-}
-
-model Sequence {
-  id         String   @id @default(uuid()) @db.Uuid
-  tenantId   String   @db.Uuid
-  prefix     String
-  year       Int
-  lastNumber Int      @default(0)
-  updatedAt  DateTime @updatedAt
-  tenant     Tenant   @relation(fields: [tenantId], references: [id])
-
-  @@unique([tenantId, prefix, year])
-  @@index([tenantId, prefix, year])
+  id               String       @id @default(uuid()) @db.Uuid
+  receiptId        String       @db.Uuid
+  productId        String       @db.Uuid
+  receivedQuantity Decimal      @db.Decimal(18, 3)
+  receipt          GoodsReceipt @relation(fields: [receiptId], references: [id])
+  product          Product      @relation(fields: [productId], references: [id])
 }
 
 model AuditLog {
