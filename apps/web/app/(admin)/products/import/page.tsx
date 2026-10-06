@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { api } from '@/app/lib/api';
+import { getStoredToken } from '@/app/lib/auth';
 
 export default function ImportProductsPage() {
   const router = useRouter();
@@ -28,29 +30,11 @@ export default function ImportProductsPage() {
 
     try {
       const text = await file.text();
-      const authToken = Buffer.from(
-        JSON.stringify({
-          tenantId: 'c7e3b8a1-1234-5678-9abc-def012345678',
-          userId: 'system',
-          permissions: ['product.import'],
-        })
-      ).toString('base64');
-
-      const res = await fetch('http://localhost:3001/api/v1/products/import/preview', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({ content: text }),
-      });
-
-      if (!res.ok) {
-        throw new Error('Preview failed');
-      }
-
-      const data = await res.json();
+      const token = getStoredToken();
+      if (!token) throw new Error('Please sign in again.');
+      const data = await api.post<any>('/api/v1/products/import/preview', { content: text }, token);
       setPreview(data);
+      
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -66,28 +50,9 @@ export default function ImportProductsPage() {
 
     try {
       const text = await file.text();
-      const authToken = Buffer.from(
-        JSON.stringify({
-          tenantId: 'c7e3b8a1-1234-5678-9abc-def012345678',
-          userId: 'system',
-          permissions: ['product.import'],
-        })
-      ).toString('base64');
-
-      const res = await fetch('http://localhost:3001/api/v1/products/import/execute', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({ content: text }),
-      });
-
-      if (!res.ok) {
-        throw new Error('Import failed');
-      }
-
-      const data = await res.json();
+      const token = getStoredToken();
+      if (!token) throw new Error('Please sign in again.');
+      const data = await api.post<any>('/api/v1/products/import/execute', { content: text }, token);
       setResult(data);
       setPreview(null);
     } catch (err: any) {
