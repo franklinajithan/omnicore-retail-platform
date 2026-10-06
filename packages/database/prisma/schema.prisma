@@ -12,6 +12,41 @@ enum ProductStatus {
   INACTIVE
 }
 
+enum ProductType {
+  GOODS
+  SERVICE
+}
+
+enum IdentifierType {
+  EAN_13
+  EAN_8
+  UPC_A
+  UPC_E
+  GTIN_14
+  ITF_14
+  CODE_128
+  INTERNAL
+  CUSTOM
+}
+
+enum PackagingLevel {
+  CONSUMER_UNIT
+  INNER_PACK
+  CASE
+  PALLET
+}
+
+enum ManufacturerStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum SupplierStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
 enum PurchaseOrderStatus {
   DRAFT
   SUBMITTED
@@ -30,18 +65,55 @@ enum MovementType {
   RETURN
 }
 
+enum TenantStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
 model Tenant {
-  id        String   @id @default(uuid()) @db.Uuid
-  name      String
-  createdAt DateTime @default(now())
-  stores    Store[]
-  products  Product[]
-  suppliers Supplier[]
-  orders    PurchaseOrder[]
-  movements StockMovement[]
-  balances  StockBalance[]
-  receipts  GoodsReceipt[]
-  users     TenantUser[]
+  id                  String                @id @default(uuid()) @db.Uuid
+  code                String                @unique
+  name                String
+  legalName           String?
+  tradingName         String?
+  status              TenantStatus          @default(ACTIVE)
+  countryCode         String                @default("GB")
+  currencyCode        String                @default("GBP")
+  timezone            String                @default("Europe/London")
+  locale              String                @default("en-GB")
+  vatNumber           String?
+  companyNumber       String?
+  email               String?
+  phone               String?
+  addressLine1        String?
+  addressLine2        String?
+  city                String?
+  state               String?
+  postcode            String?
+  country             String?
+  logoUrl             String?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  archivedAt          DateTime?
+  stores              Store[]
+  products            Product[]
+  suppliers           Supplier[]
+  orders              PurchaseOrder[]
+  movements           StockMovement[]
+  balances            StockBalance[]
+  receipts            GoodsReceipt[]
+  users               TenantUser[]
+  usersV2             User[]
+  auditLogs           AuditLog[]
+  manufacturers       Manufacturer[]
+  brands              Brand[]
+  categories          Category[]
+  taxRates            TaxRate[]
+  productPrices       ProductPrice[]
+  productAliases      ProductAlias[]
+  productTranslations ProductTranslation[]
+  supplierCostHistory SupplierCostHistory[]
 }
 
 model TenantUser {
@@ -50,151 +122,546 @@ model TenantUser {
   userId   String
   role     String
   tenant   Tenant @relation(fields: [tenantId], references: [id])
+
   @@unique([tenantId, userId])
   @@index([tenantId])
 }
 
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  INVITED
+}
+
+model User {
+  id             String                @id @default(uuid()) @db.Uuid
+  tenantId       String                @db.Uuid
+  authUserId     String?
+  firstName      String
+  lastName       String
+  email          String
+  phone          String?
+  status         UserStatus            @default(INVITED)
+  defaultStoreId String?               @db.Uuid
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  lastLoginAt    DateTime?
+  tenant         Tenant                @relation(fields: [tenantId], references: [id])
+  defaultStore   Store?                @relation("UserDefaultStore", fields: [defaultStoreId, tenantId], references: [id, tenantId])
+  stores         UserStoreAssignment[]
+  roles          UserRole[]
+  auditLogs      AuditLog[]
+
+  @@unique([tenantId, email])
+  @@unique([tenantId, authUserId])
+  @@index([tenantId])
+  @@index([authUserId])
+}
+
+enum RoleType {
+  SYSTEM
+  CUSTOM
+}
+
+model Role {
+  id          String           @id @default(uuid()) @db.Uuid
+  tenantId    String?          @db.Uuid
+  code        String
+  name        String
+  description String?
+  type        RoleType         @default(CUSTOM)
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  permissions RolePermission[]
+  users       UserRole[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+}
+
+model Permission {
+  id          String           @id @default(uuid()) @db.Uuid
+  code        String           @unique
+  name        String
+  description String?
+  module      String
+  createdAt   DateTime         @default(now())
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  id           String     @id @default(uuid()) @db.Uuid
+  roleId       String     @db.Uuid
+  permissionId String     @db.Uuid
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+}
+
+model UserRole {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  roleId    String   @db.Uuid
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+}
+
+model UserStoreAssignment {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  storeId   String   @db.Uuid
+  tenantId  String   @db.Uuid
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store     Store    @relation(fields: [storeId, tenantId], references: [id, tenantId], onDelete: Cascade)
+
+  @@unique([userId, storeId])
+  @@index([tenantId])
+}
+
+enum StoreStatus {
+  ACTIVE
+  INACTIVE
+  OPENING_SOON
+  CLOSED
+}
+
+enum StoreType {
+  SUPERMARKET
+  CONVENIENCE
+  EXPRESS
+  WAREHOUSE
+  HEAD_OFFICE
+}
+
 model Store {
-  id        String @id @default(uuid()) @db.Uuid
-  tenantId  String @db.Uuid
-  code      String
-  name      String
-  tenant    Tenant @relation(fields: [tenantId], references: [id])
-  balances  StockBalance[]
-  movements StockMovement[]
-  receipts  GoodsReceipt[]
+  id            String                @id @default(uuid()) @db.Uuid
+  tenantId      String                @db.Uuid
+  code          String
+  name          String
+  status        StoreStatus           @default(ACTIVE)
+  storeType     StoreType?
+  addressLine1  String?
+  addressLine2  String?
+  city          String?
+  state         String?
+  postcode      String?
+  country       String?
+  phone         String?
+  email         String?
+  timezone      String?
+  openingStatus String?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  archivedAt    DateTime?
+  tenant        Tenant                @relation(fields: [tenantId], references: [id])
+  balances      StockBalance[]
+  movements     StockMovement[]
+  receipts      GoodsReceipt[]
+  userDefaults  User[]                @relation("UserDefaultStore")
+  assignments   UserStoreAssignment[]
+  prices        ProductPrice[]
+
   @@unique([tenantId, code])
   @@unique([id, tenantId])
+  @@index([tenantId, status])
+}
+
+model Manufacturer {
+  id           String             @id @default(uuid()) @db.Uuid
+  tenantId     String             @db.Uuid
+  code         String
+  name         String
+  legalName    String?
+  status       ManufacturerStatus @default(ACTIVE)
+  countryCode  String?
+  website      String?
+  email        String?
+  phone        String?
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  state        String?
+  postcode     String?
+  country      String?
+  notes        String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  archivedAt   DateTime?
+  tenant       Tenant             @relation(fields: [tenantId], references: [id])
+  brands       Brand[]
+  products     Product[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, status])
+}
+
+model Brand {
+  id             String        @id @default(uuid()) @db.Uuid
+  tenantId       String        @db.Uuid
+  manufacturerId String?       @db.Uuid
+  code           String
+  name           String
+  description    String?
+  logoUrl        String?
+  status         ProductStatus @default(ACTIVE)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  tenant         Tenant        @relation(fields: [tenantId], references: [id])
+  manufacturer   Manufacturer? @relation(fields: [manufacturerId], references: [id])
+  products       Product[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, manufacturerId])
+}
+
+model Category {
+  id          String        @id @default(uuid()) @db.Uuid
+  tenantId    String        @db.Uuid
+  parentId    String?       @db.Uuid
+  code        String
+  name        String
+  description String?
+  status      ProductStatus @default(ACTIVE)
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  tenant      Tenant        @relation(fields: [tenantId], references: [id])
+  parent      Category?     @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[]    @relation("CategoryHierarchy")
+  products    Product[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, parentId])
+}
+
+model TaxRate {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @db.Uuid
+  code        String
+  name        String
+  rate        Decimal   @db.Decimal(5, 2)
+  countryCode String    @default("GB")
+  description String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  products    Product[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, isActive])
 }
 
 model Product {
-  id          String @id @default(uuid()) @db.Uuid
-  tenantId    String @db.Uuid
-  sku         String
-  name        String
-  status      ProductStatus @default(ACTIVE)
-  baseUnit    String @default("EACH")
-  createdAt   DateTime @default(now())
-  tenant      Tenant @relation(fields: [tenantId], references: [id])
-  barcodes    ProductBarcode[]
-  suppliers   SupplierProduct[]
-  balances    StockBalance[]
-  movements   StockMovement[]
-  orderLines  PurchaseOrderLine[]
-  receiptLines GoodsReceiptLine[]
-  @@unique([tenantId, sku])
+  id              String               @id @default(uuid()) @db.Uuid
+  tenantId        String               @db.Uuid
+  itemCode        String
+  name            String
+  shortName       String?
+  description     String?
+  brandId         String?              @db.Uuid
+  manufacturerId  String?              @db.Uuid
+  categoryId      String?              @db.Uuid
+  taxRateId       String?              @db.Uuid
+  status          ProductStatus        @default(ACTIVE)
+  productType     ProductType          @default(GOODS)
+  baseUnit        String               @default("EACH")
+  netWeight       Decimal?             @db.Decimal(10, 3)
+  grossWeight     Decimal?             @db.Decimal(10, 3)
+  weightUnit      String?
+  volume          Decimal?             @db.Decimal(10, 3)
+  volumeUnit      String?
+  defaultCaseSize Int?
+  countryOfOrigin String?
+  imageUrl        String?
+  notes           String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  archivedAt      DateTime?
+  mergedIntoId    String?              @db.Uuid
+  tenant          Tenant               @relation(fields: [tenantId], references: [id])
+  brand           Brand?               @relation(fields: [brandId], references: [id])
+  manufacturer    Manufacturer?        @relation(fields: [manufacturerId], references: [id])
+  category        Category?            @relation(fields: [categoryId], references: [id])
+  taxRate         TaxRate?             @relation(fields: [taxRateId], references: [id])
+  mergedInto      Product?             @relation("ProductMerge", fields: [mergedIntoId], references: [id])
+  mergedFrom      Product[]            @relation("ProductMerge")
+  barcodes        ProductBarcode[]
+  translations    ProductTranslation[]
+  aliases         ProductAlias[]
+  suppliers       SupplierProduct[]
+  prices          ProductPrice[]
+  balances        StockBalance[]
+  movements       StockMovement[]
+  orderLines      PurchaseOrderLine[]
+  receiptLines    GoodsReceiptLine[]
+
+  @@unique([tenantId, itemCode])
   @@unique([id, tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, brandId])
+  @@index([tenantId, manufacturerId])
+  @@index([tenantId, categoryId])
+  @@index([tenantId, name])
 }
 
 model ProductBarcode {
-  id        String @id @default(uuid()) @db.Uuid
-  productId String @db.Uuid
-  code      String
-  product   Product @relation(fields: [productId], references: [id])
-  @@unique([productId, code])
+  id             String         @id @default(uuid()) @db.Uuid
+  tenantId       String         @db.Uuid
+  productId      String         @db.Uuid
+  code           String
+  identifierType IdentifierType @default(EAN_13)
+  packagingLevel PackagingLevel @default(CONSUMER_UNIT)
+  isPrimary      Boolean        @default(false)
+  isActive       Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  product        Product        @relation(fields: [productId, tenantId], references: [id, tenantId])
+
+  @@unique([tenantId, code])
+  @@index([tenantId, productId])
   @@index([code])
 }
 
+model ProductTranslation {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  productId   String   @db.Uuid
+  locale      String
+  name        String
+  shortName   String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  product     Product  @relation(fields: [productId, tenantId], references: [id, tenantId])
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([productId, locale])
+  @@index([tenantId, productId])
+}
+
+model ProductAlias {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  productId String   @db.Uuid
+  alias     String
+  source    String?
+  createdAt DateTime @default(now())
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  product   Product  @relation(fields: [productId, tenantId], references: [id, tenantId])
+
+  @@index([tenantId, productId])
+  @@index([tenantId, alias])
+}
+
+model ProductPrice {
+  id            String    @id @default(uuid()) @db.Uuid
+  tenantId      String    @db.Uuid
+  storeId       String    @db.Uuid
+  productId     String    @db.Uuid
+  retailPrice   Decimal   @db.Decimal(18, 4)
+  effectiveFrom DateTime  @default(now())
+  effectiveTo   DateTime?
+  source        String?
+  changedBy     String?   @db.Uuid
+  createdAt     DateTime  @default(now())
+  tenant        Tenant    @relation(fields: [tenantId], references: [id])
+  store         Store     @relation(fields: [storeId, tenantId], references: [id, tenantId])
+  product       Product   @relation(fields: [productId, tenantId], references: [id, tenantId])
+
+  @@unique([tenantId, storeId, productId, effectiveFrom])
+  @@index([tenantId, storeId, productId])
+  @@index([tenantId, productId])
+}
+
 model Supplier {
-  id       String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  code     String
-  name     String
-  email    String?
-  tenant   Tenant @relation(fields: [tenantId], references: [id])
-  products SupplierProduct[]
-  orders   PurchaseOrder[]
+  id            String            @id @default(uuid()) @db.Uuid
+  tenantId      String            @db.Uuid
+  code          String
+  name          String
+  legalName     String?
+  status        SupplierStatus    @default(ACTIVE)
+  vatNumber     String?
+  companyNumber String?
+  email         String?
+  orderEmail    String?
+  claimsEmail   String?
+  phone         String?
+  website       String?
+  addressLine1  String?
+  addressLine2  String?
+  city          String?
+  state         String?
+  postcode      String?
+  country       String?
+  currencyCode  String            @default("GBP")
+  paymentTerms  String?
+  minimumOrder  Decimal?          @db.Decimal(18, 4)
+  deliveryNotes String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  archivedAt    DateTime?
+  tenant        Tenant            @relation(fields: [tenantId], references: [id])
+  products      SupplierProduct[]
+  orders        PurchaseOrder[]
+
   @@unique([tenantId, code])
   @@unique([id, tenantId])
+  @@index([tenantId, status])
 }
 
 model SupplierProduct {
-  id           String @id @default(uuid()) @db.Uuid
-  supplierId   String @db.Uuid
-  productId    String @db.Uuid
-  supplierCode String
-  packSize     Decimal @db.Decimal(18, 3)
-  cost         Decimal @db.Decimal(18, 4)
-  supplier     Supplier @relation(fields: [supplierId], references: [id])
-  product      Product @relation(fields: [productId], references: [id])
-  @@unique([supplierId, supplierCode])
-  @@unique([supplierId, productId])
+  id                  String                @id @default(uuid()) @db.Uuid
+  tenantId            String                @db.Uuid
+  supplierId          String                @db.Uuid
+  productId           String                @db.Uuid
+  supplierProductCode String
+  supplierDescription String?
+  supplierBarcode     String?
+  caseSize            Decimal               @db.Decimal(18, 3)
+  minimumOrderQty     Decimal?              @db.Decimal(18, 3)
+  orderMultiple       Decimal?              @db.Decimal(18, 3)
+  leadTimeDays        Int?
+  currentUnitCost     Decimal               @db.Decimal(18, 4)
+  currentCaseCost     Decimal               @db.Decimal(18, 4)
+  currencyCode        String                @default("GBP")
+  isPreferredSupplier Boolean               @default(false)
+  isActive            Boolean               @default(true)
+  lastCostChangeAt    DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  supplier            Supplier              @relation(fields: [supplierId, tenantId], references: [id, tenantId])
+  product             Product               @relation(fields: [productId, tenantId], references: [id, tenantId])
+  costHistory         SupplierCostHistory[]
+
+  @@unique([tenantId, supplierId, supplierProductCode])
+  @@unique([tenantId, supplierId, productId])
+  @@index([tenantId, productId])
+  @@index([tenantId, supplierProductCode])
+}
+
+model SupplierCostHistory {
+  id                String          @id @default(uuid()) @db.Uuid
+  tenantId          String          @db.Uuid
+  supplierProductId String          @db.Uuid
+  effectiveFrom     DateTime
+  effectiveTo       DateTime?
+  unitCost          Decimal         @db.Decimal(18, 4)
+  caseCost          Decimal         @db.Decimal(18, 4)
+  currencyCode      String          @default("GBP")
+  source            String?
+  changedBy         String?         @db.Uuid
+  createdAt         DateTime        @default(now())
+  tenant            Tenant          @relation(fields: [tenantId], references: [id])
+  supplierProduct   SupplierProduct @relation(fields: [supplierProductId], references: [id])
+
+  @@index([tenantId, supplierProductId, effectiveFrom])
+  @@index([tenantId, supplierProductId])
 }
 
 model StockBalance {
-  id        String @id @default(uuid()) @db.Uuid
-  tenantId  String @db.Uuid
-  storeId   String @db.Uuid
-  productId String @db.Uuid
+  id        String  @id @default(uuid()) @db.Uuid
+  tenantId  String  @db.Uuid
+  storeId   String  @db.Uuid
+  productId String  @db.Uuid
   quantity  Decimal @default(0) @db.Decimal(18, 3)
-  tenant    Tenant @relation(fields: [tenantId], references: [id])
-  store     Store @relation(fields: [storeId, tenantId], references: [id, tenantId])
+  tenant    Tenant  @relation(fields: [tenantId], references: [id])
+  store     Store   @relation(fields: [storeId, tenantId], references: [id, tenantId])
   product   Product @relation(fields: [productId, tenantId], references: [id, tenantId])
+
   @@unique([tenantId, storeId, productId])
 }
 
 model StockMovement {
-  id             String @id @default(uuid()) @db.Uuid
-  tenantId       String @db.Uuid
-  storeId        String @db.Uuid
-  productId      String @db.Uuid
+  id             String       @id @default(uuid()) @db.Uuid
+  tenantId       String       @db.Uuid
+  storeId        String       @db.Uuid
+  productId      String       @db.Uuid
   type           MovementType
-  quantityDelta  Decimal @db.Decimal(18, 3)
+  quantityDelta  Decimal      @db.Decimal(18, 3)
   referenceType  String
   referenceId    String
   idempotencyKey String
-  createdAt      DateTime @default(now())
-  tenant         Tenant @relation(fields: [tenantId], references: [id])
-  store          Store @relation(fields: [storeId, tenantId], references: [id, tenantId])
-  product        Product @relation(fields: [productId, tenantId], references: [id, tenantId])
+  createdAt      DateTime     @default(now())
+  tenant         Tenant       @relation(fields: [tenantId], references: [id])
+  store          Store        @relation(fields: [storeId, tenantId], references: [id, tenantId])
+  product        Product      @relation(fields: [productId, tenantId], references: [id, tenantId])
+
   @@unique([tenantId, idempotencyKey])
   @@index([tenantId, storeId, productId, createdAt])
 }
 
 model PurchaseOrder {
-  id         String @id @default(uuid()) @db.Uuid
-  tenantId   String @db.Uuid
-  supplierId String @db.Uuid
+  id         String              @id @default(uuid()) @db.Uuid
+  tenantId   String              @db.Uuid
+  supplierId String              @db.Uuid
   number     String
   status     PurchaseOrderStatus @default(DRAFT)
-  createdAt  DateTime @default(now())
-  tenant     Tenant @relation(fields: [tenantId], references: [id])
-  supplier   Supplier @relation(fields: [supplierId, tenantId], references: [id, tenantId])
+  createdAt  DateTime            @default(now())
+  tenant     Tenant              @relation(fields: [tenantId], references: [id])
+  supplier   Supplier            @relation(fields: [supplierId, tenantId], references: [id, tenantId])
   lines      PurchaseOrderLine[]
   receipts   GoodsReceipt[]
+
   @@unique([tenantId, number])
   @@unique([id, tenantId])
 }
 
 model PurchaseOrderLine {
-  id              String @id @default(uuid()) @db.Uuid
-  orderId         String @db.Uuid
-  productId       String @db.Uuid
-  orderedQuantity Decimal @db.Decimal(18, 3)
-  unitCost        Decimal @db.Decimal(18, 4)
+  id              String        @id @default(uuid()) @db.Uuid
+  orderId         String        @db.Uuid
+  productId       String        @db.Uuid
+  orderedQuantity Decimal       @db.Decimal(18, 3)
+  unitCost        Decimal       @db.Decimal(18, 4)
   order           PurchaseOrder @relation(fields: [orderId], references: [id])
-  product         Product @relation(fields: [productId], references: [id])
+  product         Product       @relation(fields: [productId], references: [id])
 }
 
 model GoodsReceipt {
-  id             String @id @default(uuid()) @db.Uuid
-  tenantId       String @db.Uuid
-  orderId        String @db.Uuid
-  storeId        String @db.Uuid
+  id             String             @id @default(uuid()) @db.Uuid
+  tenantId       String             @db.Uuid
+  orderId        String             @db.Uuid
+  storeId        String             @db.Uuid
   idempotencyKey String
-  createdAt      DateTime @default(now())
-  tenant         Tenant @relation(fields: [tenantId], references: [id])
-  order          PurchaseOrder @relation(fields: [orderId, tenantId], references: [id, tenantId])
-  store          Store @relation(fields: [storeId, tenantId], references: [id, tenantId])
+  createdAt      DateTime           @default(now())
+  tenant         Tenant             @relation(fields: [tenantId], references: [id])
+  order          PurchaseOrder      @relation(fields: [orderId, tenantId], references: [id, tenantId])
+  store          Store              @relation(fields: [storeId, tenantId], references: [id, tenantId])
   lines          GoodsReceiptLine[]
+
   @@unique([tenantId, idempotencyKey])
 }
 
 model GoodsReceiptLine {
-  id               String @id @default(uuid()) @db.Uuid
-  receiptId        String @db.Uuid
-  productId        String @db.Uuid
-  receivedQuantity Decimal @db.Decimal(18, 3)
+  id               String       @id @default(uuid()) @db.Uuid
+  receiptId        String       @db.Uuid
+  productId        String       @db.Uuid
+  receivedQuantity Decimal      @db.Decimal(18, 3)
   receipt          GoodsReceipt @relation(fields: [receiptId], references: [id])
-  product          Product @relation(fields: [productId], references: [id])
+  product          Product      @relation(fields: [productId], references: [id])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @db.Uuid
+  userId     String?  @db.Uuid
+  action     String
+  entityType String
+  entityId   String?
+  storeId    String?  @db.Uuid
+  before     Json?
+  after      Json?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  user       User?    @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, entityType, entityId])
+  @@index([tenantId, userId])
 }

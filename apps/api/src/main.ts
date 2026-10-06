@@ -1,7 +1,28 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { Module, Controller, Get } from '@nestjs/common';
-@Controller('health') class HealthController { @Get() health() { return { status: 'ok' }; } }
-@Module({ controllers: [HealthController] }) class AppModule {}
-async function bootstrap() { const app = await NestFactory.create(AppModule); await app.listen(process.env.PORT ?? 3001); }
+import { ValidationPipe } from '@nestjs/common';
+import { AppModule } from './app.module';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  app.enableCors({
+    origin: process.env.CORS_ORIGIN || '*',
+    credentials: true,
+  });
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+
+  const port = process.env.PORT ?? 3001;
+  await app.listen(port);
+  console.log(`OmniCore API listening on port ${port}`);
+}
+
 void bootstrap();
+

@@ -1,0 +1,4 @@
+
+> @omnicore/api@ typecheck /workspace/apps/api
+> tsc --noEmit
+

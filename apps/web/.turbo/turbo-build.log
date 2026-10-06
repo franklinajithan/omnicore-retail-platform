@@ -1,0 +1,35 @@
+
+> @omnicore/web@ build /workspace/apps/web
+> next build
+
+   ▲ Next.js 15.5.27
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 1571ms
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/10) ...
+   Generating static pages (2/10) 
+   Generating static pages (4/10) 
+   Generating static pages (7/10) 
+ ✓ Generating static pages (10/10)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                    1.05 kB         111 kB
+├ ○ /_not-found                            991 B         104 kB
+├ ○ /audit                               1.52 kB         111 kB
+├ ○ /dashboard                           1.12 kB         111 kB
+├ ○ /settings/organisation               1.49 kB         111 kB
+├ ○ /settings/roles                      1.46 kB         111 kB
+├ ○ /stores                              1.58 kB         111 kB
+└ ○ /users                               1.55 kB         111 kB
++ First Load JS shared by all             103 kB
+  ├ chunks/812-52aaa9f8a3640ba4.js       46.5 kB
+  ├ chunks/9923a0e2-1a45aa5d099bff40.js  54.2 kB
+  └ other shared chunks (total)          1.93 kB
+
+
+○  (Static)  prerendered as static content
+
