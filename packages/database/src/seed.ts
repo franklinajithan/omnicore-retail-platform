@@ -59,19 +59,71 @@ async function main() {
   }
 
   const permissions = [
+    // Organisation
     { code: 'tenant.read', name: 'View Organisation', module: 'organisation' },
     { code: 'tenant.update', name: 'Update Organisation', module: 'organisation' },
+    
+    // Stores
     { code: 'store.read', name: 'View Stores', module: 'stores' },
     { code: 'store.create', name: 'Create Stores', module: 'stores' },
     { code: 'store.update', name: 'Update Stores', module: 'stores' },
     { code: 'store.archive', name: 'Archive Stores', module: 'stores' },
+    
+    // Users
     { code: 'user.read', name: 'View Users', module: 'users' },
     { code: 'user.create', name: 'Create Users', module: 'users' },
     { code: 'user.update', name: 'Update Users', module: 'users' },
     { code: 'user.assign_store', name: 'Assign Users to Stores', module: 'users' },
     { code: 'user.assign_role', name: 'Assign Roles to Users', module: 'users' },
+    
+    // Roles
     { code: 'role.read', name: 'View Roles', module: 'roles' },
+    
+    // Audit
     { code: 'audit.read', name: 'View Audit Log', module: 'audit' },
+    
+    // Products - Day 2
+    { code: 'product.read', name: 'View Products', module: 'products' },
+    { code: 'product.create', name: 'Create Products', module: 'products' },
+    { code: 'product.update', name: 'Update Products', module: 'products' },
+    { code: 'product.archive', name: 'Archive Products', module: 'products' },
+    { code: 'product.merge', name: 'Merge Products', module: 'products' },
+    { code: 'product.import', name: 'Import Products', module: 'products' },
+    { code: 'product.export', name: 'Export Products', module: 'products' },
+    
+    // Manufacturers - Day 2
+    { code: 'manufacturer.read', name: 'View Manufacturers', module: 'manufacturers' },
+    { code: 'manufacturer.create', name: 'Create Manufacturers', module: 'manufacturers' },
+    { code: 'manufacturer.update', name: 'Update Manufacturers', module: 'manufacturers' },
+    
+    // Brands - Day 2
+    { code: 'brand.read', name: 'View Brands', module: 'brands' },
+    { code: 'brand.create', name: 'Create Brands', module: 'brands' },
+    { code: 'brand.update', name: 'Update Brands', module: 'brands' },
+    
+    // Categories - Day 2
+    { code: 'category.read', name: 'View Categories', module: 'categories' },
+    { code: 'category.create', name: 'Create Categories', module: 'categories' },
+    { code: 'category.update', name: 'Update Categories', module: 'categories' },
+    
+    // Suppliers - Day 2 (extended)
+    { code: 'supplier.read', name: 'View Suppliers', module: 'suppliers' },
+    { code: 'supplier.create', name: 'Create Suppliers', module: 'suppliers' },
+    { code: 'supplier.update', name: 'Update Suppliers', module: 'suppliers' },
+    { code: 'supplier.archive', name: 'Archive Suppliers', module: 'suppliers' },
+    
+    // Supplier Products - Day 2
+    { code: 'supplier_product.read', name: 'View Supplier Products', module: 'suppliers' },
+    { code: 'supplier_product.create', name: 'Create Supplier Products', module: 'suppliers' },
+    { code: 'supplier_product.update', name: 'Update Supplier Products', module: 'suppliers' },
+    
+    // Pricing - Day 2
+    { code: 'pricing.read', name: 'View Retail Prices', module: 'pricing' },
+    { code: 'pricing.update', name: 'Update Retail Prices', module: 'pricing' },
+    
+    // Costs - Day 2 (sensitive)
+    { code: 'cost.read', name: 'View Supplier Costs', module: 'costs' },
+    { code: 'cost.update', name: 'Update Supplier Costs', module: 'costs' },
   ];
 
   for (const permData of permissions) {

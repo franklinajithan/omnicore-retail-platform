@@ -12,6 +12,10 @@ import { UsersController } from './users/users.controller';
 import { OrganisationService } from './organisation/organisation.service';
 import { OrganisationController } from './organisation/organisation.controller';
 import { RolesController } from './roles/roles.controller';
+import { ManufacturersService } from './manufacturers/manufacturers.service';
+import { ManufacturersController } from './manufacturers/manufacturers.controller';
+import { ProductsService } from './products/products.service';
+import { ProductsController } from './products/products.controller';
 
 @Controller('health')
 class HealthController {
@@ -30,6 +34,8 @@ class HealthController {
     UsersController,
     OrganisationController,
     RolesController,
+    ManufacturersController,
+    ProductsController,
   ],
   providers: [
     PrismaService,
@@ -37,6 +43,8 @@ class HealthController {
     StoresService,
     UsersService,
     OrganisationService,
+    ManufacturersService,
+    ProductsService,
     {
       provide: APP_GUARD,
       useClass: AuthGuard,

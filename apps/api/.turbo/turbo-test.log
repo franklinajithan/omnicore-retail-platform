@@ -1,0 +1,18 @@
+
+> @omnicore/api@ test /workspace/apps/api
+> jest
+
+PASS src/stores/stores.service.spec.ts
+  StoresService - Tenant Isolation
+    Tenant Isolation
+      ✓ should only return stores for the specified tenant (8 ms)
+      ✓ should not return stores from other tenants (2 ms)
+      ✓ should throw NotFoundException when accessing another tenant store (7 ms)
+      ✓ should create store with correct tenantId (2 ms)
+      ✓ should update store only within tenant scope (1 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       5 passed, 5 total
+Snapshots:   0 total
+Time:        2.41 s
+Ran all test suites.
