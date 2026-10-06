@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { api } from '@/app/lib/api';
+import { getStoredToken } from '@/app/lib/auth';
 
 export default function NewProductPage() {
   const router = useRouter();
@@ -28,31 +30,12 @@ export default function NewProductPage() {
   const checkDuplicates = async () => {
     if (!formData.name) return;
 
-    const authToken = Buffer.from(
-      JSON.stringify({
-        tenantId: 'c7e3b8a1-1234-5678-9abc-def012345678',
-        userId: 'system',
-        permissions: ['product.create'],
-      })
-    ).toString('base64');
-
-    const res = await fetch(
-      `http://localhost:3001/api/v1/products/detect-duplicates?name=${encodeURIComponent(
-        formData.name
-      )}`,
-      {
-        headers: { Authorization: `Bearer ${authToken}` },
-      }
-    );
-
-    if (res.ok) {
-      const data = await res.json();
-      if (data.length > 0) {
-        setDuplicates(data);
-        setShowDuplicateWarning(true);
-        return true;
-      }
-    }
+    const token = getStoredToken();
+    if (!token) { setError('Please sign in again.'); return true; }
+    try {
+      const data = await api.get<any[]>('/api/v1/products/detect-duplicates?name=' + encodeURIComponent(formData.name), token);
+      if (Array.isArray(data) && data.length) { setDuplicates(data); setShowDuplicateWarning(true); return true; }
+    } catch (err) { setError(err instanceof Error ? err.message : 'Duplicate check failed'); return true; }
     return false;
   };
 
@@ -70,14 +53,8 @@ export default function NewProductPage() {
     setLoading(true);
 
     try {
-      const authToken = Buffer.from(
-        JSON.stringify({
-          tenantId: 'c7e3b8a1-1234-5678-9abc-def012345678',
-          userId: 'system',
-          permissions: ['product.create'],
-        })
-      ).toString('base64');
-
+      const token = getStoredToken();
+      if (!token) throw new Error('Please sign in again.');
       const payload: any = {
         itemCode: formData.itemCode,
         name: formData.name,
@@ -91,38 +68,15 @@ export default function NewProductPage() {
       if (formData.description) payload.description = formData.description;
       if (formData.caseSize) payload.defaultCaseSize = parseInt(formData.caseSize);
 
-      const res = await fetch('http://localhost:3001/api/v1/products', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to create product');
-      }
-
-      const product = await res.json();
-
+      const product = await api.post<{ id: string }>('/api/v1/products', payload, token);
       if (formData.barcode) {
-        await fetch(`http://localhost:3001/api/v1/products/${product.id}/barcodes`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${authToken}`,
-          },
-          body: JSON.stringify({
-            code: formData.barcode,
-            identifierType: 'EAN_13',
-            packagingLevel: 'CONSUMER_UNIT',
-            isPrimary: true,
-          }),
-        });
+        await api.post('/api/v1/products/' + product.id + '/barcodes', {
+          code: formData.barcode,
+          identifierType: formData.barcode.length === 13 ? 'EAN_13' : 'CODE_128',
+          packagingLevel: 'CONSUMER_UNIT',
+          isPrimary: true,
+        }, token);
       }
-
       router.push(`/products/${product.id}`);
     } catch (err: any) {
       setError(err.message);
@@ -131,15 +85,15 @@ export default function NewProductPage() {
   };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="product-form-page">
       <div className="mb-6">
         <Link href="/products" className="text-blue-600 hover:underline">
           ← Back to Products
         </Link>
       </div>
 
-      <div className="bg-white shadow rounded-lg p-6">
-        <h1 className="text-2xl font-bold mb-6">Create Product</h1>
+      <div className="product-form-card">
+        <h1 className="product-form-title">Create Product</h1>
 
         {error && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded text-red-700">
@@ -180,7 +134,7 @@ export default function NewProductPage() {
         )}
 
         <form onSubmit={handleSubmit}>
-          <div className="grid gap-4">
+          <div className="product-form-grid">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Item Code <span className="text-red-500">*</span>
