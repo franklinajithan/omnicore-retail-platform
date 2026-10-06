@@ -1,118 +1,94 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ReactNode } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { ReactNode, useEffect, useState } from 'react';
 import { clearStoredToken } from '@/app/lib/auth';
+
+const groups = [
+  { title: 'Overview', items: [{ href: '/dashboard', label: 'Dashboard', icon: '⌂' }] },
+  { title: 'Catalog', items: [
+    { href: '/products', label: 'Products', icon: '▦' },
+    { href: '/categories', label: 'Categories', icon: '◇' },
+    { href: '/brands', label: 'Brands', icon: '◆' },
+    { href: '/manufacturers', label: 'Manufacturers', icon: '◎' },
+    { href: '/suppliers', label: 'Suppliers', icon: '⇄' },
+  ]},
+  { title: 'Organisation', items: [
+    { href: '/stores', label: 'Stores', icon: '▣' },
+    { href: '/users', label: 'Users', icon: '♙' },
+    { href: '/settings/roles', label: 'Roles & Permissions', icon: '⌘' },
+  ]},
+  { title: 'System', items: [
+    { href: '/audit', label: 'Audit Log', icon: '≡' },
+    { href: '/settings/organisation', label: 'Settings', icon: '⚙' },
+  ]},
+];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => setDrawerOpen(false), [pathname]);
 
   const handleLogout = () => {
     clearStoredToken();
     router.push('/');
   };
 
+  const current = groups.flatMap(g => g.items)
+    .filter(item => pathname === item.href || pathname.startsWith(item.href + '/'))
+    .sort((a,b) => b.href.length - a.href.length)[0];
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <aside style={{
-        width: 250,
-        background: '#1a1a2e',
-        color: 'white',
-        padding: '24px 0',
-      }}>
-        <div style={{ padding: '0 20px', marginBottom: 32 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 600 }}>OmniCore</h2>
-          <p style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>Admin Portal</p>
+    <div className={`app-shell ${collapsed ? 'sidebar-collapsed' : ''}`}>
+      {drawerOpen && <button className="drawer-backdrop" aria-label="Close navigation" onClick={() => setDrawerOpen(false)} />}
+      <aside className={`app-sidebar ${drawerOpen ? 'is-open' : ''}`}>
+        <div className="brand-row">
+          <div className="brand-mark">O</div>
+          <div className="brand-copy"><strong>OmniCore</strong><span>Retail Operations</span></div>
+          <button className="sidebar-collapse" onClick={() => setCollapsed(v => !v)} aria-label="Collapse sidebar">‹</button>
         </div>
-
-        <nav>
-          <NavLink href="/dashboard">Dashboard</NavLink>
-          <NavSection title="Organisation">
-            <NavLink href="/stores">Stores</NavLink>
-            <NavLink href="/users">Users</NavLink>
-            <NavLink href="/settings/roles">Roles & Permissions</NavLink>
-            <NavLink href="/settings/organisation">Settings</NavLink>
-          </NavSection>
-          <NavSection title="System">
-            <NavLink href="/audit">Audit Log</NavLink>
-          </NavSection>
+        <nav className="side-nav" aria-label="Main navigation">
+          {groups.map(group => (
+            <div className="nav-group" key={group.title}>
+              <div className="nav-group-title">{group.title}</div>
+              {group.items.map(item => {
+                const active = pathname === item.href || pathname.startsWith(item.href + '/');
+                return <Link key={item.href} href={item.href} className={`nav-item ${active ? 'active' : ''}`}>
+                  <span className="nav-icon" aria-hidden="true">{item.icon}</span>
+                  <span className="nav-label">{item.label}</span>
+                </Link>;
+              })}
+            </div>
+          ))}
         </nav>
-
-        <div style={{ padding: '0 20px', marginTop: 'auto', paddingTop: 32 }}>
-          <button
-            onClick={handleLogout}
-            style={{
-              background: 'transparent',
-              border: '1px solid #374151',
-              color: 'white',
-              padding: '8px 16px',
-              borderRadius: 6,
-              width: '100%',
-              fontSize: 14,
-            }}
-          >
-            Sign Out
-          </button>
+        <div className="sidebar-footer">
+          <button className="signout-btn" onClick={handleLogout}><span>↪</span><span className="nav-label">Sign out</span></button>
         </div>
       </aside>
 
-      <main style={{ flex: 1, background: '#f5f5f5' }}>
-        <div style={{
-          background: 'white',
-          borderBottom: '1px solid #e5e7eb',
-          padding: '16px 32px',
-          marginBottom: 24,
-        }}>
-          <h1 style={{ fontSize: 24, fontWeight: 600 }}>Administration</h1>
-        </div>
-        <div style={{ padding: '0 32px' }}>
-          {children}
-        </div>
-      </main>
-    </div>
-  );
-}
-
-function NavSection({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <div style={{ marginTop: 24 }}>
-      <div style={{
-        padding: '8px 20px',
-        fontSize: 11,
-        textTransform: 'uppercase',
-        fontWeight: 600,
-        color: '#6b7280',
-        letterSpacing: '0.05em',
-      }}>
-        {title}
+      <div className="app-workspace">
+        <header className="topbar">
+          <div className="topbar-left">
+            <button className="mobile-menu" onClick={() => setDrawerOpen(true)} aria-label="Open navigation">☰</button>
+            <div><div className="breadcrumb">OmniCore / {current?.label || 'Administration'}</div><strong className="topbar-title">{current?.label || 'Administration'}</strong></div>
+          </div>
+          <div className="global-search"><span>⌕</span><input aria-label="Global search" placeholder="Search products, barcodes, suppliers..." /></div>
+          <div className="topbar-actions"><button className="icon-button" aria-label="Notifications">○</button><div className="avatar">AA</div></div>
+        </header>
+        <main className="app-main">{children}</main>
       </div>
-      {children}
-    </div>
-  );
-}
 
-function NavLink({ href, children }: { href: string; children: ReactNode }) {
-  return (
-    <Link
-      href={href}
-      style={{
-        display: 'block',
-        padding: '10px 20px',
-        color: '#d1d5db',
-        fontSize: 14,
-        transition: 'all 0.2s',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = '#16213e';
-        e.currentTarget.style.color = 'white';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = 'transparent';
-        e.currentTarget.style.color = '#d1d5db';
-      }}
-    >
-      {children}
-    </Link>
+      <nav className="bottom-nav" aria-label="Mobile navigation">
+        <Link href="/dashboard" className={pathname.startsWith('/dashboard') ? 'active' : ''}><span>⌂</span><small>Home</small></Link>
+        <Link href="/products" className={pathname.startsWith('/products') ? 'active' : ''}><span>▦</span><small>Products</small></Link>
+        <button onClick={() => setDrawerOpen(true)}><span className="scan-action">⌗</span><small>Scan</small></button>
+        <Link href="/stores" className={pathname.startsWith('/stores') ? 'active' : ''}><span>▣</span><small>Stores</small></Link>
+        <button onClick={() => setDrawerOpen(true)}><span>•••</span><small>More</small></button>
+      </nav>
+    </div>
   );
 }
