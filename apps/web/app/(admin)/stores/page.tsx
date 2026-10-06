@@ -48,7 +48,7 @@ export default function StoresPage() {
       <div className="card" style={{ background: '#fee', border: '1px solid #fcc' }}>
         <p style={{ color: '#c33' }}>Error loading stores: {error}</p>
         <p style={{ fontSize: 13, color: '#666', marginTop: 8 }}>
-          Make sure the API is running on http://localhost:3001
+          We couldn't retrieve store data. Please try again after the API connection is restored.
         </p>
       </div>
     );
