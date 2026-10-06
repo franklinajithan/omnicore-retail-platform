@@ -1,0 +1,35 @@
+
+> @omnicore/web@ typecheck /workspace/apps/web
+> tsc --noEmit
+
+error TS6053: File '/workspace/apps/web/.next/types/app/(admin)/audit/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in '/workspace/apps/web/tsconfig.json'
+error TS6053: File '/workspace/apps/web/.next/types/app/(admin)/dashboard/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in '/workspace/apps/web/tsconfig.json'
+error TS6053: File '/workspace/apps/web/.next/types/app/(admin)/layout.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in '/workspace/apps/web/tsconfig.json'
+error TS6053: File '/workspace/apps/web/.next/types/app/(admin)/settings/organisation/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in '/workspace/apps/web/tsconfig.json'
+error TS6053: File '/workspace/apps/web/.next/types/app/(admin)/settings/roles/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in '/workspace/apps/web/tsconfig.json'
+error TS6053: File '/workspace/apps/web/.next/types/app/(admin)/stores/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in '/workspace/apps/web/tsconfig.json'
+error TS6053: File '/workspace/apps/web/.next/types/app/(admin)/users/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in '/workspace/apps/web/tsconfig.json'
+error TS6053: File '/workspace/apps/web/.next/types/app/layout.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in '/workspace/apps/web/tsconfig.json'
+error TS6053: File '/workspace/apps/web/.next/types/app/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in '/workspace/apps/web/tsconfig.json'
+error TS6053: File '/workspace/apps/web/.next/types/cache-life.d.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in '/workspace/apps/web/tsconfig.json'
+ ELIFECYCLE  Command failed with exit code 2.
