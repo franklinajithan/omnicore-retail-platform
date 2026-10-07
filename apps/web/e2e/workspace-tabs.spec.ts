@@ -131,3 +131,22 @@ test.describe('OmniCore desktop product opening',()=>{
   await expect(page.locator('.productListWorkspace')).toBeVisible();
  });
 });
+
+test.describe('OmniCore workspace tab context menu',()=>{
+ test('right-click menu works on product workspace tabs',async({page})=>{
+  await page.setViewportSize({width:1440,height:900});
+  await page.goto('/products');
+  await page.evaluate(()=>localStorage.clear());
+  await page.reload();
+  const row=page.getByRole('row').filter({hasText:'KABANOS KIELBASA DLA CHLOPA'});
+  await row.dblclick();
+  const tab=page.locator('.workspaceTab').filter({hasText:'17041'});
+  await tab.click({button:'right'});
+  await expect(page.getByRole('menuitem',{name:'Pin tab'})).toBeVisible();
+  await expect(page.getByRole('menuitem',{name:'Duplicate'})).toBeVisible();
+  await expect(page.getByRole('menuitem',{name:'Close others'})).toBeVisible();
+  await expect(page.getByRole('menuitem',{name:'Close'})).toBeVisible();
+  await page.getByRole('menuitem',{name:'Duplicate'}).click();
+  await expect(page.locator('.workspaceTab').filter({hasText:'Copy'})).toHaveCount(1);
+ });
+});
