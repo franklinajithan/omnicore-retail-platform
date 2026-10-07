@@ -1,1 +1,1 @@
-import {contextBridge} from 'electron';contextBridge.exposeInMainWorld('omnicore',{platform:process.platform,version:'0.1.0'});
+import {contextBridge,ipcRenderer} from 'electron';contextBridge.exposeInMainWorld('omnicore',{platform:process.platform,version:'0.1.0',findProduct:(value:string,storeId:string)=>ipcRenderer.invoke('pos:find-product',value,storeId),completeSale:(input:unknown)=>ipcRenderer.invoke('pos:complete-sale',input),sync:()=>ipcRenderer.invoke('pos:sync'),status:()=>ipcRenderer.invoke('pos:status')});
