@@ -303,3 +303,15 @@ small,.muted{line-height:1.4}
  .workspaceTab[title="Dashboard"]>span,.workspaceTab[title="Products"]>span{overflow:visible!important;text-overflow:clip!important}
 }
 @media(max-width:760px){.productApp{display:block!important}}
+
+/* MUI visual foundation */
+:root{--font-ui:Roboto,Arial,sans-serif}
+html,body,button,input,select,textarea{font-family:Roboto,Arial,sans-serif!important}
+body{font-family:Roboto,Arial,sans-serif!important;font-size:14px;letter-spacing:0!important}
+h1,h2,h3,h4,h5,h6{font-family:Roboto,Arial,sans-serif!important;letter-spacing:-.015em!important}
+.nav,.pNav{font-family:Roboto,Arial,sans-serif!important;font-size:13px!important;font-weight:400!important}
+.nav.active,.pNav.active{font-weight:500!important}
+.muiNavIcon{width:19px!important;height:19px!important;flex:0 0 19px!important;opacity:.88}
+.nav.active .muiNavIcon,.pNav.active .muiNavIcon{opacity:1}
+button,input,select{font-family:Roboto,Arial,sans-serif!important}
+.card,.catalog,.pStats>div{border-color:#dfe6ee!important;box-shadow:0 1px 2px rgba(15,23,42,.025)!important}
