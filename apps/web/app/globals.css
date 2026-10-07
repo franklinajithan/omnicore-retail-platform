@@ -467,3 +467,14 @@ body{font-size:15px;line-height:1.5}
 .priceHistoryGrid .gridHead,.priceHistoryGrid .gridRow{grid-template-columns:1.2fr .9fr .9fr .8fr .8fr .7fr 1.4fr 1fr;min-width:980px}
 .auditDetailGrid,.priceHistoryGrid{overflow-x:auto}
 @media(max-width:900px){.auditFilters{grid-template-columns:1fr 1fr}.commonProductDetails .detailGrid,.commonPriceDetails .commercialGrid{grid-template-columns:1fr 1fr}}
+
+/* Product grid: spreadsheet-first rows */
+.excelGrid .prodCell{padding-left:0!important}
+.excelGrid .status{display:inline-flex!important;align-items:center!important;gap:7px!important;background:transparent!important;border:0!important;border-radius:0!important;padding:0!important;font-weight:600!important}
+.excelGrid .status:before{content:"";width:8px;height:8px;border-radius:50%;background:#64748b;display:inline-block;flex:0 0 8px}
+.excelGrid .status.active:before{background:#16a36a}
+.excelGrid .status.low-stock:before{background:#d98a00}
+.excelGrid .status.out-of-stock:before{background:#d92d20}
+.excelGrid .status.inactive:before{background:#64748b}
+.excelGrid .MuiDataGrid-cell--textLeft,.excelGrid .MuiDataGrid-cell--textRight{font-size:14px!important}
+.excelGrid .MuiDataGrid-columnHeaderTitle{font-size:13px!important}
