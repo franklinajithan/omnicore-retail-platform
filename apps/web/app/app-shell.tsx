@@ -1,9 +1,40 @@
 'use client';
 import Link from 'next/link';
 import type {ReactNode} from 'react';
+import DashboardOutlined from '@mui/icons-material/DashboardOutlined';
+import Inventory2Outlined from '@mui/icons-material/Inventory2Outlined';
+import CategoryOutlined from '@mui/icons-material/CategoryOutlined';
+import SellOutlined from '@mui/icons-material/SellOutlined';
+import QrCode2Outlined from '@mui/icons-material/QrCode2Outlined';
+import VerifiedOutlined from '@mui/icons-material/VerifiedOutlined';
+import BusinessOutlined from '@mui/icons-material/BusinessOutlined';
+import InventoryOutlined from '@mui/icons-material/InventoryOutlined';
+import LocalShippingOutlined from '@mui/icons-material/LocalShippingOutlined';
+import ShoppingCartOutlined from '@mui/icons-material/ShoppingCartOutlined';
+import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined';
+import AssignmentReturnOutlined from '@mui/icons-material/AssignmentReturnOutlined';
+import WarehouseOutlined from '@mui/icons-material/WarehouseOutlined';
+import SwapHorizOutlined from '@mui/icons-material/SwapHorizOutlined';
+import FactCheckOutlined from '@mui/icons-material/FactCheckOutlined';
+import DeleteSweepOutlined from '@mui/icons-material/DeleteSweepOutlined';
+import TuneOutlined from '@mui/icons-material/TuneOutlined';
+import PointOfSaleOutlined from '@mui/icons-material/PointOfSaleOutlined';
+import CampaignOutlined from '@mui/icons-material/CampaignOutlined';
+import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined';
+import StoreOutlined from '@mui/icons-material/StoreOutlined';
+import TaskAltOutlined from '@mui/icons-material/TaskAltOutlined';
+import AdminPanelSettingsOutlined from '@mui/icons-material/AdminPanelSettingsOutlined';
+import HistoryOutlined from '@mui/icons-material/HistoryOutlined';
+import PaymentsOutlined from '@mui/icons-material/PaymentsOutlined';
+import AnalyticsOutlined from '@mui/icons-material/AnalyticsOutlined';
+import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
+import HubOutlined from '@mui/icons-material/HubOutlined';
+import ExtensionOutlined from '@mui/icons-material/ExtensionOutlined';
+import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
+import StraightenOutlined from '@mui/icons-material/StraightenOutlined';
 
-const icons:Record<string,string>={Dashboard:'⌂',Products:'▣',Categories:'⌘',Pricing:'£',Barcode:'▥',Boxes:'▦',Supplier:'⇄',Cart:'◫',Orders:'☷',Warehouse:'▤',Transfer:'↔',Scan:'⌗',Waste:'△',Adjust:'≡',Invoice:'▧',Promo:'%',People:'♙',Store:'▱',Shield:'◇',Admin:'♙',File:'▤',Payment:'▰',Chart:'⌁',AI:'✦',Network:'◎',Plug:'⌁',Settings:'⚙'};
-export const Icon=({name}:{name:string})=><span aria-hidden className="glyph">{icons[name]||'•'}</span>;
+const iconMap:Record<string,React.ElementType>={Dashboard:DashboardOutlined,Products:Inventory2Outlined,Categories:CategoryOutlined,Pricing:SellOutlined,Barcode:QrCode2Outlined,Boxes:InventoryOutlined,Supplier:BusinessOutlined,Cart:ShoppingCartOutlined,Orders:ReceiptLongOutlined,Warehouse:WarehouseOutlined,Transfer:SwapHorizOutlined,Scan:FactCheckOutlined,Waste:DeleteSweepOutlined,Adjust:TuneOutlined,Invoice:ReceiptLongOutlined,Promo:CampaignOutlined,People:PeopleAltOutlined,Store:StoreOutlined,Shield:VerifiedOutlined,Admin:AdminPanelSettingsOutlined,File:ReceiptLongOutlined,Payment:PaymentsOutlined,Chart:AnalyticsOutlined,AI:AutoAwesomeOutlined,Network:HubOutlined,Plug:ExtensionOutlined,Settings:SettingsOutlined};
+export const Icon=({name}:{name:string})=>{const C=iconMap[name]||Inventory2Outlined;return <C className="muiNavIcon" aria-hidden fontSize="small"/>};
 export const appNav=[
  ['CORE RETAIL',[['Products','Products','/products'],['Categories','Categories','#'],['Pricing','Pricing','#'],['Barcodes & EANs','Barcode','#'],['Product Passport','Shield','#'],['Brands','Categories','#'],['Units & Packaging','Boxes','#']]],
  ['SUPPLY CHAIN',[['Suppliers','Supplier','#'],['Purchasing','Cart','#'],['Purchase Orders','Orders','#'],['Deliveries','Supplier','#'],['Invoice Matching','Invoice','#'],['Returns & Claims','Transfer','#']]],
