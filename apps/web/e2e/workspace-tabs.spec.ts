@@ -70,4 +70,33 @@ test.describe('OmniCore Chrome-like workspace tabs',()=>{
   await row.dblclick();
   await expect(page.locator('.workspaceTab').filter({hasText:'15953'})).toHaveCount(1);
  });
+ test('product grid behaves like an operational spreadsheet',async({page})=>{
+  const firstRow=page.locator('tbody tr').first();
+  await page.getByRole('columnheader',{name:/STOCK/}).click();
+  await expect(page.getByRole('columnheader',{name:/STOCK/})).toContainText('↑');
+  await page.getByRole('columnheader',{name:/STOCK/}).click();
+  await expect(page.getByRole('columnheader',{name:/STOCK/})).toContainText('↓');
+
+  await page.getByRole('button',{name:/Columns/}).click();
+  const barcodeToggle=page.getByLabel('Barcode / EAN');
+  await barcodeToggle.uncheck();
+  await expect(page.getByRole('columnheader',{name:/BARCODE/})).toHaveCount(0);
+  await barcodeToggle.check();
+  await expect(page.getByRole('columnheader',{name:/BARCODE/})).toBeVisible();
+
+  await firstRow.focus();
+  await expect(firstRow).toHaveAttribute('aria-selected','true');
+  await firstRow.press('ArrowDown');
+  await expect(page.locator('tbody tr').nth(1)).toBeFocused();
+
+  await page.locator('tr[data-product-code="15953"]').focus();
+  await page.locator('tr[data-product-code="15953"]').press('Enter');
+  await expect(page.locator('.workspaceTab').filter({hasText:'15953'})).toHaveCount(1);
+  await expect(page.getByRole('heading',{name:'MLEKPOL MASLO EXTRA 200G'})).toBeVisible();
+
+  await page.locator('.workspaceTab').filter({hasText:'Products'}).click();
+  await page.getByRole('button',{name:/Reset view/}).click();
+  await expect(page.getByRole('columnheader',{name:/BARCODE/})).toBeVisible();
+ });
+
 });
