@@ -42,7 +42,7 @@ test.describe('OmniCore Chrome-like workspace tabs',()=>{
   await tabs.filter({hasText:'Products'}).click();
   await expect(search).toHaveValue('KABANOS');
 
-  await kabanosTab.locator('button').filter({hasText:'×'}).click();
+  await kabanosTab.getByRole('button',{name:'Close tab'}).click();
   await expect(kabanosTab).toHaveCount(0);
   await page.locator('.reopenTab').click();
   await expect(tabs.filter({hasText:'17041'})).toBeVisible();
