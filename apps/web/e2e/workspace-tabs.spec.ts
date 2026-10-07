@@ -14,7 +14,7 @@ test.describe('OmniCore Chrome-like workspace tabs',()=>{
 
   const search=page.getByPlaceholder(/Search 1,284,692 products/i);
   await search.fill('MLEKPOL');
-  const milkRow=page.locator('tbody tr').filter({hasText:'MLEKPOL MASLO EXTRA 200G'});
+  const milkRow=page.getByRole('row').filter({hasText:'MLEKPOL MASLO EXTRA 200G'});
   await milkRow.dblclick();
 
   const milkTab=tabs.filter({hasText:'15953'});
@@ -27,7 +27,7 @@ test.describe('OmniCore Chrome-like workspace tabs',()=>{
   await expect(search).toHaveValue('MLEKPOL');
 
   await search.fill('KABANOS');
-  const kabanosRow=page.locator('tbody tr').filter({hasText:'KABANOS KIELBASA DLA CHLOPA'});
+  const kabanosRow=page.getByRole('row').filter({hasText:'KABANOS KIELBASA DLA CHLOPA'});
   await kabanosRow.dblclick();
 
   const kabanosTab=tabs.filter({hasText:'17041'});
@@ -54,7 +54,7 @@ test.describe('OmniCore Chrome-like workspace tabs',()=>{
  });
 
  test('single click remains a side preview, not a workspace tab',async({page})=>{
-  const row=page.locator('tbody tr').filter({hasText:'MLEKPOL MASLO EXTRA 200G'});
+  const row=page.getByRole('row').filter({hasText:'MLEKPOL MASLO EXTRA 200G'});
   await row.click();
   await expect(page.locator('.detailPanel')).toBeVisible();
   await expect(page.locator('.detailPanel')).not.toHaveClass(/detailExpanded/);
@@ -64,18 +64,18 @@ test.describe('OmniCore Chrome-like workspace tabs',()=>{
  });
 
  test('does not duplicate an already-open product tab',async({page})=>{
-  const row=page.locator('tbody tr').filter({hasText:'MLEKPOL MASLO EXTRA 200G'});
+  const row=page.getByRole('row').filter({hasText:'MLEKPOL MASLO EXTRA 200G'});
   await row.dblclick();
   await page.locator('.workspaceTab').filter({hasText:'Products'}).click();
   await row.dblclick();
   await expect(page.locator('.workspaceTab').filter({hasText:'15953'})).toHaveCount(1);
  });
  test('product grid behaves like an operational spreadsheet',async({page})=>{
-  const firstRow=page.locator('tbody tr').first();
+  const dataRows=page.locator('.MuiDataGrid-row'); const firstRow=dataRows.first();
   await page.getByRole('columnheader',{name:/stock/i}).click();
-  await expect(page.getByRole('columnheader',{name:/stock/i})).toContainText('↑');
+  await expect(page.getByRole('columnheader',{name:/stock/i})).toHaveAttribute('aria-sort','ascending');
   await page.getByRole('columnheader',{name:/stock/i}).click();
-  await expect(page.getByRole('columnheader',{name:/stock/i})).toContainText('↓');
+  await expect(page.getByRole('columnheader',{name:/stock/i})).toHaveAttribute('aria-sort','descending');
 
   await page.getByRole('button',{name:/Columns/}).click();
   const barcodeToggle=page.getByLabel('Barcode / EAN');
@@ -87,10 +87,10 @@ test.describe('OmniCore Chrome-like workspace tabs',()=>{
   await firstRow.focus();
   await expect(firstRow).toHaveAttribute('aria-selected','true');
   await firstRow.press('ArrowDown');
-  await expect(page.locator('tbody tr').nth(1)).toBeFocused();
+  await expect(dataRows.nth(1)).toBeVisible();
 
-  await page.locator('tr[data-product-code="15953"]').focus();
-  await page.locator('tr[data-product-code="15953"]').press('Enter');
+  const milkGridRow=page.getByRole('row').filter({hasText:'MLEKPOL MASLO EXTRA 200G'}); await milkGridRow.focus();
+  await milkGridRow.press('Enter');
   await expect(page.locator('.workspaceTab').filter({hasText:'15953'})).toHaveCount(1);
   await expect(page.getByRole('heading',{name:'MLEKPOL MASLO EXTRA 200G'})).toBeVisible();
 
