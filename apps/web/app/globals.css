@@ -449,3 +449,21 @@ body{font-size:15px;line-height:1.5}
  .productMain .MuiDataGrid-root{font-size:14px}
  .productMain .MuiDataGrid-columnHeaderTitle{font-size:13px!important}
 }
+
+/* Product 360 readability + operational audit grid */
+.commonProductDetails,.commonPriceDetails{margin-bottom:14px!important}
+.commonProductDetails .detailGrid,.commonPriceDetails .commercialGrid{font-size:15px!important}
+.commonProductDetails label,.commonPriceDetails label{font-size:13px!important}
+.commonProductDetails b,.commonPriceDetails b{font-size:15px!important}
+.tabWorkspace{font-size:14px!important}
+.tabWorkspace h3,.sectionTitle h3{font-size:17px!important}
+.tabWorkspace p,.sectionTitle p,.gridHelp,.packNotice{font-size:13px!important}
+.excelMiniGrid{font-size:13px!important}
+.excelMiniGrid .gridHead{font-size:12px!important;font-weight:700!important}
+.excelMiniGrid .gridRow{min-height:38px!important;align-items:center!important}
+.auditFilters{display:grid;grid-template-columns:1.1fr 1.3fr 1fr 1fr 1.25fr auto auto;gap:8px;margin:12px 0 14px}
+.auditFilters select,.auditFilters input,.auditFilters button{min-height:38px;font-size:14px;padding:7px 10px;border:1px solid #ccd7e5;border-radius:7px;background:#fff}
+.auditDetailGrid .gridHead,.auditDetailGrid .gridRow{grid-template-columns:1.2fr 1fr 1.15fr .85fr .9fr .65fr .8fr .75fr .75fr 1.3fr;min-width:1180px}
+.priceHistoryGrid .gridHead,.priceHistoryGrid .gridRow{grid-template-columns:1.2fr .9fr .9fr .8fr .8fr .7fr 1.4fr 1fr;min-width:980px}
+.auditDetailGrid,.priceHistoryGrid{overflow-x:auto}
+@media(max-width:900px){.auditFilters{grid-template-columns:1fr 1fr}.commonProductDetails .detailGrid,.commonPriceDetails .commercialGrid{grid-template-columns:1fr 1fr}}
