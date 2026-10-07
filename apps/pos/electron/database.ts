@@ -1,0 +1,6 @@
+import path from 'path';import fs from 'fs';import {app} from 'electron';
+let db:any;
+export async function openDatabase(){const mod:any=await import('better-sqlite3');const Database=mod.default||mod;const file=path.join(app.getPath('userData'),'omnicore-pos.db');db=new Database(file);db.pragma('journal_mode = WAL');db.pragma('synchronous = NORMAL');db.pragma('foreign_keys = ON');const schema=fs.readFileSync(path.join(__dirname,'../dist/db/schema.sql'),'utf8');db.exec(schema);return db;}
+export function getDb(){if(!db)throw new Error('POS database is not initialized');return db;}
+export function findProduct(value:string,storeId:string){const d=getDb();return d.prepare(`SELECT p.id,p.item_code itemCode,p.name,p.english_name englishName,p.vat_rate vatRate,b.barcode,b.pack_qty packQty,pr.retail_price retailPrice FROM products p LEFT JOIN barcodes b ON b.product_id=p.id LEFT JOIN prices pr ON pr.product_id=p.id AND pr.store_id=? AND pr.effective_from<=datetime('now') AND (pr.effective_to IS NULL OR pr.effective_to>datetime('now')) WHERE p.status='ACTIVE' AND (b.barcode=? OR p.item_code=?) ORDER BY pr.effective_from DESC LIMIT 1`).get(storeId,value,value);}
+export function pendingSales(limit=100){return getDb().prepare("SELECT * FROM sales WHERE sync_status IN ('PENDING','RETRY') ORDER BY created_at LIMIT ?").all(limit);}
