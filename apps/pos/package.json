@@ -7,14 +7,14 @@
     "dev": "concurrently \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5174 && electron .\"",
     "build": "tsc -p tsconfig.electron.json && vite build && electron-builder --win nsis",
     "preview": "vite preview",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-rebuild -f -w better-sqlite3"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "latest",
+    "@vitejs/plugin-react": "4.3.4",
     "electron-store": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "vite": "latest",
+    "vite": "5.4.14",
     "zustand": "latest",
     "better-sqlite3": "^12.4.1"
   },
@@ -22,12 +22,13 @@
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
-    "concurrently": "latest",
-    "electron": "latest",
-    "electron-builder": "latest",
-    "typescript": "latest",
-    "wait-on": "latest",
-    "@types/better-sqlite3": "latest"
+    "concurrently": "9.1.2",
+    "electron": "33.4.11",
+    "electron-builder": "25.1.8",
+    "typescript": "5.7.3",
+    "wait-on": "8.0.2",
+    "@types/better-sqlite3": "latest",
+    "@electron/rebuild": "3.7.2"
   },
   "build": {
     "appId": "com.omnicore.pos",
