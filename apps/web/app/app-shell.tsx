@@ -32,8 +32,21 @@ import HubOutlined from '@mui/icons-material/HubOutlined';
 import ExtensionOutlined from '@mui/icons-material/ExtensionOutlined';
 import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
 import StraightenOutlined from '@mui/icons-material/StraightenOutlined';
+import SearchOutlined from '@mui/icons-material/SearchOutlined';
+import NotificationsNoneOutlined from '@mui/icons-material/NotificationsNoneOutlined';
+import TrendingUpOutlined from '@mui/icons-material/TrendingUpOutlined';
+import WarningAmberOutlined from '@mui/icons-material/WarningAmberOutlined';
+import MenuOutlined from '@mui/icons-material/MenuOutlined';
+import MoreHorizOutlined from '@mui/icons-material/MoreHorizOutlined';
+import CloseOutlined from '@mui/icons-material/CloseOutlined';
+import AddOutlined from '@mui/icons-material/AddOutlined';
+import UploadOutlined from '@mui/icons-material/UploadOutlined';
+import DownloadOutlined from '@mui/icons-material/DownloadOutlined';
+import OpenInFullOutlined from '@mui/icons-material/OpenInFullOutlined';
+import RestartAltOutlined from '@mui/icons-material/RestartAltOutlined';
+import ViewColumnOutlined from '@mui/icons-material/ViewColumnOutlined';
 
-const iconMap:Record<string,React.ElementType>={Dashboard:DashboardOutlined,Products:Inventory2Outlined,Categories:CategoryOutlined,Pricing:SellOutlined,Barcode:QrCode2Outlined,Boxes:InventoryOutlined,Supplier:BusinessOutlined,Cart:ShoppingCartOutlined,Orders:ReceiptLongOutlined,Warehouse:WarehouseOutlined,Transfer:SwapHorizOutlined,Scan:FactCheckOutlined,Waste:DeleteSweepOutlined,Adjust:TuneOutlined,Invoice:ReceiptLongOutlined,Promo:CampaignOutlined,People:PeopleAltOutlined,Store:StoreOutlined,Shield:VerifiedOutlined,Admin:AdminPanelSettingsOutlined,File:ReceiptLongOutlined,Payment:PaymentsOutlined,Chart:AnalyticsOutlined,AI:AutoAwesomeOutlined,Network:HubOutlined,Plug:ExtensionOutlined,Settings:SettingsOutlined};
+const iconMap:Record<string,React.ElementType>={Dashboard:DashboardOutlined,Products:Inventory2Outlined,Categories:CategoryOutlined,Pricing:SellOutlined,Barcode:QrCode2Outlined,Boxes:InventoryOutlined,Supplier:BusinessOutlined,Cart:ShoppingCartOutlined,Orders:ReceiptLongOutlined,Warehouse:WarehouseOutlined,Transfer:SwapHorizOutlined,Scan:FactCheckOutlined,Waste:DeleteSweepOutlined,Adjust:TuneOutlined,Invoice:ReceiptLongOutlined,Promo:CampaignOutlined,People:PeopleAltOutlined,Store:StoreOutlined,Shield:VerifiedOutlined,Admin:AdminPanelSettingsOutlined,File:ReceiptLongOutlined,Payment:PaymentsOutlined,Chart:AnalyticsOutlined,AI:AutoAwesomeOutlined,Network:HubOutlined,Plug:ExtensionOutlined,Settings:SettingsOutlined,Search:SearchOutlined,Bell:NotificationsNoneOutlined,Trend:TrendingUpOutlined,Alert:WarningAmberOutlined,ProductsOpen:Inventory2Outlined,Menu:MenuOutlined,More:MoreHorizOutlined,Close:CloseOutlined,Add:AddOutlined,Upload:UploadOutlined,Download:DownloadOutlined,Expand:OpenInFullOutlined,Reset:RestartAltOutlined,Columns:ViewColumnOutlined};
 export const Icon=({name}:{name:string})=>{const C=iconMap[name]||Inventory2Outlined;return <C className="muiNavIcon" aria-hidden fontSize="small"/>};
 export const appNav=[
  ['CORE RETAIL',[['Products','Products','/products'],['Categories','Categories','#'],['Pricing','Pricing','#'],['Barcodes & EANs','Barcode','#'],['Product Passport','Shield','#'],['Brands','Categories','#'],['Units & Packaging','Boxes','#']]],
