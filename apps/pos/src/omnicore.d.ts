@@ -1,0 +1,1 @@
+export {};declare global{interface Window{omnicore:{platform:string;version:string;findProduct:(value:string,storeId:string)=>Promise<any>;completeSale:(input:any)=>Promise<{id:string;receipt:string;total:number;createdAt:string;syncStatus:string}>;sync:()=>Promise<{synced:number;pending:number}>;status:()=>Promise<{pending:number}>}}}
