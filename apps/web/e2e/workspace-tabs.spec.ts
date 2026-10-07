@@ -115,3 +115,19 @@ test.describe('OmniCore mobile product grid',()=>{
   await expect(page.getByRole('heading',{name:'MLEKPOL MASLO EXTRA 200G'})).toBeVisible();
  });
 });
+
+test.describe('OmniCore desktop product opening',()=>{
+ test('desktop double click opens Product 360 in a Chrome-style workspace tab',async({page})=>{
+  await page.setViewportSize({width:1440,height:900});
+  await page.goto('/products');
+  await page.evaluate(()=>localStorage.clear());
+  await page.reload();
+  const row=page.getByRole('row').filter({hasText:'MLEKPOL MASLO EXTRA 200G'});
+  await row.dblclick();
+  await expect(page.locator('.workspaceTab').filter({hasText:'15953'})).toHaveCount(1);
+  await expect(page.getByRole('heading',{name:'MLEKPOL MASLO EXTRA 200G'})).toBeVisible();
+  await expect(page.locator('.productListWorkspace')).toBeHidden();
+  await page.locator('.workspaceTab').filter({hasText:'Products'}).click();
+  await expect(page.locator('.productListWorkspace')).toBeVisible();
+ });
+});
