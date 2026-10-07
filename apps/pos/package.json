@@ -19,7 +19,7 @@
     "better-sqlite3": "^12.4.1"
   },
   "devDependencies": {
-    "@types/node": "latest",
+    "@types/node": "22.15.3",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "concurrently": "9.1.2",
