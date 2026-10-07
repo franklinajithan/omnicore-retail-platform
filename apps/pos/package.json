@@ -4,10 +4,11 @@
   "private": true,
   "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "tsc -p tsconfig.electron.json && concurrently \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5174 && electron .\"",
-    "build": "tsc -p tsconfig.electron.json && vite build && electron-builder --win nsis",
+    "dev": "pnpm copy-db-schema && tsc -p tsconfig.electron.json && concurrently \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5174 && electron .\"",
+    "build": "pnpm copy-db-schema && tsc -p tsconfig.electron.json && vite build && electron-builder --win nsis",
     "preview": "vite preview",
-    "postinstall": "electron-rebuild -f -w better-sqlite3"
+    "postinstall": "electron-rebuild -f -w better-sqlite3",
+    "copy-db-schema": "node -e \"require('fs').mkdirSync('dist/db',{recursive:true});require('fs').copyFileSync('src/db/schema.sql','dist/db/schema.sql')\""
   },
   "dependencies": {
     "@vitejs/plugin-react": "4.3.4",
