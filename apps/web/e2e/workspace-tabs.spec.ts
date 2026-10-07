@@ -100,3 +100,17 @@ test.describe('OmniCore Chrome-like workspace tabs',()=>{
  });
 
 });
+
+test.describe('OmniCore mobile product grid',()=>{
+ test('mobile double tap opens a Chrome-style product workspace tab',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.goto('/products');
+  await page.evaluate(()=>localStorage.clear());
+  await page.reload();
+  const row=page.getByRole('row').filter({hasText:'MLEKPOL MASLO EXTRA 200G'});
+  await row.click();
+  await row.click();
+  await expect(page.locator('.workspaceTab').filter({hasText:'15953'})).toHaveCount(1);
+  await expect(page.getByRole('heading',{name:'MLEKPOL MASLO EXTRA 200G'})).toBeVisible();
+ });
+});
