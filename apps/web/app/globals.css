@@ -195,3 +195,12 @@ td,.gridRow{font-size:13px}
 .workspaceTab{font-size:12px;font-weight:550;letter-spacing:-.005em}
 .mono,.barcode,.itemCode{font-family:var(--font-mono)!important;letter-spacing:-.015em}
 small,.muted{line-height:1.4}
+
+/* Excel-style Product grid interactions */
+.productTable th{position:sticky;top:0;user-select:none;cursor:pointer;white-space:nowrap}
+.productTable th{position:relative}
+.columnResizer{position:absolute;right:-3px;top:0;width:7px;height:100%;cursor:col-resize;z-index:4}
+.productTable tr.gridSelected td{background:#eaf3ff!important;box-shadow:inset 0 1px #b8d4fb,inset 0 -1px #b8d4fb}
+.productTable tbody tr:focus{outline:2px solid #2563eb;outline-offset:-2px}
+.productTable tbody tr{cursor:default}
+.productTable td{overflow:hidden;text-overflow:ellipsis}
