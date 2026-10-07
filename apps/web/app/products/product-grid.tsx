@@ -1,28 +1,45 @@
 'use client';
-import {useEffect,useMemo,useRef,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
+import {Box,Button,Checkbox,FormControlLabel,MenuItem,Paper,Select,Stack,Typography} from '@mui/material';
+import {DataGrid,GridColDef,GridColumnVisibilityModel,GridRowParams,GridSortModel} from '@mui/x-data-grid';
 import type {Product} from './page';
 import {Icon} from '../app-shell';
 
 type Key='product'|'itemCode'|'barcode'|'category'|'supplier'|'cost'|'retail'|'margin'|'stock'|'status';
 const labels:Record<Key,string>={product:'Product',itemCode:'Item Code',barcode:'Barcode / EAN',category:'Category',supplier:'Primary Supplier',cost:'Cost',retail:'Retail',margin:'Margin',stock:'Stock',status:'Status'};
 const defaults:Key[]=['product','itemCode','barcode','category','supplier','cost','retail','margin','stock','status'];
-const storageKey='omnicore-product-grid-v2';
+const storageKey='omnicore-product-grid-v3';
 
 export default function ProductGrid({rows,workingStore,onPreview,onOpen}:{rows:Product[];workingStore:string;onPreview:(p:Product)=>void;onOpen:(p:Product)=>void}){
- const[order,setOrder]=useState<Key[]>(defaults);const[hidden,setHidden]=useState<Key[]>([]);const[widths,setWidths]=useState<Record<string,number>>({});const[density,setDensity]=useState<'Compact'|'Comfortable'>('Compact');const[sort,setSort]=useState<{key:Key;dir:'asc'|'desc'}|null>(null);const[selected,setSelected]=useState<string|null>(null);const[chooser,setChooser]=useState(false);const clickTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
- useEffect(()=>{try{const s=JSON.parse(localStorage.getItem(storageKey)||'{}');if(Array.isArray(s.order))setOrder(s.order.filter((x:string)=>defaults.includes(x as Key)));if(Array.isArray(s.hidden))setHidden(s.hidden);if(s.widths)setWidths(s.widths);if(s.density)setDensity(s.density);if(s.sort)setSort(s.sort)}catch{}},[]);
- useEffect(()=>{try{localStorage.setItem(storageKey,JSON.stringify({order,hidden,widths,density,sort}))}catch{}},[order,hidden,widths,density,sort]);
- const value=(p:Product,k:Key):string|number=>k==='product'?p.name:k==='margin'?(p.retail-p.cost)/p.retail:p[k as keyof Product] as string|number;
- const sorted=useMemo(()=>{if(!sort)return rows;return [...rows].sort((a,b)=>{const av=value(a,sort.key),bv=value(b,sort.key);const n=typeof av==='number'&&typeof bv==='number'?av-bv:String(av).localeCompare(String(bv),undefined,{numeric:true});return sort.dir==='asc'?n:-n})},[rows,sort]);
- const sortBy=(key:Key)=>setSort(s=>s?.key===key?{key,dir:s.dir==='asc'?'desc':'asc'}:{key,dir:'asc'});
- const toggle=(key:Key)=>setHidden(v=>v.includes(key)?v.filter(x=>x!==key):[...v,key]);
- const reset=()=>{setOrder(defaults);setHidden([]);setWidths({});setDensity('Compact');setSort(null);try{localStorage.removeItem(storageKey)}catch{}};
- const move=(from:Key,to:Key)=>setOrder(v=>{const n=v.filter(x=>x!==from);n.splice(n.indexOf(to),0,from);return n});
- const resize=(key:Key,e:React.PointerEvent)=>{e.preventDefault();e.stopPropagation();const start=e.clientX,base=widths[key]||140;const move=(ev:PointerEvent)=>setWidths(w=>({...w,[key]:Math.max(70,base+ev.clientX-start)}));const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up)};window.addEventListener('pointermove',move);window.addEventListener('pointerup',up)};
- const copy=async(p:Product)=>{const text=order.filter(k=>!hidden.includes(k)).map(k=>String(value(p,k))).join('\t');try{await navigator.clipboard.writeText(text)}catch{}};
- const keyDown=(e:React.KeyboardEvent<HTMLTableRowElement>,p:Product)=>{const i=sorted.findIndex(x=>x.itemCode===p.itemCode);if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='c'){e.preventDefault();void copy(p)}else if(e.key==='Enter'){e.preventDefault();onOpen(p)}else if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const ni=Math.max(0,Math.min(sorted.length-1,i+(e.key==='ArrowDown'?1:-1))),code=sorted[ni]?.itemCode;setSelected(code||null);document.querySelector<HTMLTableRowElement>('tr[data-product-code="'+code+'"]')?.focus()}};
- const cell=(p:Product,k:Key)=>{const margin=Math.round((p.retail-p.cost)/p.retail*100);if(k==='product')return <div className="prodCell"><span className="prodImg"><Icon name="Products"/></span><div><b>{p.name}</b><small>{p.alt}</small></div></div>;if(k==='cost')return <>£{p.cost.toFixed(2)}</>;if(k==='retail')return <b>£{p.retail.toFixed(2)}</b>;if(k==='margin')return <span className="good">{margin}%</span>;if(k==='status')return <span className={'status '+p.status.toLowerCase().replaceAll(' ','-')}>{p.status}</span>;if(k==='itemCode'||k==='stock')return <b>{p[k]}</b>;return <>{p[k as 'barcode'|'category'|'supplier']}</>};
- return <><div className="gridToolbar"><b>Product grid · {workingStore}</b><span>Excel mode · sort, resize, reorder, hide, keyboard navigation & copy</span><button onClick={()=>setChooser(!chooser)}><Icon name="Columns"/> Columns</button><select value={density} onChange={e=>setDensity(e.target.value as 'Compact'|'Comfortable')}><option>Compact</option><option>Comfortable</option></select><button onClick={reset}><Icon name="Reset"/> Reset view</button></div>
- {chooser&&<div className="columnChooser"><b>Columns</b>{order.map(k=><label key={k}><input type="checkbox" checked={!hidden.includes(k)} onChange={()=>toggle(k)}/> {labels[k]}</label>)}</div>}
- <div className="tableWrap"><table className={'productTable excelGrid '+density.toLowerCase()}><thead><tr>{order.filter(k=>!hidden.includes(k)).map(k=><th key={k} draggable onDragStart={e=>e.dataTransfer.setData('text/plain',k)} onDragOver={e=>e.preventDefault()} onDrop={e=>move(e.dataTransfer.getData('text/plain') as Key,k)} onClick={()=>sortBy(k)} style={widths[k]?{width:widths[k],minWidth:widths[k]}:undefined}>{labels[k]} {sort?.key===k?(sort.dir==='asc'?'↑':'↓'):''}<i className="columnResizer" onPointerDown={e=>resize(k,e)}/></th>)}<th/></tr></thead><tbody>{sorted.map(p=><tr key={p.itemCode} data-product-code={p.itemCode} tabIndex={0} aria-selected={selected===p.itemCode} className={selected===p.itemCode?'gridSelected':''} onFocus={()=>setSelected(p.itemCode)} onKeyDown={e=>keyDown(e,p)} onClick={()=>{setSelected(p.itemCode);if(clickTimer.current)clearTimeout(clickTimer.current);clickTimer.current=setTimeout(()=>onPreview(p),220)}} onDoubleClick={()=>{if(clickTimer.current)clearTimeout(clickTimer.current);onOpen(p)}}>{order.filter(k=>!hidden.includes(k)).map(k=><td key={k} className={k==='barcode'?'mono':undefined} style={widths[k]?{width:widths[k],minWidth:widths[k]}:undefined}>{cell(p,k)}</td>)}<td>›</td></tr>)}</tbody></table></div></>
+ const[density,setDensity]=useState<'compact'|'standard'>('compact');const[visibility,setVisibility]=useState<GridColumnVisibilityModel>({});const[sortModel,setSortModel]=useState<GridSortModel>([]);const[chooser,setChooser]=useState(false);
+ useEffect(()=>{try{const s=JSON.parse(localStorage.getItem(storageKey)||'{}');if(s.density)setDensity(s.density);if(s.visibility)setVisibility(s.visibility);if(s.sortModel)setSortModel(s.sortModel)}catch{}},[]);
+ useEffect(()=>{try{localStorage.setItem(storageKey,JSON.stringify({density,visibility,sortModel}))}catch{}},[density,visibility,sortModel]);
+ const data=useMemo(()=>rows.map(p=>({...p,id:p.itemCode,product:p.name,margin:Math.round((p.retail-p.cost)/p.retail*100)})),[rows]);
+ const columns=useMemo<GridColDef[]>(()=>[
+  {field:'product',headerName:labels.product,minWidth:260,flex:1,renderCell:p=><div className="prodCell"><span className="prodImg"><Icon name="Products"/></span><div><b>{p.row.name}</b><small>{p.row.alt}</small></div></div>},
+  {field:'itemCode',headerName:labels.itemCode,width:110},
+  {field:'barcode',headerName:labels.barcode,width:155},
+  {field:'category',headerName:labels.category,width:120},
+  {field:'supplier',headerName:labels.supplier,width:160},
+  {field:'cost',headerName:labels.cost,width:90,type:'number',valueFormatter:v=>'£'+Number(v).toFixed(2)},
+  {field:'retail',headerName:labels.retail,width:90,type:'number',valueFormatter:v=>'£'+Number(v).toFixed(2)},
+  {field:'margin',headerName:labels.margin,width:90,type:'number',valueFormatter:v=>v+'%'},
+  {field:'stock',headerName:labels.stock,width:85,type:'number'},
+  {field:'status',headerName:labels.status,width:125,renderCell:p=><span className={'status '+String(p.value).toLowerCase().replaceAll(' ','-')}>{p.value}</span>}
+ ],[]);
+ const reset=()=>{setDensity('compact');setVisibility({});setSortModel([]);try{localStorage.removeItem(storageKey)}catch{}};
+ const copyRow=async(p:Product)=>{const text=defaults.filter(k=>visibility[k]!==false).map(k=>k==='product'?p.name:k==='margin'?Math.round((p.retail-p.cost)/p.retail*100):String(p[k as keyof Product])).join('\t');try{await navigator.clipboard.writeText(text)}catch{}};
+ const find=(id:unknown)=>rows.find(p=>p.itemCode===String(id));
+ return <Box>
+  <Paper className="gridToolbar" variant="outlined"><Stack direction="row" spacing={1} alignItems="center" sx={{width:'100%',flexWrap:'wrap'}}>
+   <Typography fontWeight={600}>Product grid · {workingStore}</Typography><Typography variant="body2" color="text.secondary" sx={{flex:1}}>Excel mode · sort, resize, reorder, hide, keyboard navigation & copy</Typography>
+   <Button variant="outlined" size="small" startIcon={<Icon name="Columns"/>} onClick={()=>setChooser(!chooser)}>Columns</Button>
+   <Select size="small" value={density} onChange={e=>setDensity(e.target.value as 'compact'|'standard')}><MenuItem value="compact">Compact</MenuItem><MenuItem value="standard">Comfortable</MenuItem></Select>
+   <Button variant="outlined" size="small" startIcon={<Icon name="Reset"/>} onClick={reset}>Reset view</Button>
+  </Stack></Paper>
+  {chooser&&<Paper className="columnChooser" elevation={3}><Typography fontWeight={600}>Columns</Typography>{defaults.map(k=><FormControlLabel key={k} control={<Checkbox size="small" checked={visibility[k]!==false} onChange={()=>setVisibility(v=>({...v,[k]:v[k]===false}))}/>} label={labels[k]}/>)}</Paper>}
+  <Box className="tableWrap" sx={{height:520,width:'100%'}}>
+   <DataGrid className="productTable excelGrid" rows={data} columns={columns} density={density} disableRowSelectionOnClick={false} columnVisibilityModel={visibility} onColumnVisibilityModelChange={setVisibility} sortModel={sortModel} onSortModelChange={setSortModel} onRowClick={(p:GridRowParams)=>{const x=find(p.id);if(x)onPreview(x)}} onRowDoubleClick={(p:GridRowParams)=>{const x=find(p.id);if(x)onOpen(x)}} onCellKeyDown={(p,e)=>{const x=find(p.id);if(!x)return;if(e.key==='Enter'){e.preventDefault();onOpen(x)}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='c'){e.preventDefault();void copyRow(x)}}} pageSizeOptions={[25,50,100]} initialState={{pagination:{paginationModel:{pageSize:25,page:0}}}} sx={{border:0,'& .MuiDataGrid-columnHeaders':{backgroundColor:'#f5f7fa'},'& .MuiDataGrid-cell:focus,& .MuiDataGrid-columnHeader:focus':{outline:'2px solid #1769e0',outlineOffset:-2}}}/>
+  </Box>
+ </Box>
 }
