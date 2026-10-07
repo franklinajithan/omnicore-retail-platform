@@ -141,3 +141,11 @@
 @media(max-width:760px){.intelList{grid-template-columns:1fr}.productTabs{padding-bottom:4px}}
 
 .supplierGrid .gridHead,.supplierGrid .gridRow{grid-template-columns:1.15fr 1.25fr 1.45fr .8fr .7fr .85fr .8fr .8fr .75fr .65fr .7fr;min-width:1150px}.supplierGrid .preferredSupplier{background:#eef7ff}.supplierRule{display:flex;flex-direction:column;gap:3px;margin-top:12px;background:#f5f8fc;border:1px solid #dce5ef;border-radius:7px;padding:10px}.supplierRule b{font-size:9px;color:#1c3857}.supplierRule span{font-size:8px;color:#74869d;line-height:1.45}
+
+/* Desktop shell guard: prevent mobile drawer rules leaking into desktop */
+@media (min-width:761px){
+  .app{display:grid!important;grid-template-columns:248px minmax(0,1fr)!important}
+  .side,.side.open{display:block!important;position:sticky!important;left:auto!important;top:0!important;width:248px!important;max-width:248px!important;height:100vh!important;transform:none!important;z-index:10!important;box-shadow:none!important}
+  .drawerBackdrop,.drawerBackdrop.open,.side .drawerClose{display:none!important}
+  .main{grid-column:2;min-width:0;width:auto!important}
+}
