@@ -18,7 +18,8 @@
     "@fontsource/roboto": "^5.2.6",
     "@mui/icons-material": "^7.3.4",
     "@mui/material": "^7.3.4",
-    "@mui/x-data-grid": "^8.14.1"
+    "ag-grid-react": "^36.2.0",
+    "ag-grid-community": "^36.2.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
