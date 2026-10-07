@@ -42,6 +42,7 @@ model Tenant {
   balances  StockBalance[]
   receipts  GoodsReceipt[]
   users     TenantUser[]
+  posSales  PosSale[]
 }
 
 model TenantUser {
@@ -63,6 +64,7 @@ model Store {
   balances  StockBalance[]
   movements StockMovement[]
   receipts  GoodsReceipt[]
+  posSales  PosSale[]
   @@unique([tenantId, code])
   @@unique([id, tenantId])
 }
@@ -82,6 +84,7 @@ model Product {
   movements   StockMovement[]
   orderLines  PurchaseOrderLine[]
   receiptLines GoodsReceiptLine[]
+  posLines     PosSaleLine[]
   @@unique([tenantId, sku])
   @@unique([id, tenantId])
 }
@@ -197,4 +200,53 @@ model GoodsReceiptLine {
   receivedQuantity Decimal @db.Decimal(18, 3)
   receipt          GoodsReceipt @relation(fields: [receiptId], references: [id])
   product          Product @relation(fields: [productId], references: [id])
+}
+
+
+model PosSale {
+  id             String   @id @db.Uuid
+  tenantId       String   @db.Uuid
+  storeId        String   @db.Uuid
+  tillId         String
+  cashierId      String
+  receiptNo      String
+  idempotencyKey String
+  total          Decimal  @db.Decimal(18, 2)
+  status         String   @default("COMPLETED")
+  soldAt         DateTime
+  receivedAt     DateTime @default(now())
+  tenant         Tenant   @relation(fields: [tenantId], references: [id])
+  store          Store    @relation(fields: [storeId, tenantId], references: [id, tenantId])
+  lines          PosSaleLine[]
+  payments       PosPayment[]
+  @@unique([tenantId, idempotencyKey])
+  @@unique([tenantId, receiptNo])
+  @@index([tenantId, storeId, soldAt])
+}
+
+model PosSaleLine {
+  id        String  @id @default(uuid()) @db.Uuid
+  saleId    String  @db.Uuid
+  productId String  @db.Uuid
+  itemCode  String
+  barcode   String?
+  name      String
+  quantity  Decimal @db.Decimal(18, 3)
+  unitPrice Decimal @db.Decimal(18, 2)
+  vatRate   Decimal @db.Decimal(8, 4)
+  lineTotal Decimal @db.Decimal(18, 2)
+  sale      PosSale @relation(fields: [saleId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+  @@index([saleId])
+  @@index([productId])
+}
+
+model PosPayment {
+  id        String @id @default(uuid()) @db.Uuid
+  saleId    String @db.Uuid
+  method    String
+  amount    Decimal @db.Decimal(18, 2)
+  reference String?
+  sale      PosSale @relation(fields: [saleId], references: [id])
+  @@index([saleId])
 }
