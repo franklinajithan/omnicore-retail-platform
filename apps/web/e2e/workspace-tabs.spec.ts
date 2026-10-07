@@ -72,17 +72,17 @@ test.describe('OmniCore Chrome-like workspace tabs',()=>{
  });
  test('product grid behaves like an operational spreadsheet',async({page})=>{
   const firstRow=page.locator('tbody tr').first();
-  await page.getByRole('columnheader',{name:/STOCK/}).click();
-  await expect(page.getByRole('columnheader',{name:/STOCK/})).toContainText('↑');
-  await page.getByRole('columnheader',{name:/STOCK/}).click();
-  await expect(page.getByRole('columnheader',{name:/STOCK/})).toContainText('↓');
+  await page.getByRole('columnheader',{name:/stock/i}).click();
+  await expect(page.getByRole('columnheader',{name:/stock/i})).toContainText('↑');
+  await page.getByRole('columnheader',{name:/stock/i}).click();
+  await expect(page.getByRole('columnheader',{name:/stock/i})).toContainText('↓');
 
   await page.getByRole('button',{name:/Columns/}).click();
   const barcodeToggle=page.getByLabel('Barcode / EAN');
   await barcodeToggle.uncheck();
-  await expect(page.getByRole('columnheader',{name:/BARCODE/})).toHaveCount(0);
+  await expect(page.getByRole('columnheader',{name:/barcode/i})).toHaveCount(0);
   await barcodeToggle.check();
-  await expect(page.getByRole('columnheader',{name:/BARCODE/})).toBeVisible();
+  await expect(page.getByRole('columnheader',{name:/barcode/i})).toBeVisible();
 
   await firstRow.focus();
   await expect(firstRow).toHaveAttribute('aria-selected','true');
@@ -96,7 +96,7 @@ test.describe('OmniCore Chrome-like workspace tabs',()=>{
 
   await page.locator('.workspaceTab').filter({hasText:'Products'}).click();
   await page.getByRole('button',{name:/Reset view/}).click();
-  await expect(page.getByRole('columnheader',{name:/BARCODE/})).toBeVisible();
+  await expect(page.getByRole('columnheader',{name:/barcode/i})).toBeVisible();
  });
 
 });
