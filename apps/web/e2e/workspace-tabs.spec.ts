@@ -150,3 +150,17 @@ test.describe('OmniCore workspace tab context menu',()=>{
   await expect(page.locator('.workspaceTab').filter({hasText:'Copy'})).toHaveCount(1);
  });
 });
+
+test.describe('OmniCore Products root tab isolation',()=>{
+ test('stale Dashboard storage cannot replace Products root tab',async({page})=>{
+  await page.goto('/products');
+  await page.evaluate(()=>{
+   localStorage.setItem('omnicore-tabs',JSON.stringify([{id:'dashboard',title:'Dashboard',href:'/',pinned:true},{id:'product-15953',title:'15953 · MLEKPOL MASLO EXTRA 200G',href:'/products?item=15953'}]));
+   localStorage.setItem('omnicore-active-tab','dashboard');
+  });
+  await page.reload();
+  await expect(page.locator('.workspaceTab').filter({hasText:'Products'})).toHaveCount(1);
+  await expect(page.locator('.workspaceTab').filter({hasText:'Dashboard'})).toHaveCount(0);
+  await expect(page.locator('.workspaceTab').first()).toContainText('Products');
+ });
+});
