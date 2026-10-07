@@ -84,7 +84,7 @@ test.describe('OmniCore Chrome-like workspace tabs',()=>{
   await barcodeToggle.check();
   await expect(page.getByRole('columnheader',{name:/barcode/i})).toBeVisible();
 
-  await firstRow.focus();
+  await firstRow.click();
   await expect(firstRow).toHaveAttribute('aria-selected','true');
   await firstRow.press('ArrowDown');
   await expect(dataRows.nth(1)).toBeVisible();
@@ -109,6 +109,7 @@ test.describe('OmniCore mobile product grid',()=>{
   await page.reload();
   const row=page.getByRole('row').filter({hasText:'MLEKPOL MASLO EXTRA 200G'});
   await row.click();
+  await page.waitForTimeout(120);
   await row.click();
   await expect(page.locator('.workspaceTab').filter({hasText:'15953'})).toHaveCount(1);
   await expect(page.getByRole('heading',{name:'MLEKPOL MASLO EXTRA 200G'})).toBeVisible();
