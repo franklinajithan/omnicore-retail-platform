@@ -385,3 +385,38 @@ button{font-weight:500}
 /* Expanded Product 360 occupies content only; header/tabs stay Chrome-like and clickable. */
 .workspaceDetailBackdrop{position:fixed!important;top:64px!important;left:var(--sidebar-width,240px)!important;right:0!important;bottom:0!important;z-index:30!important}
 @media(max-width:760px){.workspaceDetailBackdrop{left:0!important;top:126px!important}.pTop{z-index:120!important}}
+
+
+/* Product 360 readability: larger desktop type without changing the compact layout */
+@media(min-width:761px){
+ .expandedBackdrop .detailPanel,
+ .workspaceDetailBackdrop .detailPanel{font-size:14px!important}
+ .expandedBackdrop .detailHero h2,
+ .workspaceDetailBackdrop .detailHero h2{font-size:21px!important}
+ .expandedBackdrop .detailHero p,
+ .workspaceDetailBackdrop .detailHero p{font-size:13px!important}
+ .expandedBackdrop .productTabs,
+ .workspaceDetailBackdrop .productTabs{font-size:13px!important}
+ .expandedBackdrop .productTabs button,
+ .workspaceDetailBackdrop .productTabs button{font-size:13px!important}
+ .expandedBackdrop .detailSection h3,
+ .workspaceDetailBackdrop .detailSection h3{font-size:15px!important}
+ .expandedBackdrop .detailSection label,
+ .workspaceDetailBackdrop .detailSection label{font-size:11px!important}
+ .expandedBackdrop .detailSection b,
+ .expandedBackdrop .detailSection strong,
+ .workspaceDetailBackdrop .detailSection b,
+ .workspaceDetailBackdrop .detailSection strong{font-size:14px!important}
+ .expandedBackdrop .detailSection p,
+ .expandedBackdrop .detailSection span,
+ .workspaceDetailBackdrop .detailSection p,
+ .workspaceDetailBackdrop .detailSection span{font-size:12px!important}
+ .expandedBackdrop .coreIdentity,
+ .workspaceDetailBackdrop .coreIdentity{font-size:13px!important}
+ .expandedBackdrop .coreIdentity b,
+ .expandedBackdrop .coreIdentity strong,
+ .workspaceDetailBackdrop .coreIdentity b,
+ .workspaceDetailBackdrop .coreIdentity strong{font-size:15px!important}
+ .expandedBackdrop .storeStrip,
+ .workspaceDetailBackdrop .storeStrip{font-size:12px!important}
+}
