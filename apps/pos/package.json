@@ -1,1 +1,54 @@
-{"name":"@omnicore/pos","version":"0.1.0","private":true,"main":"dist-electron/main.js","scripts":{"dev":"concurrently \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5174 && electron .\"","build":"tsc -p tsconfig.electron.json && vite build && electron-builder --win nsis","preview":"vite preview"},"dependencies":{"@vitejs/plugin-react":"latest","electron-store":"latest","react":"latest","react-dom":"latest","vite":"latest","zustand":"latest"},"devDependencies":{"@types/node":"latest","@types/react":"latest","@types/react-dom":"latest","concurrently":"latest","electron":"latest","electron-builder":"latest","typescript":"latest","wait-on":"latest"},"build":{"appId":"com.omnicore.pos","productName":"OmniCore POS","directories":{"output":"release"},"files":["dist/**/*","dist-electron/**/*","package.json"],"win":{"target":"nsis"},"nsis":{"oneClick":false,"allowToChangeInstallationDirectory":true,"createDesktopShortcut":true,"createStartMenuShortcut":true}}}
+{
+  "name": "@omnicore/pos",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "concurrently \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5174 && electron .\"",
+    "build": "tsc -p tsconfig.electron.json && vite build && electron-builder --win nsis",
+    "preview": "vite preview",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "electron-store": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "vite": "latest",
+    "zustand": "latest",
+    "better-sqlite3": "^12.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "concurrently": "latest",
+    "electron": "latest",
+    "electron-builder": "latest",
+    "typescript": "latest",
+    "wait-on": "latest",
+    "@types/better-sqlite3": "latest"
+  },
+  "build": {
+    "appId": "com.omnicore.pos",
+    "productName": "OmniCore POS",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json",
+      "dist/db/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}
