@@ -16,5 +16,5 @@ export function WorkspaceProvider({children}:{children:ReactNode}){
 export function useWorkspace(){return useContext(WorkspaceContext)!}
 export function WorkspaceTabs(){
  const {tabs,open,close}=useWorkspace();const path=usePathname();
- return <div className="workspaceTabs">{tabs.map(t=><div key={t.id} className={"workspaceTab "+(t.href===path?"active":"")} onClick={()=>open(t)}><span>{t.title}</span>{tabs.length>1&&<button onClick={e=>{e.stopPropagation();close(t.id)}}>×</button>}</div>)}<button className="tabPlus">＋</button></div>
+ return <div className="workspaceTabs">{tabs.map(t=><div key={t.id} className={"workspaceTab "+(t.href===path?"active":"")} onClick={()=>open(t)}><span>{t.title}</span>{tabs.length>1&&<button onClick={e=>{e.stopPropagation();close(t.id)}}>×</button>}</div>)}<button className="tabPlus" title="Open dashboard in a new workspace tab" onClick={()=>open({id:'dashboard-'+Date.now(),title:'Dashboard',href:'/'},true)}>＋</button></div>
 }
