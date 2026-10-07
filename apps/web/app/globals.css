@@ -359,3 +359,25 @@ button{font-weight:500}
 /* Product workspace tabs must remain above the expanded Product 360 workspace. */
 .workspaceDetailBackdrop{top:64px!important;z-index:20!important}
 .pTop{position:relative;z-index:40!important}
+
+/* Mobile product grid: compact operational layout */
+@media(max-width:760px){
+ .catalog{overflow:hidden!important}
+ .catalogHead{padding:12px!important;gap:8px!important}
+ .productSearch{min-width:0!important;width:100%!important}
+ .productSearch input{min-width:0!important;font-size:14px!important}
+ .quickViews{display:flex!important;overflow-x:auto!important;width:100%!important;scrollbar-width:none}
+ .quickViews::-webkit-scrollbar{display:none}
+ .gridToolbar{padding:8px 10px!important;border-left:0!important;border-right:0!important;border-radius:0!important}
+ .gridToolbar .MuiStack-root{gap:6px!important}
+ .gridToolbar .MuiTypography-root:nth-of-type(2){display:none!important}
+ .gridToolbar .MuiButton-root{min-width:auto!important;padding:5px 9px!important}
+ .tableWrap{height:520px!important}
+ .excelGrid .MuiDataGrid-columnHeader,.excelGrid .MuiDataGrid-cell{padding-left:10px!important;padding-right:10px!important}
+ .excelGrid .MuiDataGrid-columnHeaderTitle{font-size:12px!important}
+ .excelGrid .prodCell{gap:8px!important}
+ .excelGrid .prodCell b{font-size:13px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;display:block!important}
+ .excelGrid .prodCell small{display:none!important}
+ .excelGrid .prodImg{width:30px!important;height:30px!important;min-width:30px!important}
+ .catalogFoot{padding-bottom:92px!important}
+}
