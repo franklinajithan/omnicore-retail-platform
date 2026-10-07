@@ -355,3 +355,7 @@ button{font-weight:500}
 .sectionTitle>button .muiNavIcon,.gridActions .muiNavIcon,.gridToolbar .muiNavIcon,.addPack .muiNavIcon{width:17px!important;height:17px!important}
 .gridToolbar select,.catalogHead select,.storeStrip select,.storeContext{min-height:34px!important;border:1px solid #d7e0ea!important;background:#fff!important;color:#29435f!important;font:400 13px Roboto,Arial,sans-serif!important}
 .prodImg .muiNavIcon{width:20px!important;height:20px!important}
+
+/* Product workspace tabs must remain above the expanded Product 360 workspace. */
+.workspaceDetailBackdrop{top:64px!important;z-index:20!important}
+.pTop{position:relative;z-index:40!important}
