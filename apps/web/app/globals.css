@@ -171,3 +171,5 @@
  .expandedBackdrop .detailWindowActions{display:none!important}
  .expandedBackdrop .detailHero{padding-top:8px!important}
 }
+
+.workspaceTab{position:relative}.workspaceTab.pinned{min-width:105px}.pinMark{font-size:7px;color:#1266e8;flex:0!important}.tabMenu{position:absolute;top:34px;left:4px;width:145px;background:#fff;border:1px solid #d8e2ed;border-radius:9px;padding:5px;box-shadow:0 12px 28px #0b23462b;z-index:500}.tabMenu button,.allTabs button{display:block;width:100%;text-align:left;border:0;background:#fff;padding:8px;border-radius:6px;font-size:11px;color:#263c5b}.tabMenu button:hover,.allTabs button:hover{background:#f0f5fb}.tabOverflow{position:relative}.tabOverflow>button,.reopenTab{height:29px;border:0;background:transparent;color:#526a86;cursor:pointer}.allTabs{position:absolute;right:0;top:32px;width:230px;background:#fff;border:1px solid #d8e2ed;border-radius:9px;padding:5px;box-shadow:0 12px 28px #0b23462b;z-index:500}
