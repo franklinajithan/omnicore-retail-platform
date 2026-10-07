@@ -420,3 +420,32 @@ button{font-weight:500}
  .expandedBackdrop .storeStrip,
  .workspaceDetailBackdrop .storeStrip{font-size:12px!important}
 }
+
+/* OmniCore readability baseline — desktop + mobile */
+html{font-size:16px}
+body{font-size:15px;line-height:1.5}
+.productMain{font-size:15px}
+.productMain .MuiTypography-body1{font-size:15px}
+.productMain .MuiTypography-body2{font-size:14px}
+.productMain button,.productMain input,.productMain select{font-size:14px}
+.productMain small{font-size:12px;line-height:1.4}
+.productMain h1{font-size:28px;line-height:1.2}
+.productMain h2{font-size:22px;line-height:1.25}
+.productMain h3{font-size:17px;line-height:1.3}
+.productMain .workspaceTab{font-size:13px}
+.productMain .detailTabs button{font-size:13px}
+.productMain .detailSection,.productMain .detailCard,.productMain .identityCard{font-size:14px}
+.productMain .detailSection label,.productMain .detailCard label,.productMain .identityCard label{font-size:12px}
+.productMain .detailSection b,.productMain .detailCard b,.productMain .identityCard b{font-size:14px}
+.productMain .MuiDataGrid-root{font-size:14px}
+.productMain .MuiDataGrid-columnHeaderTitle{font-size:13px}
+.sidebar{font-size:14px}
+.sidebar a,.sidebar button{font-size:14px}
+.sidebar .navSectionTitle{font-size:11px;letter-spacing:.06em}
+@media(max-width:760px){
+ html{font-size:16px}
+ body,.productMain{font-size:15px}
+ .productMain button,.productMain input,.productMain select{font-size:14px}
+ .productMain .MuiDataGrid-root{font-size:14px}
+ .productMain .MuiDataGrid-columnHeaderTitle{font-size:13px!important}
+}
