@@ -149,3 +149,5 @@
   .drawerBackdrop,.drawerBackdrop.open,.side .drawerClose{display:none!important}
   .main{grid-column:2;min-width:0;width:auto!important}
 }
+
+.workspaceTabs{height:36px;display:flex;align-items:flex-end;gap:2px;padding:4px 8px 0;background:#e9eef5;border-bottom:1px solid #cfd9e5;overflow-x:auto;position:sticky;top:0;z-index:100}.workspaceTab{height:31px;min-width:130px;max-width:240px;display:flex;align-items:center;gap:8px;padding:0 8px 0 12px;background:#dbe3ed;border:1px solid #ccd6e2;border-bottom:0;border-radius:8px 8px 0 0;font-size:10px;color:#42566f;cursor:pointer}.workspaceTab span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}.workspaceTab.active{background:#fff;color:#122b49;font-weight:700}.workspaceTab button,.tabPlus{border:0;background:transparent;color:#657990;cursor:pointer}.workspaceTab button{font-size:16px}.tabPlus{height:29px;width:30px;font-size:15px}@media(max-width:760px){.workspaceTabs{height:34px;padding-left:4px}.workspaceTab{min-width:112px;max-width:170px;height:29px;font-size:9px}}
