@@ -78,7 +78,7 @@ test.describe('OmniCore Chrome-like workspace tabs',()=>{
   await expect(page.getByRole('columnheader',{name:/stock/i})).toHaveAttribute('aria-sort','descending');
 
   await page.getByRole('button',{name:/Columns/}).click();
-  const barcodeToggle=page.getByLabel('Barcode / EAN');
+  const barcodeToggle=page.getByRole('checkbox',{name:'Barcode / EAN'});
   await barcodeToggle.uncheck();
   await expect(page.getByRole('columnheader',{name:/barcode/i})).toHaveCount(0);
   await barcodeToggle.check();
