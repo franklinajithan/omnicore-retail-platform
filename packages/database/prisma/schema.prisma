@@ -43,6 +43,7 @@ model Tenant {
   receipts  GoodsReceipt[]
   users     TenantUser[]
   posSales  PosSale[]
+  prices    ProductPrice[]
 }
 
 model TenantUser {
@@ -65,6 +66,7 @@ model Store {
   movements StockMovement[]
   receipts  GoodsReceipt[]
   posSales  PosSale[]
+  prices    ProductPrice[]
   @@unique([tenantId, code])
   @@unique([id, tenantId])
 }
@@ -85,6 +87,7 @@ model Product {
   orderLines  PurchaseOrderLine[]
   receiptLines GoodsReceiptLine[]
   posLines     PosSaleLine[]
+  prices       ProductPrice[]
   @@unique([tenantId, sku])
   @@unique([id, tenantId])
 }
@@ -249,4 +252,22 @@ model PosPayment {
   reference String?
   sale      PosSale @relation(fields: [saleId], references: [id])
   @@index([saleId])
+}
+
+
+model ProductPrice {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @db.Uuid
+  storeId       String   @db.Uuid
+  productId     String   @db.Uuid
+  retailPrice   Decimal  @db.Decimal(18, 2)
+  vatRate       Decimal  @db.Decimal(8, 4)
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  createdAt     DateTime @default(now())
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  store         Store    @relation(fields: [storeId, tenantId], references: [id, tenantId])
+  product       Product  @relation(fields: [productId, tenantId], references: [id, tenantId])
+  @@index([tenantId, storeId, productId, effectiveFrom])
+  @@index([tenantId, storeId, effectiveFrom, effectiveTo])
 }
