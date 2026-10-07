@@ -16,7 +16,7 @@ export function WorkspaceProvider({children}:{children:ReactNode}){
  const openRoute=(href:string,title:string,newTab=true)=>open({id:"route-"+href.replace(/[^a-z0-9]+/gi,"-").replace(/^-|-$/g,"").toLowerCase(),title,href},newTab);
  const close=(id:string)=>setTabs(v=>{const i=v.findIndex(x=>x.id===id);if(i<0||v[i].pinned)return v;const closing=v[i],n=v.filter(x=>x.id!==id),safe=n.length?n:[home];setRecent(r=>[closing,...r.filter(x=>x.id!==closing.id)].slice(0,10));if(id===activeId){const next=safe[Math.max(0,Math.min(i-1,safe.length-1))];setTimeout(()=>navigate(next),0)}return safe});
  const closeOthers=(id:string)=>setTabs(v=>v.filter(x=>x.id===id||x.pinned));
- const togglePin=(id:string)=>{if(id==="products"||id==="dashboard")return;setTabs(v=>v.map(x=>x.id===id?{...x,pinned:!x.pinned}:x))};
+ const togglePin=(id:string)=>{if(id==="products"||id==="dashboard")return;setTabs(v=>v.map(x=>x.id===id?{...x,pinned:!x.pinned}:x)};
  const duplicate=(id:string)=>{const t=tabs.find(x=>x.id===id);if(t)open({...t,id:t.id+"-copy-"+Date.now(),title:t.title+" · Copy",pinned:false},true)};
  const saveState=(id:string,state:Record<string,unknown>)=>setTabs(v=>v.map(x=>x.id===id?{...x,state:{...(x.state||{}),...state}}:x));
  const getState=(id:string)=>tabs.find(x=>x.id===id)?.state;
