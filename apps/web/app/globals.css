@@ -478,3 +478,53 @@ body{font-size:15px;line-height:1.5}
 .excelGrid .status.inactive:before{background:#64748b}
 .excelGrid .MuiDataGrid-cell--textLeft,.excelGrid .MuiDataGrid-cell--textRight{font-size:14px!important}
 .excelGrid .MuiDataGrid-columnHeaderTitle{font-size:13px!important}
+
+/* OmniCore AG Grid — professional retail operations skin */
+.agProductShell{border:1px solid #d9e2ec;border-radius:10px;overflow:hidden;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.agProductShell .gridToolbar{border:0!important;border-bottom:1px solid #d9e2ec!important;border-radius:0!important;background:#fbfcfe!important;padding:9px 12px!important}
+.agProductShell .tableWrap{border:0!important}
+.agProductShell .ag-theme-quartz{
+ --ag-font-family:Roboto,Arial,sans-serif;
+ --ag-font-size:13px;
+ --ag-foreground-color:#172b43;
+ --ag-secondary-foreground-color:#5f7186;
+ --ag-background-color:#fff;
+ --ag-header-background-color:#f4f7fa;
+ --ag-header-foreground-color:#233a55;
+ --ag-border-color:#dfe6ee;
+ --ag-row-border-color:#e9eef4;
+ --ag-odd-row-background-color:#fbfcfd;
+ --ag-row-hover-color:#f1f6fd;
+ --ag-selected-row-background-color:#e8f1ff;
+ --ag-range-selection-background-color:rgba(23,105,224,.10);
+ --ag-range-selection-border-color:#1769e0;
+ --ag-input-focus-border-color:#1769e0;
+ --ag-checkbox-checked-color:#1769e0;
+ --ag-accent-color:#1769e0;
+ --ag-border-radius:0;
+ --ag-wrapper-border-radius:0;
+ --ag-cell-horizontal-padding:12px;
+ --ag-header-column-resize-handle-color:#c2ceda;
+}
+.agProductShell .ag-root-wrapper{border:0!important}
+.agProductShell .ag-header{font-weight:700;border-bottom:1px solid #ccd7e3}
+.agProductShell .ag-header-cell{font-size:12px;letter-spacing:.01em}
+.agProductShell .ag-header-cell:hover{background:#eaf0f6}
+.agProductShell .ag-header-cell-label{gap:6px}
+.agProductShell .ag-cell{display:flex;align-items:center;border-right:1px solid #edf1f5;font-size:13px}
+.agProductShell .ag-row{font-variant-numeric:tabular-nums}
+.agProductShell .ag-row:hover{box-shadow:inset 3px 0 0 #1769e0}
+.agProductShell .ag-row-selected{font-weight:500}
+.agProductShell .ag-pinned-left-header,.agProductShell .ag-pinned-left-cols-container{box-shadow:3px 0 7px rgba(15,23,42,.06)}
+.agProductShell .ag-cell[col-id="itemCode"]{font-weight:700;color:#123b69}
+.agProductShell .ag-cell[col-id="name"]{font-weight:600;color:#102a43}
+.agProductShell .ag-cell[col-id="barcode"]{font-family:Roboto Mono,Roboto,Arial,sans-serif;color:#41566f}
+.agProductShell .ag-cell[col-id="cost"],.agProductShell .ag-cell[col-id="retail"],.agProductShell .ag-cell[col-id="margin"],.agProductShell .ag-cell[col-id="stock"]{justify-content:flex-end;font-variant-numeric:tabular-nums}
+.agProductShell .ag-paging-panel{min-height:44px;border-top:1px solid #dfe6ee;background:#fbfcfe;color:#53677e}
+.agStatus{display:inline-flex;align-items:center;gap:7px;font-weight:600;white-space:nowrap}
+.agStatus:before{content:"";width:8px;height:8px;border-radius:50%;background:#64748b;box-shadow:0 0 0 2px rgba(100,116,139,.10)}
+.agStatus.active:before{background:#10a36a;box-shadow:0 0 0 2px rgba(16,163,106,.12)}
+.agStatus.low-stock:before{background:#d98a00;box-shadow:0 0 0 2px rgba(217,138,0,.12)}
+.agStatus.out-of-stock:before{background:#d92d20;box-shadow:0 0 0 2px rgba(217,45,32,.12)}
+.columnChooser{z-index:50!important}
+@media(max-width:760px){.agProductShell{border-radius:8px}.agProductShell .ag-theme-quartz{--ag-font-size:13px;--ag-cell-horizontal-padding:9px}.agProductShell .gridToolbar{padding:8px!important}}
