@@ -6,6 +6,17 @@ import { issuePosCredential, newDeviceCredentialHash } from './pos-device-creden
 @Controller('core/v1')
 export class CoreController {
   constructor(private readonly access: CoreAccessService, private readonly db: PrismaService) {}
+  @Get('security-audit')
+  async securityAudit(@Headers('authorization') authorization: string | undefined) {
+    const actor = await this.access.require(authorization, ['OWNER', 'ADMIN']);
+    if (actor.storeId) throw new ForbiddenException('Store-scoped account cannot view security audit');
+    return this.db.securityAuditEvent.findMany({
+      where: { tenantId: actor.tenantId },
+      orderBy: { occurredAt: 'desc' },
+      take: 100,
+      select: { id: true, actorUserId: true, action: true, resourceType: true, resourceId: true, storeId: true, occurredAt: true }
+    });
+  }
   @Get('me')
   async me(@Headers('authorization') authorization: string | undefined) {
     return this.access.require(authorization, ['OWNER', 'ADMIN', 'MANAGER', 'STAFF', 'VIEWER']);
