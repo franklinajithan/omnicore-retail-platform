@@ -227,4 +227,14 @@ export class RetailController {
     });
   }
 
+  @Get('stores/:storeId/rtc/:rtcId/history')
+  async rtcHistory(@Headers('authorization') token:string|undefined,@Param('storeId') storeId:string,@Param('rtcId') rtcId:string){
+    const store=await this.db.store.findFirst({where:{OR:[{id:/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(storeId)?storeId:'00000000-0000-0000-0000-000000000000'},{code:storeId}]},select:{id:true,tenantId:true}});
+    if(!store)throw new BadRequestException('Unknown store');
+    if(!verifyStoreCredential(token,store.id))throw new UnauthorizedException('Store-specific credential required');
+    const rtc=await this.db.rtcMarkdown.findFirst({where:{id:rtcId,tenantId:store.tenantId,storeId:store.id},select:{id:true,labelCode:true,status:true,quantity:true,remainingQuantity:true}});
+    if(!rtc)throw new BadRequestException('RTC label not found for store');
+    const events=await this.db.rtcAuditEvent.findMany({where:{rtcId:rtc.id},orderBy:[{createdAt:'asc'},{id:'asc'}],take:500});
+    return {rtc,events};
+  }
 }
