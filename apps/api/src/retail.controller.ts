@@ -63,7 +63,9 @@ export class RetailController {
       const p=await tx.promotion.findUnique({where:{id}});
       if(!p||p.status!==PromotionStatus.DRAFT)throw new BadRequestException('Only drafts can be approved');
       if(p.createdBy===input.actorId)throw new BadRequestException('Creator cannot self-approve');
-      const updated=await tx.promotion.update({where:{id},data:{status:PromotionStatus.APPROVED,approvedBy:input.actorId,approvedAt:new Date()}});
+      const changed=await tx.promotion.updateMany({where:{id,status:PromotionStatus.DRAFT},data:{status:PromotionStatus.APPROVED,approvedBy:input.actorId,approvedAt:new Date()}});
+      if(changed.count!==1)throw new BadRequestException('Promotion was already approved or modified');
+      const updated=await tx.promotion.findUniqueOrThrow({where:{id}});
       await tx.promotionAudit.create({data:{promotionId:id,actorId:input.actorId,action:'APPROVED'}});
       return updated;
     });
