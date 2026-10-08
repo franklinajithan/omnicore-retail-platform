@@ -42,10 +42,11 @@ export class RetailController {
   async createPromotion(@Headers('authorization') token:string|undefined,@Body() input:{tenantId:string;name:string;scope:PromotionScope;type:PromotionType;startsAt:string;endsAt:string;createdBy:string;storeIds?:string[];zoneIds?:string[];products:{productId:string;value:number;requiredQuantity?:number}[]}){
     this.authorize(token,true);
     const startsAt=new Date(input.startsAt),endsAt=new Date(input.endsAt);
-    if(!input.tenantId||!input.name?.trim()||!input.createdBy||!Object.values(PromotionScope).includes(input.scope)||!Object.values(PromotionType).includes(input.type)||!Number.isFinite(startsAt.getTime())||!Number.isFinite(endsAt.getTime())||startsAt>=endsAt||!input.products?.length)throw new BadRequestException('Invalid promotion');
+    if(!input||!input.tenantId||!input.name?.trim()||!input.createdBy||!Object.values(PromotionScope).includes(input.scope)||!Object.values(PromotionType).includes(input.type)||!Number.isFinite(startsAt.getTime())||!Number.isFinite(endsAt.getTime())||startsAt>=endsAt||!input.products?.length)throw new BadRequestException('Invalid promotion');
     const storeIds=[...new Set(input.storeIds||[])],zoneIds=[...new Set(input.zoneIds||[])];
+    if(new Set(input.products.map(p=>p.productId)).size!==input.products.length)throw new BadRequestException('Duplicate product in promotion');
     if(input.scope==='STORES'&&!storeIds.length||input.scope==='ZONES'&&!zoneIds.length)throw new BadRequestException('Promotion targets required');
-    if(input.products.some(p=>!Number.isFinite(p.value)||p.value<0||((input.type==='PERCENT_OFF')&&p.value>100)||((input.type==='MULTIBUY_FIXED_PRICE')&&(!Number.isInteger(p.requiredQuantity)||p.requiredQuantity!<2))))throw new BadRequestException('Invalid promotion value');
+    if(input.products.some(p=>!p.productId||!Number.isFinite(p.value)||p.value<0||((input.type==='PERCENT_OFF')&&p.value>100)||((input.type==='MULTIBUY_FIXED_PRICE')&&(!Number.isInteger(p.requiredQuantity)||p.requiredQuantity!<2))))throw new BadRequestException('Invalid promotion value');
     const [products,stores,zones]=await Promise.all([
       this.db.product.count({where:{tenantId:input.tenantId,id:{in:input.products.map(p=>p.productId)}}}),
       this.db.store.count({where:{tenantId:input.tenantId,id:{in:storeIds}}}),
