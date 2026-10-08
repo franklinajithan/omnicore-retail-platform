@@ -1,3 +1,5 @@
+import { StockValuationController } from './stock-valuation.controller';
+import { StockValuationService } from './stock-valuation.service';
 import { Module } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { InventoryController } from './inventory.controller';
@@ -10,8 +12,8 @@ import { StockAdjustmentController } from './stock-adjustment.controller';
 import { StockAdjustmentService } from './stock-adjustment.service';
 
 @Module({
-  controllers: [InventoryController, StockTransferController, GoodsReceivingController, StockAdjustmentController],
-  providers: [InventoryService, StockTransferService, GoodsReceivingService, StockAdjustmentService, PrismaService],
-  exports: [InventoryService, StockTransferService, GoodsReceivingService, StockAdjustmentService],
+  controllers: [InventoryController, StockTransferController, GoodsReceivingController, StockAdjustmentController, StockValuationController],
+  providers: [InventoryService, StockTransferService, GoodsReceivingService, StockAdjustmentService, StockValuationService, PrismaService],
+  exports: [InventoryService, StockTransferService, GoodsReceivingService, StockAdjustmentService, StockValuationService],
 })
 export class InventoryModule {}
