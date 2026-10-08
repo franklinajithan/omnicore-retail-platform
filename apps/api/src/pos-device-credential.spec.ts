@@ -15,3 +15,7 @@ test('issued POS credential verifies with tenant, store and device', () => {
 test('issuer rejects weak signing configuration', () => {
   assert.throws(() => issuePosCredential('short', 'tenant', 'store', 'device'));
 });
+
+test('POS credential issuer requires a signing secret', () => {
+  assert.throws(() => issuePosCredential('', 'tenant', 'store', 'device'));
+});
