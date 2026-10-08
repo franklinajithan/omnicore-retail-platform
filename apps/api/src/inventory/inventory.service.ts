@@ -94,8 +94,9 @@ export class InventoryService {
         });
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ConflictException('Concurrent duplicate inventory posting; retry using the same key');
+      if (error instanceof Prisma.PrismaClientKnownRequestError &&
+          (error.code === 'P2002' || error.code === 'P2034')) {
+        throw new ConflictException('Concurrent inventory posting conflict; retry using the same key');
       }
       throw error;
     }
