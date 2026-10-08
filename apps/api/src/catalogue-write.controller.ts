@@ -33,7 +33,11 @@ export class CatalogueWriteController {
     const baseUnit = input.baseUnit ? this.clean(input.baseUnit, 'baseUnit', 30) : 'EACH';
     if (!(await this.db.tenant.findUnique({ where: { id: input.tenantId }, select: { id: true } }))) throw new BadRequestException('Unknown tenant');
     try {
-      return await this.db.product.create({ data: { tenantId: input.tenantId, sku, name, baseUnit, status: ProductStatus.ACTIVE } });
+      return await this.db.$transaction(async tx => {
+        const product = await tx.product.create({ data: { tenantId: input.tenantId, sku, name, baseUnit, status: ProductStatus.ACTIVE } });
+        await tx.catalogueChange.create({ data: { tenantId: input.tenantId, productId: product.id, actorId: input.actorId, action: 'PRODUCT_CREATED', after: { sku, name, baseUnit, status: 'ACTIVE' } } });
+        return product;
+      });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') throw new ConflictException('Product code already exists');
       throw error;
@@ -58,7 +62,9 @@ export class CatalogueWriteController {
       const existing = await tx.productBarcode.findFirst({ where: { code, product: { tenantId: input.tenantId } }, select: { productId: true } });
       if (existing) throw new ConflictException('Barcode already assigned in tenant');
       try {
-        return await tx.productBarcode.create({ data: { productId, code, level, unitsPerScan, supplierId: input.supplierId || null } });
+        const result = await tx.productBarcode.create({ data: { productId, code, level, unitsPerScan, supplierId: input.supplierId || null } });
+        await tx.catalogueChange.create({ data: { tenantId: input.tenantId, productId, actorId: input.actorId, action: 'BARCODE_ADDED', after: { code, level, unitsPerScan: unitsPerScan.toString(), supplierId: input.supplierId || null } } });
+        return result;
       } catch (error) {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') throw new ConflictException('Duplicate barcode');
         throw error;
@@ -77,10 +83,20 @@ export class CatalogueWriteController {
     ]);
     if (!product || !supplier) throw new BadRequestException('Product and supplier must belong to tenant');
     try {
-      return await this.db.supplierProduct.upsert({
-        where: { supplierId_productId: { supplierId: supplier.id, productId } },
-        create: { supplierId: supplier.id, productId, supplierCode, packSize, cost },
-        update: { supplierCode, packSize, cost },
+      return await this.db.$transaction(async tx => {
+        const previous = await tx.supplierProduct.findUnique({ where: { supplierId_productId: { supplierId: supplier.id, productId } } });
+        const result = await tx.supplierProduct.upsert({
+          where: { supplierId_productId: { supplierId: supplier.id, productId } },
+          create: { supplierId: supplier.id, productId, supplierCode, packSize, cost },
+          update: { supplierCode, packSize, cost },
+        });
+        await tx.catalogueChange.create({ data: {
+          tenantId: input.tenantId, productId, actorId: input.actorId,
+          action: previous ? 'SUPPLIER_UPDATED' : 'SUPPLIER_ADDED',
+          before: previous ? { supplierId: supplier.id, supplierCode: previous.supplierCode, packSize: previous.packSize.toString(), cost: previous.cost.toString() } : undefined,
+          after: { supplierId: supplier.id, supplierCode, packSize: packSize.toString(), cost: cost.toString() },
+        } });
+        return result;
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') throw new ConflictException('Supplier product code already assigned');
