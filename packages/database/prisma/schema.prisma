@@ -74,6 +74,7 @@ model Store {
   promotionTargets PromotionStoreTarget[]
   employeeAssignments EmployeeStoreAssignment[]
   trustedDevices StoreTrustedDevice[]
+  rtcMarkdowns RtcMarkdown[]
   @@unique([tenantId, code])
   @@unique([id, tenantId])
 }
@@ -96,6 +97,7 @@ model Product {
   posLines     PosSaleLine[]
   prices       ProductPrice[]
   promotionProducts PromotionProduct[]
+  rtcMarkdowns RtcMarkdown[]
   @@unique([tenantId, sku])
   @@unique([id, tenantId])
 }
@@ -446,4 +448,34 @@ model EmployeeStoreAccessGrant {
   createdAt DateTime @default(now())
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   @@index([employeeId, storeId, validFrom, validUntil])
+}
+
+
+enum RtcStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  SOLD
+}
+
+// RTC is a store-local, quantity-limited markdown, never a Head Office promotion.
+model RtcMarkdown {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  storeId String @db.Uuid
+  productId String @db.Uuid
+  originalPrice Decimal @db.Decimal(18, 2)
+  reducedPrice Decimal @db.Decimal(18, 2)
+  quantity Int
+  remainingQuantity Int
+  reason String
+  status RtcStatus @default(ACTIVE)
+  labelCode String @unique
+  expiresAt DateTime
+  createdByEmployeeId String @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  store Store @relation(fields: [storeId, tenantId], references: [id, tenantId])
+  product Product @relation(fields: [productId, tenantId], references: [id, tenantId])
+  @@index([tenantId, storeId, status, expiresAt])
 }
