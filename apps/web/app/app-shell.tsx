@@ -52,7 +52,7 @@ export const appNav=[
  ['CORE RETAIL',[['Products','Products','/products'],['Categories','Categories','#'],['Pricing','Pricing','#'],['Barcodes & EANs','Barcode','#'],['Product Passport','Shield','#'],['Brands','Categories','#'],['Units & Packaging','Boxes','#']]],
  ['SUPPLY CHAIN',[['Suppliers','Supplier','#'],['Purchasing','Cart','#'],['Purchase Orders','Orders','#'],['Deliveries','Supplier','#'],['Invoice Matching','Invoice','#'],['Returns & Claims','Transfer','#']]],
  ['INVENTORY',[['Stock & Inventory','Warehouse','#'],['Stock Transfers','Transfer','#'],['Stocktake (HHU)','Scan','#'],['Allocations','Boxes','#'],['Wastage','Waste','#'],['Adjustments','Adjust','#']]],
- ['SALES & MARKETING',[['Sales (POS)','Cart','#'],['Promotions','Promo','#'],['RTC & Markdown','Categories','#'],['Customers','People','#'],['Loyalty','Shield','#']]],
+ ['SALES & MARKETING',[['Sales (POS)','Cart','#'],['Promotions','Promo','/promotions'],['RTC & Markdown','Categories','#'],['Customers','People','#'],['Loyalty','Shield','#']]],
  ['STORE OPERATIONS',[['Stores','Store','#'],['Store Performance','Chart','#'],['Tasks & Compliance','Orders','#']]],
  ['PEOPLE & ORGANISATION',[['Workforce','People','#'],['Roles & Permissions','Admin','#'],['Activity & Audit','Shield','#']]],
  ['FINANCE',[['Invoices','File','#'],['Payments','Payment','#'],['Cost Tracking','Pricing','#'],['Profitability','Chart','#']]],
