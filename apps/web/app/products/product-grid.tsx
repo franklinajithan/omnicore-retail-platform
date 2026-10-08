@@ -15,6 +15,7 @@ const storageKeyForStore=(store:string)=>'omnicore-product-ag-grid-v2:'+encodeUR
 export default function ProductGrid({rows,workingStore,onPreview,onOpen}:{rows:Product[];workingStore:string;onPreview:(p:Product)=>void;onOpen:(p:Product)=>void}){
  const storageKey=storageKeyForStore(workingStore);const gridRef=useRef<AgGridReact<Row>>(null);const[density,setDensity]=useState<'compact'|'standard'>('compact');const[chooser,setChooser]=useState(false);const[hidden,setHidden]=useState<Record<string,boolean>>({});const[loadedKey,setLoadedKey]=useState<string|null>(null);
  useEffect(()=>{try{const s=JSON.parse(localStorage.getItem(storageKey)||'{}');setDensity(s.density==='standard'?'standard':'compact');setHidden(s.hidden&&typeof s.hidden==='object'?s.hidden:{});}catch{setDensity('compact');setHidden({});}setLoadedKey(storageKey);},[storageKey]);
+ useEffect(()=>{if(loadedKey!==storageKey)return;const grid=gridRef.current?.api;if(!grid)return;grid.resetColumnState();Object.entries(hidden).forEach(([key,isHidden])=>{if(isHidden)grid.setColumnsVisible([key==='product'?'name':key],false)});},[hidden,loadedKey,storageKey]);
  useEffect(()=>{if(loadedKey!==storageKey)return;try{localStorage.setItem(storageKey,JSON.stringify({density,hidden}))}catch{}},[density,hidden,storageKey,loadedKey]);
  const data=useMemo<Row[]>(()=>rows.map(p=>({...p,margin:Math.round((p.retail-p.cost)/p.retail*100)})),[rows]);
  const columns=useMemo<ColDef<Row>[]>(()=>[
