@@ -1,6 +1,13 @@
 import {BadRequestException,Injectable} from '@nestjs/common';import {PrismaService} from './prisma.service';
 @Injectable() export class PosService{constructor(private db:PrismaService){}
-async receive(payload:any){const s=payload?.sale,lines=payload?.lines,payments=payload?.payments;if(!payload?.idempotencyKey||!s||!Array.isArray(lines)||!Array.isArray(payments))throw new BadRequestException('INVALID_PAYLOAD');const store=await this.db.store.findFirst({where:{code:s.store_id},select:{id:true,tenantId:true}});if(!store)throw new BadRequestException('UNKNOWN_STORE');const existing=await this.db.posSale.findFirst({where:{tenantId:store.tenantId,idempotencyKey:payload.idempotencyKey},select:{id:true,receiptNo:true}});if(existing)return{accepted:true,duplicate:true,id:existing.id,receiptNo:existing.receiptNo};const id=s.id;await this.db.$transaction(async tx=>{await tx.posSale.create({data:{id,tenantId:store.tenantId,storeId:store.id,tillId:s.till_id,cashierId:s.cashier_id,receiptNo:s.receipt_no,idempotencyKey:payload.idempotencyKey,total:Number(s.total)/100,status:s.status||'COMPLETED',soldAt:new Date(s.created_at)}});for(const l of lines){
+async receive(payload:any){const s=payload?.sale,lines=payload?.lines,payments=payload?.payments;if(!payload?.idempotencyKey||!s||!Array.isArray(lines)||!Array.isArray(payments))throw new BadRequestException('INVALID_PAYLOAD');const store=await this.db.store.findFirst({where:{code:s.store_id},select:{id:true,tenantId:true}});if(!store)throw new BadRequestException('UNKNOWN_STORE');const existing=await this.db.posSale.findFirst({where:{tenantId:store.tenantId,idempotencyKey:payload.idempotencyKey},select:{id:true,receiptNo:true}});if(existing)return{accepted:true,duplicate:true,id:existing.id,receiptNo:existing.receiptNo};const id=s.id;
+if(lines.length===0||payments.length===0)throw new BadRequestException('EMPTY_SALE');
+for(const line of lines){
+ const qty=Number(line?.qty),unit=Number(line?.unit_price),total=Number(line?.line_total);
+ if(!line?.id||!line?.product_id||!Number.isFinite(qty)||qty<=0||!Number.isSafeInteger(unit)||unit<0||!Number.isSafeInteger(total)||total<0)throw new BadRequestException('INVALID_SALE_LINE');
+ if(line.rtc_id&&(!Number.isSafeInteger(qty)||qty*unit!==total))throw new BadRequestException('RTC_LINE_TOTAL_MISMATCH');
+}
+await this.db.$transaction(async tx=>{await tx.posSale.create({data:{id,tenantId:store.tenantId,storeId:store.id,tillId:s.till_id,cashierId:s.cashier_id,receiptNo:s.receipt_no,idempotencyKey:payload.idempotencyKey,total:Number(s.total)/100,status:s.status||'COMPLETED',soldAt:new Date(s.created_at)}});for(const l of lines){
 if(l.rtc_id){
   const qty=Number(l.qty);
   if(!Number.isSafeInteger(qty)||qty<1)throw new BadRequestException('RTC_REQUIRES_INTEGER_QUANTITY');
