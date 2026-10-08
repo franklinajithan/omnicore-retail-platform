@@ -93,7 +93,7 @@ export class RetailController {
   @Get('stores/:storeId/promotions')
   async storePromotions(@Headers('authorization') token:string|undefined,@Param('storeId') storeId:string){
     const actor=await this.coreAccess.require(token,['OWNER','ADMIN','MANAGER','STAFF','VIEWER']);
-    const store=await this.db.store.findFirst({where:{OR:[{id:/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(storeId)?storeId:'00000000-0000-0000-0000-000000000000'},{code:storeId}]}});
+    const store=await this.db.store.findFirst({where:{tenantId:actor.tenantId,OR:[{id:/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(storeId)?storeId:'00000000-0000-0000-0000-000000000000'},{code:storeId}]}});
     if(!store||store.tenantId!==actor.tenantId||(actor.storeId&&actor.storeId!==store.id))throw new ForbiddenException('Store access denied');
     const resolvedStoreId=store.id;
     const now=new Date();
