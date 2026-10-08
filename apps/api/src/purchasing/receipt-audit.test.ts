@@ -15,5 +15,12 @@ test('requires approved VAT for order product', () => {
   assert.throws(() => buildReceiptAuditRows([{ productId: 'p1', receivedQuantity: '1' }], [{ ...ordered[0], vatRate: '' }]));
 });
 test('rejects duplicate order products', () => {
-  assert.throws(() => buildReceiptAuditRows([], [...ordered, ...ordered]));
+  assert.throws(() => buildReceiptAuditRows([{ productId: 'p1', receivedQuantity: '1' }], [...ordered, ...ordered]));
+});
+
+test('missing receipts fail validation', () => {
+  assert.throws(() => buildReceiptAuditRows([], ordered));
+});
+test('zero quantity receipts fail validation', () => {
+  assert.throws(() => buildReceiptAuditRows([{ productId: 'p1', receivedQuantity: '0' }], ordered));
 });
