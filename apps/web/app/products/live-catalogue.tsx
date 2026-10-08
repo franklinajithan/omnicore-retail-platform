@@ -48,7 +48,7 @@ export default function LiveCatalogue() {
     {field:'baseUnit',headerName:'Unit',width:95},
     {field:'status',headerName:'Status',width:110}
   ],[]);
-  useEffect(()=>{setSelected(null);setHistory(null);setItems([]);setCursor(null)},[tenantId,origin]);
+  useEffect(()=>{setSelected(null);setHistory(null);setItems([]);setCursor(null)},[tenantId,origin,token]);
   return <main style={{padding:24,maxWidth:1600,margin:'auto',fontFamily:'inherit'}}>
     <header style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:16,flexWrap:'wrap'}}>
       <div><a href="/products">← Product workspace</a><h1>Live Product Catalogue</h1><p>Tenant-isolated master data · AG Grid · Product 360</p></div>
