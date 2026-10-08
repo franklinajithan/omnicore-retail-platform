@@ -36,7 +36,7 @@ export class PurchasingReceivingService {
             if (!line || seen.has(line.productId)) throw new BadRequestException('Idempotency key reused with invalid lines');
             seen.add(line.productId);
             const quantity = stored.get(line.productId);
-            if (!quantity || typeof line.quantity !== 'string' || !/^(?:0|[1-9]\\d*)(?:\\.\\d{1,3})?$/.test(line.quantity) || !quantity.eq(new Prisma.Decimal(line.quantity))) {
+            if (!quantity || typeof line.quantity !== 'string' || !/^(?:0|[1-9][0-9]*)(?:[.][0-9]{1,3})?$/.test(line.quantity) || !quantity.eq(new Prisma.Decimal(line.quantity))) {
               throw new BadRequestException('Idempotency key reused with different quantities');
             }
           }
