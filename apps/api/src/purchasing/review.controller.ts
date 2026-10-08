@@ -124,18 +124,26 @@ export class PurchasingReviewController {
     if (!supplier) throw new BadRequestException('Supplier not found in tenant');
     const listings = await this.db.supplierProduct.findMany({
       where: { supplierId: supplier.id, product: { tenantId: input.tenantId } },
-      select: { productId: true, supplierCode: true },
+      select: {
+        productId: true,
+        supplierCode: true,
+        product: {
+          select: { tenantId: true, barcodes: { select: { code: true } } },
+        },
+      },
     });
-    // Barcode mappings must be loaded through the reviewed tenant-scoped
-    // ProductBarcode relation before barcode-only matching is enabled.
+    // Barcodes are resolved only through products belonging to the selected
+    // tenant and the selected supplier's catalogue.
     const catalogue: CatalogueItem[] = listings.map(item => ({
-      productId: item.productId, supplierCode: item.supplierCode, barcodes: [],
+      productId: item.productId,
+      supplierCode: item.supplierCode,
+      barcodes: item.product.barcodes.map(barcode => barcode.code),
     }));
     try {
       const rows = matchInvoiceImport(catalogue, input.rows);
       return {
         status: rows.every(row => row.status === 'MATCHED') ? 'MATCHED' : 'REVIEW_REQUIRED',
-        barcodeMatchingEnabled: false,
+        barcodeMatchingEnabled: true,
         rows,
       };
     } catch (error) {
