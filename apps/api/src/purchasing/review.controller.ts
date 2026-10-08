@@ -3,6 +3,8 @@ import { auditSupplierInvoice, type InvoiceAuditRow } from './invoice-audit';
 import { calculateClaim, type ClaimLineInput } from './claims';
 import { planCreditAllocation, type CreditAllocation, type ClaimCreditTotals } from './credit-allocation';
 import { normalizeInvoiceRows, type RawInvoiceRow } from './invoice-import';
+import { matchInvoiceImport } from './invoice-matching';
+import type { CatalogueItem } from './delivery-matching';
 
 const MAX_LINES = 1000;
 function validLines(value: unknown): value is unknown[] {
@@ -75,6 +77,26 @@ export class PurchasingReviewController {
       return { status: 'DRAFT_PREVIEW', rows: normalizeInvoiceRows(input.rows) };
     } catch (error) {
       throw new BadRequestException(error instanceof Error ? error.message : 'Invalid invoice rows');
+    }
+  }
+
+  @Post('invoice-match-preview')
+  invoiceMatchPreview(
+    @Headers('authorization') token: string | undefined,
+    @Body() input: { catalogue: CatalogueItem[]; rows: RawInvoiceRow[] },
+  ) {
+    this.authorize(token);
+    if (!input || !validLines(input.rows) || !Array.isArray(input.catalogue) || input.catalogue.length > 10000) {
+      throw new BadRequestException('Expected catalogue and 1 to 1000 invoice rows');
+    }
+    try {
+      const rows = matchInvoiceImport(input.catalogue, input.rows);
+      return {
+        status: rows.every(row => row.status === 'MATCHED') ? 'MATCHED' : 'REVIEW_REQUIRED',
+        rows,
+      };
+    } catch (error) {
+      throw new BadRequestException(error instanceof Error ? error.message : 'Invalid invoice matching request');
     }
   }
 
