@@ -38,7 +38,7 @@ export function validatePackagingBarcode(barcode: PackagingBarcode): PackagingBa
   const code = normalizeBarcode(barcode.code);
   if (!['UNIT', 'INNER', 'CASE', 'PALLET'].includes(barcode.level)) throw new Error('Invalid packaging level');
   if (parseScaledDecimal(barcode.unitsPerScan, 3) <= 0n) throw new Error('Scan quantity must be positive');
-  if (barcode.level === 'UNIT' && barcode.unitsPerScan !== '1') throw new Error('Unit barcode must represent one unit');
+  if (barcode.level === 'UNIT' && parseScaledDecimal(barcode.unitsPerScan, 3) !== 1000n) throw new Error('Unit barcode must represent one unit');
   return { ...barcode, code };
 }
 export function validateBarcodeUniqueness(barcodes: PackagingBarcode[]): void {
