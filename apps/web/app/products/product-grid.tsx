@@ -42,7 +42,7 @@ export default function ProductGrid({rows,workingStore,onPreview,onOpen}:{rows:P
   <Paper className="gridToolbar" variant="outlined"><Stack direction="row" spacing={1} alignItems="center" sx={{width:'100%',flexWrap:'wrap'}}>
    <Typography fontWeight={600}>Product grid · {workingStore}</Typography><Typography variant="body2" color="text.secondary" sx={{flex:1}}>AG Grid · sort, filter, resize, reorder, keyboard navigation & Excel copy</Typography>
    <Button variant="outlined" size="small" onClick={copy}>Copy rows</Button><Button variant="outlined" size="small" onClick={exportCsv}>Export CSV</Button><Button variant="outlined" size="small" startIcon={<Icon name="Columns"/>} onClick={()=>setChooser(!chooser)}>Columns</Button>
-   <Select size="small" value={density} onChange={e=>setDensity(e.target.value as 'compact'|'standard')}><MenuItem value="compact">Compact</MenuItem><MenuItem value="standard">Comfortable</MenuItem></Select>
+   <Select size="small" inputProps={{"aria-label":"Grid density"}} value={density} onChange={e=>setDensity(e.target.value as 'compact'|'standard')}><MenuItem value="compact">Compact</MenuItem><MenuItem value="standard">Comfortable</MenuItem></Select>
    <Button variant="outlined" size="small" startIcon={<Icon name="Reset"/>} onClick={reset}>Reset view</Button>
   </Stack></Paper>
   {chooser&&<Paper className="columnChooser" elevation={3}><Typography fontWeight={600}>Columns</Typography>{(Object.keys(labels) as Key[]).map(k=><FormControlLabel key={k} control={<Checkbox size="small" checked={!hidden[k]} onChange={()=>toggle(k)}/>} label={labels[k]}/>)}</Paper>}
