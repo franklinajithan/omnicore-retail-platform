@@ -1,1 +1,2 @@
-import {RetailController} from './retail.controller';import {Module} from '@nestjs/common';import {PosController} from './pos.controller';import {PosService} from './pos.service';import {PrismaService} from './prisma.service';@Module({controllers:[PosController,RetailController],providers:[PosService,PrismaService]})export class AppModule{}
+import {CatalogueController} from './catalogue.controller';
+import {RetailController} from './retail.controller';import {Module} from '@nestjs/common';import {PosController} from './pos.controller';import {PosService} from './pos.service';import {PrismaService} from './prisma.service';@Module({controllers:[PosController,RetailController,CatalogueController],providers:[PosService,PrismaService]})export class AppModule{}
