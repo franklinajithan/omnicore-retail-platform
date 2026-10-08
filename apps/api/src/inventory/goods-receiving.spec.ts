@@ -9,6 +9,7 @@ const quantity = (value: string) => new Prisma.Decimal(value);
 test('goods receiving blocks cumulative quantities beyond the purchase order', async () => {
   let created = false;
   const tx = {
+    $queryRaw: async () => [],
     goodsReceipt: {
       findUnique: async () => null,
       findMany: async () => [{ lines: [{ productId: 'product', receivedQuantity: quantity('7') }] }],
@@ -31,6 +32,7 @@ test('goods receiving blocks cumulative quantities beyond the purchase order', a
 
 test('goods receiving refuses cancelled purchase orders', async () => {
   const tx = {
+    $queryRaw: async () => [],
     goodsReceipt: { findUnique: async () => null },
     store: { findFirst: async () => ({ id: 'store' }) },
     purchaseOrder: { findFirst: async () => ({
