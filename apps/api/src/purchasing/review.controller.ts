@@ -6,6 +6,7 @@ import { normalizeInvoiceRows, type RawInvoiceRow } from './invoice-import';
 import { matchInvoiceImport } from './invoice-matching';
 import type { CatalogueItem } from './delivery-matching';
 import { PrismaService } from '../prisma.service';
+import { previewInvoiceReconciliation } from './invoice-reconciliation';
 
 const MAX_LINES = 1000;
 function validLines(value: unknown): value is unknown[] {
@@ -148,6 +149,41 @@ export class PurchasingReviewController {
       };
     } catch (error) {
       throw new BadRequestException(error instanceof Error ? error.message : 'Invalid invoice rows');
+    }
+  }
+
+  @Post('supplier-invoice-reconciliation-preview')
+  async supplierInvoiceReconciliationPreview(
+    @Headers('authorization') token: string | undefined,
+    @Body() input: { tenantId: string; supplierId: string; rows: RawInvoiceRow[]; received: InvoiceAuditRow[] },
+  ) {
+    this.authorize(token);
+    if (!input || typeof input.tenantId !== 'string' || !input.tenantId.trim() ||
+        typeof input.supplierId !== 'string' || !input.supplierId.trim() ||
+        !validLines(input.rows) || !Array.isArray(input.received) || input.received.length > MAX_LINES) {
+      throw new BadRequestException('tenantId, supplierId, invoice rows and received array required');
+    }
+    const supplier = await this.db.supplier.findFirst({
+      where: { id: input.supplierId, tenantId: input.tenantId },
+      select: { id: true },
+    });
+    if (!supplier) throw new BadRequestException('Supplier not found in tenant');
+    const listings = await this.db.supplierProduct.findMany({
+      where: { supplierId: supplier.id, product: { tenantId: input.tenantId } },
+      select: { productId: true, supplierCode: true, product: { select: { barcodes: { select: { code: true } } } } },
+    });
+    const catalogue: CatalogueItem[] = listings.map(item => ({
+      productId: item.productId,
+      supplierCode: item.supplierCode,
+      barcodes: item.product.barcodes.map(barcode => barcode.code),
+    }));
+    try {
+      return {
+        ...previewInvoiceReconciliation(catalogue, input.rows, input.received),
+        receivedSource: 'CLIENT_PREVIEW_ONLY',
+      };
+    } catch (error) {
+      throw new BadRequestException(error instanceof Error ? error.message : 'Invalid invoice reconciliation');
     }
   }
 
