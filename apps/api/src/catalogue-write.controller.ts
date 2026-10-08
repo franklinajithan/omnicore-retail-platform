@@ -1,4 +1,4 @@
-import { BadRequestException, Body, ConflictException, Controller, Headers, Param, Post, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Body, ConflictException, Controller, Headers, Param, Patch, Post, UnauthorizedException } from '@nestjs/common';
 import { Prisma, ProductStatus } from '@prisma/client';
 import { PrismaService } from './prisma.service';
 
@@ -42,6 +42,30 @@ export class CatalogueWriteController {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') throw new ConflictException('Product code already exists');
       throw error;
     }
+  }
+  @Patch('products/:productId')
+  async updateProduct(@Headers('authorization') token: string | undefined, @Param('productId') productId: string,
+    @Body() input: { tenantId: string; actorId: string; name?: string; baseUnit?: string; status?: 'ACTIVE' | 'INACTIVE' }) {
+    this.auth(token, input?.tenantId, input?.actorId);
+    const data: { name?: string; baseUnit?: string; status?: ProductStatus } = {};
+    if (input.name !== undefined) data.name = this.clean(input.name, 'name', 300);
+    if (input.baseUnit !== undefined) data.baseUnit = this.clean(input.baseUnit, 'baseUnit', 30);
+    if (input.status !== undefined) {
+      if (!['ACTIVE', 'INACTIVE'].includes(input.status)) throw new BadRequestException('Invalid status');
+      data.status = input.status as ProductStatus;
+    }
+    if (!Object.keys(data).length) throw new BadRequestException('No changes provided');
+    return this.db.$transaction(async tx => {
+      const previous = await tx.product.findFirst({ where: { id: productId, tenantId: input.tenantId } });
+      if (!previous) throw new BadRequestException('Product not found in tenant');
+      const updated = await tx.product.update({ where: { id: productId }, data });
+      await tx.catalogueChange.create({ data: {
+        tenantId: input.tenantId, productId, actorId: input.actorId, action: 'PRODUCT_UPDATED',
+        before: { name: previous.name, baseUnit: previous.baseUnit, status: previous.status },
+        after: { name: updated.name, baseUnit: updated.baseUnit, status: updated.status },
+      } });
+      return updated;
+    });
   }
   @Post('products/:productId/barcodes')
   async addBarcode(@Headers('authorization') token: string | undefined, @Param('productId') productId: string, @Body() input: AddBarcode) {
