@@ -47,7 +47,7 @@ export class InventoryService {
     const expectedSign: Partial<Record<MovementType, number>> = {
       RECEIPT: 1, SALE: -1, WASTAGE: -1, TRANSFER_IN: 1, TRANSFER_OUT: -1,
     };
-    if (expectedSign[input.type] && delta.sgn() !== expectedSign[input.type]) {
+    if (expectedSign[input.type] && (delta.isPositive() ? 1 : -1) !== expectedSign[input.type]) {
       throw new BadRequestException('Movement direction does not match type');
     }
     try {
