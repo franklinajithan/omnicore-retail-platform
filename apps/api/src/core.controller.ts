@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Patch, Param, Post, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Patch, Param, Delete, Post, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { CoreAccessService } from './core-access';
 import { PrismaService } from './prisma.service';
 
@@ -45,6 +45,17 @@ export class CoreController {
     return this.db.tenantUser.create({ data: { tenantId: actor.tenantId, userId: input.userId.trim(), role: input.role }, select: { id: true, userId: true, role: true } });
   }
 
+  @Delete('users/:userId')
+  async removeUser(@Headers('authorization') authorization: string | undefined,
+    @Param('userId') userId: string) {
+    const actor = await this.access.require(authorization, ['OWNER']);
+    if (actor.storeId || actor.userId === userId) throw new ForbiddenException('Membership removal forbidden');
+    const result = await this.db.tenantUser.deleteMany({
+      where: { tenantId: actor.tenantId, userId, role: { not: 'OWNER' } }
+    });
+    if (result.count !== 1) throw new BadRequestException('User not found or protected');
+    return { removed: true, userId };
+  }
   @Patch('users/:userId/role')
   async updateRole(@Headers('authorization') authorization: string | undefined,
     @Param('userId') userId: string, @Body() input: { role: string }) {
