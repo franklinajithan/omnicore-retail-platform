@@ -48,7 +48,7 @@ export class PurchasingReceivingService {
           tx.store.findFirst({ where: { id: input.storeId, tenantId: input.tenantId } }),
         ]);
         if (!order || !store) throw new BadRequestException('Order or store not found in tenant');
-        if (![PurchaseOrderStatus.SUBMITTED, PurchaseOrderStatus.PARTIALLY_RECEIVED].includes(order.status)) throw new BadRequestException('Order cannot be received');
+        if (!([PurchaseOrderStatus.SUBMITTED, PurchaseOrderStatus.PARTIALLY_RECEIVED] as PurchaseOrderStatus[]).includes(order.status)) throw new BadRequestException('Order cannot be received');
         let plan: ReturnType<typeof planReceipt>;
         try {
           plan = planReceipt(
