@@ -1,4 +1,4 @@
-import { PrismaClient as ControlClient } from './generated/control-client';
+import { PrismaClient as ControlClient } from '../generated/control-client';
 import { Prisma, PrismaClient as RetailClient } from '@prisma/client';
 
 export type TenantRoute = {
