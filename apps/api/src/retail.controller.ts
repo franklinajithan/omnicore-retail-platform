@@ -79,7 +79,7 @@ export class RetailController {
     return this.db.$transaction(async tx=>{
       const current=await tx.promotion.findUnique({where:{id}});
       if(!current)throw new BadRequestException('Promotion not found');
-      if(![PromotionStatus.DRAFT,PromotionStatus.APPROVED,PromotionStatus.ACTIVE].includes(current.status))throw new BadRequestException('Promotion is no longer cancellable');
+      if(!([PromotionStatus.DRAFT,PromotionStatus.APPROVED,PromotionStatus.ACTIVE] as PromotionStatus[]).includes(current.status))throw new BadRequestException('Promotion is no longer cancellable');
       const changed=await tx.promotion.updateMany({where:{id,status:current.status},data:{status:PromotionStatus.CANCELLED}});
       if(changed.count!==1)throw new BadRequestException('Promotion changed during cancellation');
       await tx.promotionAudit.create({data:{promotionId:id,actorId:input.actorId,action:'CANCELLED',details:{reason:input.reason.trim()}}});
