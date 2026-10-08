@@ -18,7 +18,7 @@ describe('tenant assertion verification', () => {
   });
   it('rejects tampered signatures', () => {
     const signed = token(valid);
-    expect(() => verifyTenantAssertion(signed.slice(0, -1) + '0', secret, now)).toThrow();
+    expect(() => verifyTenantAssertion(signed.slice(0, -1) + (signed.endsWith('0') ? '1' : '0'), secret, now)).toThrow();
   });
   it('rejects expired tokens', () => {
     expect(() => verifyTenantAssertion(token({ ...valid, expiresAt: now - 1 }), secret, now)).toThrow();
