@@ -1,7 +1,7 @@
 import {NextResponse} from 'next/server';
 export const dynamic='force-dynamic';
 export async function GET(){
- const base=process.env.OMNICORE_API_URL;
+ // Do not expose Head Office data until employee authentication is implemented.\n if(process.env.OMNICORE_HO_WEB_AUTH_ENABLED!=='true')return NextResponse.json({error:'Head Office access is locked until server-side employee authorization is enabled.'},{status:403});\n const base=process.env.OMNICORE_API_URL;
  const token=process.env.OMNICORE_HO_TOKEN;
  const tenantId=process.env.OMNICORE_TENANT_ID;
  if(!base||!token||!tenantId)return NextResponse.json({error:'Head Office API configuration is missing. Set OMNICORE_API_URL, OMNICORE_HO_TOKEN and OMNICORE_TENANT_ID on the web deployment.'},{status:503});
