@@ -43,7 +43,8 @@ export class RetailController {
     this.authorize(token,true);
     if(!input||typeof input!=='object')throw new BadRequestException('Promotion details required');
     const startsAt=new Date(input.startsAt),endsAt=new Date(input.endsAt);
-    if(!input.tenantId||!input.name?.trim()||!input.createdBy||!Object.values(PromotionScope).includes(input.scope)||!Object.values(PromotionType).includes(input.type)||!Number.isFinite(startsAt.getTime())||!Number.isFinite(endsAt.getTime())||startsAt>=endsAt||!input.products?.length)throw new BadRequestException('Invalid promotion');
+    if(!input.tenantId||!input.name?.trim()||!input.createdBy||!Object.values(PromotionScope).includes(input.scope)||!Object.values(PromotionType).includes(input.type)||!Number.isFinite(startsAt.getTime())||!Number.isFinite(endsAt.getTime())||startsAt>=endsAt||!Array.isArray(input.products)||!input.products.length||!input.products.every(p=>p&&typeof p.productId==='string'))throw new BadRequestException('Invalid promotion');
+    if((input.storeIds!==undefined&&!Array.isArray(input.storeIds))||(input.zoneIds!==undefined&&!Array.isArray(input.zoneIds)))throw new BadRequestException('Invalid store or zone targets');
     const storeIds=[...new Set(input.storeIds||[])],zoneIds=[...new Set(input.zoneIds||[])];
     if(new Set(input.products.map(p=>p.productId)).size!==input.products.length)throw new BadRequestException('Duplicate product in promotion');
     if(input.scope==='STORES'&&!storeIds.length||input.scope==='ZONES'&&!zoneIds.length)throw new BadRequestException('Promotion targets required');
