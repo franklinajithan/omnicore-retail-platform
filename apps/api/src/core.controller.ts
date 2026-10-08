@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Post, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Patch, Param, Post, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { CoreAccessService } from './core-access';
 import { PrismaService } from './prisma.service';
 
@@ -45,4 +45,18 @@ export class CoreController {
     return this.db.tenantUser.create({ data: { tenantId: actor.tenantId, userId: input.userId.trim(), role: input.role }, select: { id: true, userId: true, role: true } });
   }
 
+  @Patch('users/:userId/role')
+  async updateRole(@Headers('authorization') authorization: string | undefined,
+    @Param('userId') userId: string, @Body() input: { role: string }) {
+    const actor = await this.access.require(authorization, ['OWNER']);
+    if (actor.storeId || actor.userId === userId) throw new ForbiddenException('Role change forbidden');
+    if (!userId || !input || !['ADMIN', 'MANAGER', 'STAFF', 'VIEWER'].includes(input.role))
+      throw new BadRequestException('Invalid role');
+    const result = await this.db.tenantUser.updateMany({
+      where: { tenantId: actor.tenantId, userId, role: { not: 'OWNER' } },
+      data: { role: input.role }
+    });
+    if (result.count !== 1) throw new BadRequestException('User not found or protected');
+    return { userId, role: input.role };
+  }
 }
