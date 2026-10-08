@@ -25,6 +25,7 @@ test('POS device credentials reject tampering and missing configuration', () => 
 });
 test('POS device credentials reject invalid scope and expired tokens', () => {
   assert.throws(() => verifyDeviceCredential(token({ ...claims(), tenantId: 'other' }), secret));
+  assert.throws(() => verifyDeviceCredential(token({ ...claims(), deviceId: 'other' }), secret));
   assert.throws(() => verifyDeviceCredential(token({ ...claims(), exp: 1 }), secret));
   assert.throws(() => verifyDeviceCredential(token({ ...claims(), exp: claims().iat + 172800 }), secret));
 });
