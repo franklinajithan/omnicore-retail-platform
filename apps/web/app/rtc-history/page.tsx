@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import { AppSidebar, DrawerBackdrop } from '../app-shell';
+import { WorkspaceTabs } from '../workspace';
 import { AgGridReact } from 'ag-grid-react';
 import type { ColDef } from 'ag-grid-community';
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
@@ -39,6 +41,7 @@ export default function RtcHistoryPage() {
   const [rows, setRows] = useState<EventRow[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const load = useCallback(async () => {
     if (!storeId.trim() || !token.trim()) { setError('Store ID and store credential required'); return; }
     setLoading(true); setError('');
@@ -57,7 +60,7 @@ export default function RtcHistoryPage() {
   }, [storeId, token]);
 
   return (
-    <main style={{ padding: 24, display: 'grid', gap: 16 }}>
+    <div className="app"><DrawerBackdrop open={menuOpen} onClose={() => setMenuOpen(false)} /><AppSidebar active="RTC & Markdown" open={menuOpen} onClose={() => setMenuOpen(false)} /><main className="main"><header className="top"><button className="menuButton" onClick={() => setMenuOpen(true)} aria-label="Open navigation">Menu</button><WorkspaceTabs /></header><div className="content" style={{ display: 'grid', gap: 16 }}>
       <header><h1>RTC History</h1><p>Review reduced-to-clear label activity for your store.</p></header>
       <form onSubmit={e => { e.preventDefault(); void load(); }} style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         <label>Store <input value={storeId} onChange={e => setStoreId(e.target.value)} placeholder="Store code or ID" required /></label>
@@ -69,6 +72,6 @@ export default function RtcHistoryPage() {
         <AgGridReact<EventRow> rowData={rows} columnDefs={columns} defaultColDef={{ sortable: true, filter: true, resizable: true }} pagination paginationPageSize={25} />
       </div>
       <p>{rows.length} events loaded. The API currently returns the latest 200 events.</p>
-    </main>
+    </div></main></div>
   );
 }
