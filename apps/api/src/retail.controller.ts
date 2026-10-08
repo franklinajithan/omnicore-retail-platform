@@ -195,7 +195,8 @@ export class RetailController {
       tenantId:store.tenantId,storeId:store.id,productId:product.id,originalPrice:price.retailPrice,
       reducedPrice:reduced,quantity:input.quantity,remainingQuantity:input.quantity,
       reason:input.reason.trim(),labelCode:input.labelCode.trim(),expiresAt:expiry,
-      createdByEmployeeId:employee.id
+      createdByEmployeeId:employee.id,
+      events:{create:{action:'CREATED',actorId:employee.id,quantity:input.quantity,remainingBefore:0,remainingAfter:input.quantity,reason:input.reason.trim()}}
     }});
   }
   @Get('stores/:storeId/rtc')
@@ -216,10 +217,14 @@ export class RetailController {
     if(!verifyStoreCredential(token,store.id))throw new UnauthorizedException('Store-specific credential required');
     const employee=await this.db.employee.findFirst({where:{id:input.employeeId,tenantId:store.tenantId,status:'ACTIVE',stores:{some:{storeId:store.id}}},select:{id:true}});
     if(!employee)throw new BadRequestException('Employee not assigned to store');
-    // TODO: persist the cancellation actor and reason in a dedicated RTC audit table.
-    const changed=await this.db.rtcMarkdown.updateMany({where:{id:rtcId,tenantId:store.tenantId,storeId:store.id,status:'ACTIVE'},data:{status:'CANCELLED'}});
-    if(changed.count!==1)throw new BadRequestException('Active RTC not found');
-    return {cancelled:true,rtcId};
+    return this.db.$transaction(async tx=>{
+      const current=await tx.rtcMarkdown.findFirst({where:{id:rtcId,tenantId:store.tenantId,storeId:store.id,status:'ACTIVE'},select:{remainingQuantity:true}});
+      if(!current)throw new BadRequestException('Active RTC not found');
+      const changed=await tx.rtcMarkdown.updateMany({where:{id:rtcId,tenantId:store.tenantId,storeId:store.id,status:'ACTIVE'},data:{status:'CANCELLED'}});
+      if(changed.count!==1)throw new BadRequestException('RTC was modified');
+      await tx.rtcAuditEvent.create({data:{rtcId,action:'CANCELLED',actorId:employee.id,remainingBefore:current.remainingQuantity,remainingAfter:current.remainingQuantity,reason:input.reason.trim()}});
+      return {cancelled:true,rtcId};
+    });
   }
 
 }
