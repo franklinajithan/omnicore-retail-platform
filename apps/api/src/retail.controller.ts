@@ -25,7 +25,7 @@ export class RetailController {
   async assignStore(@Headers('authorization') token:string|undefined,@Param('zoneId') zoneId:string,@Body() input:{storeId:string}){
     this.authorize(token,true);
     const zone=await this.db.pricingZone.findUnique({where:{id:zoneId}});
-    const store=await this.db.store.findUnique({where:{id:input.storeId}});
+    const store=await this.db.store.findUnique({where:{id:input?.storeId||'00000000-0000-0000-0000-000000000000'}});
     if(!zone||!store||zone.tenantId!==store.tenantId)throw new BadRequestException('Zone and store must belong to same tenant');
     return this.db.$transaction(async tx=>{
       await tx.storeZoneAssignment.updateMany({where:{storeId:store.id,effectiveTo:null},data:{effectiveTo:new Date()}});
@@ -41,8 +41,9 @@ export class RetailController {
   @Post('promotions')
   async createPromotion(@Headers('authorization') token:string|undefined,@Body() input:{tenantId:string;name:string;scope:PromotionScope;type:PromotionType;startsAt:string;endsAt:string;createdBy:string;storeIds?:string[];zoneIds?:string[];products:{productId:string;value:number;requiredQuantity?:number}[]}){
     this.authorize(token,true);
+    if(!input||typeof input!=='object')throw new BadRequestException('Promotion details required');
     const startsAt=new Date(input.startsAt),endsAt=new Date(input.endsAt);
-    if(!input||!input.tenantId||!input.name?.trim()||!input.createdBy||!Object.values(PromotionScope).includes(input.scope)||!Object.values(PromotionType).includes(input.type)||!Number.isFinite(startsAt.getTime())||!Number.isFinite(endsAt.getTime())||startsAt>=endsAt||!input.products?.length)throw new BadRequestException('Invalid promotion');
+    if(!input.tenantId||!input.name?.trim()||!input.createdBy||!Object.values(PromotionScope).includes(input.scope)||!Object.values(PromotionType).includes(input.type)||!Number.isFinite(startsAt.getTime())||!Number.isFinite(endsAt.getTime())||startsAt>=endsAt||!input.products?.length)throw new BadRequestException('Invalid promotion');
     const storeIds=[...new Set(input.storeIds||[])],zoneIds=[...new Set(input.zoneIds||[])];
     if(new Set(input.products.map(p=>p.productId)).size!==input.products.length)throw new BadRequestException('Duplicate product in promotion');
     if(input.scope==='STORES'&&!storeIds.length||input.scope==='ZONES'&&!zoneIds.length)throw new BadRequestException('Promotion targets required');
@@ -58,7 +59,7 @@ export class RetailController {
   @Patch('promotions/:id/approve')
   async approve(@Headers('authorization') token:string|undefined,@Param('id') id:string,@Body() input:{actorId:string}){
     this.authorize(token,true);
-    if(!input.actorId)throw new BadRequestException('actorId required');
+    if(!input?.actorId)throw new BadRequestException('actorId required');
     return this.db.$transaction(async tx=>{
       const p=await tx.promotion.findUnique({where:{id}});
       if(!p||p.status!==PromotionStatus.DRAFT)throw new BadRequestException('Only drafts can be approved');
