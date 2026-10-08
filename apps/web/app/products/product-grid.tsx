@@ -17,7 +17,7 @@ export default function ProductGrid({rows,workingStore,onPreview,onOpen}:{rows:P
  useEffect(()=>{try{const s=JSON.parse(localStorage.getItem(storageKey)||'{}');setDensity(s.density==='standard'?'standard':'compact');setHidden(s.hidden&&typeof s.hidden==='object'?s.hidden:{});}catch{setDensity('compact');setHidden({});}setLoadedKey(storageKey);},[storageKey]);
  useEffect(()=>{if(loadedKey!==storageKey || appliedStoreRef.current===storageKey)return;const grid=gridRef.current?.api;if(!grid)return;grid.resetColumnState();Object.entries(hidden).forEach(([key,isHidden])=>{if(isHidden)grid.setColumnsVisible([key==='product'?'name':key],false)});appliedStoreRef.current=storageKey;},[hidden,loadedKey,storageKey]);
  useEffect(()=>{if(loadedKey!==storageKey)return;try{localStorage.setItem(storageKey,JSON.stringify({density,hidden}))}catch{}},[density,hidden,storageKey,loadedKey]);
- const data=useMemo<Row[]>(()=>rows.map(p=>({...p,margin:Math.round((p.retail-p.cost)/p.retail*100)})),[rows]);
+ const data=useMemo<Row[]>(()=>rows.map(p=>({...p,margin:p.retail>0?Math.round((p.retail-p.cost)/p.retail*100):0})),[rows]);
  const columns=useMemo<ColDef<Row>[]>(()=>[
   {field:'itemCode',headerName:labels.itemCode,width:115,pinned:'left'},
   {field:'name',headerName:labels.product,minWidth:280,flex:1},
