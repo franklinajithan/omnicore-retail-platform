@@ -8,9 +8,7 @@ import {Prisma,PromotionScope,PromotionStatus,PromotionType} from '@prisma/clien
 export class RetailController {
   constructor(private readonly db:PrismaService,private readonly coreAccess:CoreAccessService){}
   private async authorize(header:string|undefined,admin=false,tenantId?:string){
-    if(admin){return this.coreAccess.require(header,['OWNER','ADMIN'],tenantId);}
-    const secret=admin?process.env.OMNICORE_HO_TOKEN:process.env.OMNICORE_POS_TOKEN;
-    if(!secret || header!==`Bearer ${secret}`) throw new UnauthorizedException('Configured bearer token required');
+    return this.coreAccess.require(header,admin?['OWNER','ADMIN']:['OWNER','ADMIN','MANAGER','STAFF','VIEWER'],tenantId);
   }
   @Get('zones')
   async zones(@Headers('authorization') token:string|undefined,@Query('tenantId') tenantId:string){
