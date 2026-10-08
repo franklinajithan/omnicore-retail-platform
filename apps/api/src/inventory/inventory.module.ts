@@ -6,10 +6,12 @@ import { StockTransferController } from './stock-transfer.controller';
 import { StockTransferService } from './stock-transfer.service';
 import { GoodsReceivingController } from './goods-receiving.controller';
 import { GoodsReceivingService } from './goods-receiving.service';
+import { StockAdjustmentController } from './stock-adjustment.controller';
+import { StockAdjustmentService } from './stock-adjustment.service';
 
 @Module({
-  controllers: [InventoryController, StockTransferController, GoodsReceivingController],
-  providers: [InventoryService, StockTransferService, GoodsReceivingService, PrismaService],
-  exports: [InventoryService, StockTransferService, GoodsReceivingService],
+  controllers: [InventoryController, StockTransferController, GoodsReceivingController, StockAdjustmentController],
+  providers: [InventoryService, StockTransferService, GoodsReceivingService, StockAdjustmentService, PrismaService],
+  exports: [InventoryService, StockTransferService, GoodsReceivingService, StockAdjustmentService],
 })
 export class InventoryModule {}
