@@ -89,10 +89,11 @@ export class RetailController {
   @Get('stores/:storeId/promotions')
   async storePromotions(@Headers('authorization') token:string|undefined,@Param('storeId') storeId:string){
     this.authorize(token);
-    const store=await this.db.store.findUnique({where:{id:storeId}});
+    const store=await this.db.store.findFirst({where:{OR:[{id:/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(storeId)?storeId:'00000000-0000-0000-0000-000000000000'},{code:storeId}]}});
     if(!store)throw new BadRequestException('Unknown store');
+    const resolvedStoreId=store.id;
     const now=new Date();
-    const assignments=await this.db.storeZoneAssignment.findMany({where:{storeId,effectiveFrom:{lte:now},OR:[{effectiveTo:null},{effectiveTo:{gt:now}}]},select:{zoneId:true}});
-    return this.db.promotion.findMany({where:{tenantId:store.tenantId,status:{in:[PromotionStatus.APPROVED,PromotionStatus.ACTIVE]},endsAt:{gt:now},OR:[{scope:PromotionScope.ALL_STORES},{scope:PromotionScope.STORES,stores:{some:{storeId}}},{scope:PromotionScope.ZONES,zones:{some:{zoneId:{in:assignments.map(a=>a.zoneId)}}}}]},include:{products:true},orderBy:[{priority:'desc'},{createdAt:'desc'}]});
+    const assignments=await this.db.storeZoneAssignment.findMany({where:{storeId:resolvedStoreId,effectiveFrom:{lte:now},OR:[{effectiveTo:null},{effectiveTo:{gt:now}}]},select:{zoneId:true}});
+    return this.db.promotion.findMany({where:{tenantId:store.tenantId,status:{in:[PromotionStatus.APPROVED,PromotionStatus.ACTIVE]},endsAt:{gt:now},OR:[{scope:PromotionScope.ALL_STORES},{scope:PromotionScope.STORES,stores:{some:{storeId:resolvedStoreId}}},{scope:PromotionScope.ZONES,zones:{some:{zoneId:{in:assignments.map(a=>a.zoneId)}}}}]},include:{products:true},orderBy:[{priority:'desc'},{createdAt:'desc'}]});
   }
 }
