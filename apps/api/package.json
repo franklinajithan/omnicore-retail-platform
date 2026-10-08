@@ -5,7 +5,7 @@
     "dev": "nest start --watch",
     "build": "nest build",
     "typecheck": "tsc --noEmit",
-    "prisma:generate": "prisma generate --schema ../../packages/database/prisma/schema.prisma"
+    "prisma:generate": "npm install --prefix ../../packages/database --no-package-lock --ignore-scripts --no-audit --no-fund && prisma generate --schema ../../packages/database/prisma/schema.prisma"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
