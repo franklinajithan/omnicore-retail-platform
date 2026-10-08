@@ -1,3 +1,4 @@
+import {verifyStoreCredential} from './store-credential';
 import {BadRequestException,Body,Controller,Get,Headers,Param,Patch,Post,Query,UnauthorizedException} from '@nestjs/common';
 import {PrismaService} from './prisma.service';
 import {Prisma,PromotionScope,PromotionStatus,PromotionType} from '@prisma/client';
@@ -88,9 +89,10 @@ export class RetailController {
   }
   @Get('stores/:storeId/promotions')
   async storePromotions(@Headers('authorization') token:string|undefined,@Param('storeId') storeId:string){
-    this.authorize(token);
+
     const store=await this.db.store.findFirst({where:{OR:[{id:/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(storeId)?storeId:'00000000-0000-0000-0000-000000000000'},{code:storeId}]}});
     if(!store)throw new BadRequestException('Unknown store');
+    if(!verifyStoreCredential(token,store.id))throw new UnauthorizedException('Store-specific credential required');
     const resolvedStoreId=store.id;
     const now=new Date();
     const assignments=await this.db.storeZoneAssignment.findMany({where:{storeId:resolvedStoreId,effectiveFrom:{lte:now},OR:[{effectiveTo:null},{effectiveTo:{gt:now}}]},select:{zoneId:true}});
@@ -102,9 +104,10 @@ export class RetailController {
    */
   @Get('stores/:storeId/pricing-snapshot')
   async pricingSnapshot(@Headers('authorization') token:string|undefined,@Param('storeId') storeId:string){
-    this.authorize(token);
+
     const store=await this.db.store.findFirst({where:{OR:[{id:/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(storeId)?storeId:'00000000-0000-0000-0000-000000000000'},{code:storeId}]},select:{id:true,tenantId:true,code:true}});
     if(!store)throw new BadRequestException('Unknown store');
+    if(!verifyStoreCredential(token,store.id))throw new UnauthorizedException('Store-specific credential required');
     const now=new Date();
     const zones=await this.db.storeZoneAssignment.findMany({where:{storeId:store.id,effectiveFrom:{lte:now},OR:[{effectiveTo:null},{effectiveTo:{gt:now}}]},select:{zoneId:true}});
     const zoneIds=zones.map(z=>z.zoneId);
@@ -167,7 +170,7 @@ export class RetailController {
   @Post('stores/:storeId/rtc')
   async createRtc(@Headers('authorization') token:string|undefined,@Param('storeId') storeId:string,
     @Body() input:{productId:string;reducedPrice:string;quantity:number;reason:string;expiresAt:string;employeeId:string;labelCode:string}){
-    this.authorize(token);
+
     if(!input?.productId||!input?.employeeId||!input?.reason?.trim()||!input?.labelCode?.trim()||
       !Number.isSafeInteger(input.quantity)||input.quantity<1||input.quantity>10000)
       throw new BadRequestException('Invalid RTC details');
@@ -179,6 +182,7 @@ export class RetailController {
       throw new BadRequestException('Invalid RTC price or expiry');
     const store=await this.db.store.findFirst({where:{OR:[{id:/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(storeId)?storeId:'00000000-0000-0000-0000-000000000000'},{code:storeId}]},select:{id:true,tenantId:true}});
     if(!store)throw new BadRequestException('Unknown store');
+    if(!verifyStoreCredential(token,store.id))throw new UnauthorizedException('Store-specific credential required');
     const now=new Date();
     const [product,employee,price]=await Promise.all([
       this.db.product.findFirst({where:{id:input.productId,tenantId:store.tenantId,status:'ACTIVE'},select:{id:true}}),
@@ -196,18 +200,20 @@ export class RetailController {
   }
   @Get('stores/:storeId/rtc')
   async listRtc(@Headers('authorization') token:string|undefined,@Param('storeId') storeId:string){
-    this.authorize(token);
+
     const store=await this.db.store.findFirst({where:{OR:[{id:/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(storeId)?storeId:'00000000-0000-0000-0000-000000000000'},{code:storeId}]},select:{id:true,tenantId:true}});
     if(!store)throw new BadRequestException('Unknown store');
+    if(!verifyStoreCredential(token,store.id))throw new UnauthorizedException('Store-specific credential required');
     return this.db.rtcMarkdown.findMany({where:{tenantId:store.tenantId,storeId:store.id},orderBy:{createdAt:'desc'},take:200});
   }
   @Patch('stores/:storeId/rtc/:rtcId/cancel')
   async cancelRtc(@Headers('authorization') token:string|undefined,@Param('storeId') storeId:string,@Param('rtcId') rtcId:string,
     @Body() input:{employeeId:string;reason:string}){
-    this.authorize(token);
+
     if(!input?.employeeId||!input?.reason?.trim())throw new BadRequestException('Employee and reason required');
     const store=await this.db.store.findFirst({where:{OR:[{id:/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(storeId)?storeId:'00000000-0000-0000-0000-000000000000'},{code:storeId}]},select:{id:true,tenantId:true}});
     if(!store)throw new BadRequestException('Unknown store');
+    if(!verifyStoreCredential(token,store.id))throw new UnauthorizedException('Store-specific credential required');
     const employee=await this.db.employee.findFirst({where:{id:input.employeeId,tenantId:store.tenantId,status:'ACTIVE',stores:{some:{storeId:store.id}}},select:{id:true}});
     if(!employee)throw new BadRequestException('Employee not assigned to store');
     // TODO: persist the cancellation actor and reason in a dedicated RTC audit table.
