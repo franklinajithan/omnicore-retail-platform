@@ -34,13 +34,14 @@ export default function ProductGrid({rows,workingStore,onPreview,onOpen}:{rows:P
  const reset=()=>{setDensity('compact');setHidden({});api()?.resetColumnState();api()?.setFilterModel(null);try{localStorage.removeItem(storageKey)}catch{}};
  const toggle=(key:Key)=>{if(loadedKey!==storageKey)return;const field=key==='product'?'name':key;setHidden(v=>({...v,[key]:!v[key]}));api()?.setColumnsVisible([field],!!hidden[key])};
  const copy=()=>{api()?.copySelectedRowsToClipboard({includeHeaders:true})};
+ const exportCsv=()=>{api()?.exportDataAsCsv({fileName:'omnicore-products-'+workingStore.toLowerCase().replace(/[^a-z0-9-]/g,'-')+'.csv'})};
  const openFrom=(p?:Row|null)=>{if(p)onOpen(p)};
  const click=(e:RowClickedEvent<Row>)=>{if(e.data)onPreview(e.data)};
  const dbl=(e:RowDoubleClickedEvent<Row>)=>openFrom(e.data);
  return <Box className="agProductShell">
   <Paper className="gridToolbar" variant="outlined"><Stack direction="row" spacing={1} alignItems="center" sx={{width:'100%',flexWrap:'wrap'}}>
    <Typography fontWeight={600}>Product grid · {workingStore}</Typography><Typography variant="body2" color="text.secondary" sx={{flex:1}}>AG Grid · sort, filter, resize, reorder, keyboard navigation & Excel copy</Typography>
-   <Button variant="outlined" size="small" onClick={copy}>Copy rows</Button><Button variant="outlined" size="small" startIcon={<Icon name="Columns"/>} onClick={()=>setChooser(!chooser)}>Columns</Button>
+   <Button variant="outlined" size="small" onClick={copy}>Copy rows</Button><Button variant="outlined" size="small" onClick={exportCsv}>Export CSV</Button><Button variant="outlined" size="small" startIcon={<Icon name="Columns"/>} onClick={()=>setChooser(!chooser)}>Columns</Button>
    <Select size="small" value={density} onChange={e=>setDensity(e.target.value as 'compact'|'standard')}><MenuItem value="compact">Compact</MenuItem><MenuItem value="standard">Comfortable</MenuItem></Select>
    <Button variant="outlined" size="small" startIcon={<Icon name="Reset"/>} onClick={reset}>Reset view</Button>
   </Stack></Paper>
