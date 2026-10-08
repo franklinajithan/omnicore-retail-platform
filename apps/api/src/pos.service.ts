@@ -7,6 +7,10 @@ for(const line of lines){
  if(!line?.id||!line?.product_id||!Number.isFinite(qty)||qty<=0||!Number.isSafeInteger(unit)||unit<0||!Number.isSafeInteger(total)||total<0)throw new BadRequestException('INVALID_SALE_LINE');
  if(line.rtc_id&&(!Number.isSafeInteger(qty)||qty*unit!==total))throw new BadRequestException('RTC_LINE_TOTAL_MISMATCH');
 }
+const lineTotalPence=lines.reduce((sum:any,line:any)=>sum+Number(line.line_total),0);
+const paidPence=payments.reduce((sum:any,payment:any)=>sum+Number(payment?.amount),0);
+if(!Number.isSafeInteger(lineTotalPence)||!Number.isSafeInteger(Number(s.total))||Number(s.total)!==lineTotalPence)throw new BadRequestException('SALE_TOTAL_MISMATCH');
+if(!payments.every((payment:any)=>payment?.method&&Number.isSafeInteger(Number(payment.amount))&&Number(payment.amount)>=0)||!Number.isSafeInteger(paidPence)||paidPence!==lineTotalPence)throw new BadRequestException('PAYMENT_TOTAL_MISMATCH');
 await this.db.$transaction(async tx=>{await tx.posSale.create({data:{id,tenantId:store.tenantId,storeId:store.id,tillId:s.till_id,cashierId:s.cashier_id,receiptNo:s.receipt_no,idempotencyKey:payload.idempotencyKey,total:Number(s.total)/100,status:s.status||'COMPLETED',soldAt:new Date(s.created_at)}});for(const l of lines){
 if(l.rtc_id){
   const qty=Number(l.qty);
