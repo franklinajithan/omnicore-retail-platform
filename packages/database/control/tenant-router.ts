@@ -1,5 +1,5 @@
 import { PrismaClient as ControlClient } from './generated/control-client';
-import { PrismaClient as RetailClient } from '@prisma/client';
+import { Prisma, PrismaClient as RetailClient } from '@prisma/client';
 
 export type TenantRoute = {
   tenantId: string;
@@ -70,7 +70,7 @@ export class RetailConnectionManager {
 export async function withTenantTransaction<T>(
   client: RetailClient,
   tenantId: string,
-  operation: (tx: Parameters<Parameters<RetailClient['$transaction']>[0]>[0]) => Promise<T>,
+  operation: (tx: Prisma.TransactionClient) => Promise<T>,
 ): Promise<T> {
   return client.$transaction(async tx => {
     await tx.$executeRaw`SELECT set_config('app.tenant_id', ${tenantId}, true)`;
