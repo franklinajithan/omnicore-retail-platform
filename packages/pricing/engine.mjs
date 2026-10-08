@@ -27,6 +27,8 @@ export function calculatePromotion(baseMinor, promotion, quantity = 1) {
   return Math.max(0, Math.min(baseMinor * quantity, total));
 }
 export function resolvePrice({baseMinor, quantity = 1, promotions = [], storeId, zoneIds = [], at = new Date()}) {
+  if (!Number.isSafeInteger(baseMinor) || baseMinor < 0 || !Number.isSafeInteger(quantity) || quantity < 1 || !Number.isSafeInteger(baseMinor * quantity)) throw new RangeError('Invalid base price, quantity, or amount overflow');
+  if (!Array.isArray(promotions) || !Array.isArray(zoneIds)) throw new RangeError('Invalid promotion or zone list');
   const now = new Date(at).getTime();
   if (!Number.isFinite(now)) throw new RangeError('Invalid timestamp');
   const eligible = promotions.filter(p =>
@@ -34,7 +36,7 @@ export function resolvePrice({baseMinor, quantity = 1, promotions = [], storeId,
     (p.scope === 'ALL_STORES' || p.scope === 'STORES' && p.storeIds?.includes(storeId) ||
       p.scope === 'ZONES' && p.zoneIds?.some(z => zoneIds.includes(z))));
   const candidates = eligible.map(p => ({promotionId:p.id, totalMinor:calculatePromotion(baseMinor,p,quantity), priority:p.priority ?? 0}));
-  candidates.push({promotionId:null,totalMinor:baseMinor*quantity,priority:-Infinity});
+  candidates.push({promotionId:null,totalMinor:baseMinor*quantity,priority:Infinity});
   candidates.sort((a,b)=>a.totalMinor-b.totalMinor || b.priority-a.priority || String(a.promotionId).localeCompare(String(b.promotionId)));
   return candidates[0];
 }
