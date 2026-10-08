@@ -7,6 +7,12 @@ export async function syncPromotions(apiUrl:string,storeId:string,token?:string)
  const rows:any[]=await response.json();
  if(!Array.isArray(rows))throw new Error('Invalid promotion payload');
  const now=new Date().toISOString(),db=getDb();
+ // Validate the complete response before replacing the last known-good offline cache.
+ for(const p of rows){
+  if(typeof p.id!=='string'||!Array.isArray(p.products)||!['ALL_STORES','ZONES','STORES'].includes(p.scope)||!['FIXED_PRICE','PERCENT_OFF','AMOUNT_OFF','MULTIBUY_FIXED_PRICE'].includes(p.type)||!Number.isFinite(Date.parse(p.startsAt))||!Number.isFinite(Date.parse(p.endsAt)))throw new Error('Invalid promotion response; existing cache retained');
+  for(const line of p.products){if(typeof line.productId!=='string'||!Number.isFinite(Number(line.value))||Number(line.value)<0)throw new Error('Invalid promotion rule; existing cache retained');}
+ }
+
  const update=db.transaction(()=>{
   db.prepare('DELETE FROM promotion_rules WHERE store_id=?').run(storeId);
   const insert=db.prepare('INSERT INTO promotion_rules(promotion_id,product_id,store_id,scope,type,value,required_quantity,priority,starts_at,ends_at) VALUES(?,?,?,?,?,?,?,?,?,?)');
