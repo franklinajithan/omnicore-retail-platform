@@ -9,7 +9,7 @@ export async function syncPromotions(apiUrl:string,storeId:string,token?:string)
  const now=new Date().toISOString(),db=getDb();
  // Validate the complete response before replacing the last known-good offline cache.
  for(const p of rows){
-  if(typeof p.id!=='string'||!Array.isArray(p.products)||!['ALL_STORES','ZONES','STORES'].includes(p.scope)||!['FIXED_PRICE','PERCENT_OFF','AMOUNT_OFF','MULTIBUY_FIXED_PRICE'].includes(p.type)||!Number.isFinite(Date.parse(p.startsAt))||!Number.isFinite(Date.parse(p.endsAt))||Date.parse(p.startsAt)>=Date.parse(p.endsAt))throw new Error('Invalid promotion response; existing cache retained');
+  if(typeof p.id!=='string'||!['APPROVED','ACTIVE'].includes(p.status)||!Array.isArray(p.products)||!['ALL_STORES','ZONES','STORES'].includes(p.scope)||!['FIXED_PRICE','PERCENT_OFF','AMOUNT_OFF','MULTIBUY_FIXED_PRICE'].includes(p.type)||!Number.isFinite(Date.parse(p.startsAt))||!Number.isFinite(Date.parse(p.endsAt))||Date.parse(p.startsAt)>=Date.parse(p.endsAt))throw new Error('Invalid promotion response; existing cache retained');
   for(const line of p.products){if(typeof line.productId!=='string'||!Number.isFinite(Number(line.value))||Number(line.value)<0||(p.type==='PERCENT_OFF'&&Number(line.value)>100)||(p.type==='MULTIBUY_FIXED_PRICE'&&(!Number.isSafeInteger(line.requiredQuantity)||line.requiredQuantity<2)))throw new Error('Invalid promotion rule; existing cache retained');}
  }
 
