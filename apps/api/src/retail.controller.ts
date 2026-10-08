@@ -174,7 +174,7 @@ export class RetailController {
     if(!input?.productId||!input?.employeeId||!input?.reason?.trim()||!input?.labelCode?.trim()||
       !Number.isSafeInteger(input.quantity)||input.quantity<1||input.quantity>10000)
       throw new BadRequestException('Invalid RTC details');
-    if(typeof input.reducedPrice!=='string'||!/^(?:0|[1-9]\\d*)(?:\\.\\d{1,2})?$/.test(input.reducedPrice))
+    if(typeof input.reducedPrice!=='string'||!/^(?:0|[1-9][0-9]*)(?:[.][0-9]{1,2})?$/.test(input.reducedPrice))
       throw new BadRequestException('RTC reduced price must be a non-negative GBP decimal string');
     const reduced=new Prisma.Decimal(input.reducedPrice);
     const expiry=new Date(input.expiresAt);
