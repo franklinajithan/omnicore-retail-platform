@@ -50,3 +50,17 @@ test.describe('Team 10 store-specific grid preferences', () => {
     await expect(page.getByRole('columnheader', { name: 'Barcode / EAN' })).toHaveCount(0);
   });
 });
+
+test.describe('Team 10 grid interaction regression', () => {
+  test('sorting remains active when columns are hidden', async ({ page }) => {
+    await page.goto('/products');
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    const stock = page.getByRole('columnheader', { name: 'Stock' });
+    await stock.click();
+    await expect(stock).toHaveAttribute('aria-sort', 'ascending');
+    await page.getByRole('button', { name: 'Columns' }).click();
+    await page.getByRole('checkbox', { name: 'Barcode / EAN' }).uncheck();
+    await expect(stock).toHaveAttribute('aria-sort', 'ascending');
+  });
+});
