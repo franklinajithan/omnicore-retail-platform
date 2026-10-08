@@ -29,13 +29,13 @@ export function verifyCoreToken(authorization: string | undefined, secret: strin
   const supplied = decodeBase64Url(signature);
   if (expected.length !== supplied.length || !timingSafeEqual(expected, supplied)) throw new UnauthorizedException('Invalid token signature');
   const now = Math.floor(Date.now() / 1000);
-  if (typeof claims.exp !== 'number' || !Number.isInteger(claims.exp) || claims.exp <= now ||
-      typeof claims.iat !== 'number' || claims.iat > now + 60 ||
+  if (typeof claims.exp !== 'number' || !Number.isInteger(claims.exp) || claims.exp <= now || claims.exp > now + 86400 ||
+      typeof claims.iat !== 'number' || !Number.isInteger(claims.iat) || claims.iat > now + 60 ||
       typeof claims.sub !== 'string' || !claims.sub.trim() ||
       typeof claims.tenantId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(claims.tenantId)) {
     throw new UnauthorizedException('Invalid or expired token claims');
   }
-  if (claims.storeId !== undefined && typeof claims.storeId !== 'string') throw new UnauthorizedException('Invalid store claim');
+  if (claims.storeId !== undefined && (typeof claims.storeId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(claims.storeId))) throw new UnauthorizedException('Invalid store claim');
   return { userId: claims.sub, tenantId: claims.tenantId, ...(claims.storeId ? { storeId: claims.storeId } : {}) };
 }
 
