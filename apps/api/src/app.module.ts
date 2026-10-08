@@ -8,10 +8,11 @@ import { HybridModeGuard } from './hybrid-mode.guard';
 import { TenantMembershipService } from './tenant-membership.service';
 import { StoreAccessService } from './store-access.service';
 import { StoreAccessController } from './store-access.controller';
+import { StoreCatalogController } from './store-catalog.controller';
 import { TenantIdentityController } from './tenant-identity.controller';
 
 @Module({
-  controllers: [PosController, RetailController, TenantIdentityController, StoreAccessController],
+  controllers: [PosController, RetailController, TenantIdentityController, StoreAccessController, StoreCatalogController],
   providers: [
     PosService,
     PrismaService,
