@@ -26,7 +26,9 @@ if(l.rtc_id){
     status:'ACTIVE',expiresAt:{gt:new Date()},remainingQuantity:{gte:qty}
   },data:{remainingQuantity:{decrement:qty}}});
   if(result.count!==1)throw new BadRequestException('RTC_QUANTITY_CONFLICT');
-  await tx.rtcAuditEvent.create({data:{rtcId:l.rtc_id,action:'REDEEMED',actorId:s.cashier_id,saleId:id,quantity:qty,remainingBefore:rtc.remainingQuantity,remainingAfter:rtc.remainingQuantity-qty}});
+  const updatedRtc=await tx.rtcMarkdown.findFirst({where:{id:l.rtc_id,tenantId:store.tenantId,storeId:store.id},select:{remainingQuantity:true}});
+  if(!updatedRtc)throw new BadRequestException('RTC_REDEMPTION_AUDIT_FAILED');
+  await tx.rtcAuditEvent.create({data:{rtcId:l.rtc_id,action:'REDEEMED',actorId:s.cashier_id,saleId:id,quantity:qty,remainingBefore:updatedRtc.remainingQuantity+qty,remainingAfter:updatedRtc.remainingQuantity}});
   await tx.rtcMarkdown.updateMany({where:{id:l.rtc_id,remainingQuantity:0,status:'ACTIVE'},data:{status:'SOLD'}});
 }
 await tx.posSaleLine.create({data:{saleId:id,productId:l.product_id,itemCode:l.item_code,barcode:l.barcode||null,name:l.name,quantity:Number(l.qty),unitPrice:Number(l.unit_price)/100,vatRate:Number(l.vat_rate),lineTotal:Number(l.line_total)/100}});await tx.stockMovement.create({data:{tenantId:store.tenantId,storeId:store.id,productId:l.product_id,type:'SALE',quantityDelta:-Number(l.qty),referenceType:'POS_SALE',referenceId:id,idempotencyKey:payload.idempotencyKey+':'+l.id}});}for(const p of payments)await tx.posPayment.create({data:{saleId:id,method:p.method,amount:Number(p.amount)/100,reference:p.reference||null}});});return{accepted:true,duplicate:false,id,receiptNo:s.receipt_no};}
