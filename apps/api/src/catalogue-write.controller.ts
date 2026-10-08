@@ -49,7 +49,7 @@ export class CatalogueWriteController {
       if (!product) throw new BadRequestException('Product not found in tenant');
       // Serialize assignments for this tenant/barcode across concurrent API requests.
       // This works with the existing schema; a database unique index is still recommended.
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${input.tenantId + ':' + code}, 0))`;
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${input.tenantId + ':' + code}, 0))`;
       const existing = await tx.productBarcode.findFirst({ where: { code, product: { tenantId: input.tenantId } }, select: { productId: true } });
       if (existing) throw new ConflictException('Barcode already assigned in tenant');
       try {
