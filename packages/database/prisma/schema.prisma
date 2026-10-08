@@ -103,10 +103,13 @@ model Product {
 }
 
 model ProductBarcode {
-  id        String @id @default(uuid()) @db.Uuid
-  productId String @db.Uuid
-  code      String
-  product   Product @relation(fields: [productId], references: [id])
+  id           String  @id @default(uuid()) @db.Uuid
+  productId    String  @db.Uuid
+  code         String
+  level        String  @default("UNIT")
+  unitsPerScan Decimal @default(1) @db.Decimal(18, 3)
+  supplierId   String? @db.Uuid
+  product      Product @relation(fields: [productId], references: [id])
   @@unique([productId, code])
   @@index([code])
 }
