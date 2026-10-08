@@ -40,4 +40,12 @@ test.describe('Team 10 grid view lifecycle', () => {
     expect(download.suggestedFilename()).toBe('omnicore-products-hounslow.csv');
   });
 
+  test('persists comfortable grid density across reload', async ({ page }) => {
+    await page.getByRole('combobox', { name: 'Grid density' }).click();
+    await page.getByRole('option', { name: 'Comfortable' }).click();
+    await expect.poll(async () => page.evaluate(() => localStorage.getItem('omnicore-product-ag-grid-v2:Hounslow'))).toContain('"density":"standard"');
+    await page.reload();
+    await expect(page.getByRole('combobox', { name: 'Grid density' })).toContainText('Comfortable');
+  });
+
 });
