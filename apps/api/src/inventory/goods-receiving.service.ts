@@ -48,6 +48,9 @@ export class GoodsReceivingService {
           }
           return { receipt: existing, replayed: true };
         }
+        // Lock the purchase order before reading its status or receipt totals.
+        // Competing receipts serialize on this row within the transaction.
+        await tx.$queryRaw`SELECT id FROM "PurchaseOrder" WHERE id = ${input.orderId}::uuid AND "tenantId" = ${input.tenantId}::uuid FOR UPDATE`;
         const [store, order] = await Promise.all([
           tx.store.findFirst({ where: { tenantId: input.tenantId, id: input.storeId } }),
           tx.purchaseOrder.findFirst({
@@ -62,9 +65,6 @@ export class GoodsReceivingService {
         if (lines.some(line => !orderedProducts.has(line.productId))) {
           throw new BadRequestException('Receipt includes a product absent from purchase order');
         }
-        // Serialize receipts for the same purchase order before calculating cumulative quantities.
-        // PostgreSQL row lock is held until this transaction commits or rolls back.
-        await tx.$queryRaw`SELECT id FROM "PurchaseOrder" WHERE id = ${input.orderId}::uuid AND "tenantId" = ${input.tenantId}::uuid FOR UPDATE`;
         const previousReceipts = await tx.goodsReceipt.findMany({
           where: { tenantId: input.tenantId, orderId: input.orderId },
           include: { lines: true },
