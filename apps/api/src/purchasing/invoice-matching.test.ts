@@ -37,3 +37,18 @@ test('two identifiers disambiguate shared supplier code', () => {
   assert.equal(result[0].status, 'MATCHED');
   assert.equal(result[0].productId, 'p2');
 });
+
+test('barcode-only invoice line matches catalogue product', () => {
+  const result = matchInvoiceImport(catalogue, [{ ...line, supplierCode: '' }]);
+  assert.equal(result[0].status, 'MATCHED');
+  assert.equal(result[0].productId, 'p1');
+});
+test('duplicate barcode across products is ambiguous', () => {
+  const sharedBarcode = [
+    { productId: 'p1', supplierCode: 'A', barcodes: ['123456'] },
+    { productId: 'p2', supplierCode: 'B', barcodes: ['123456'] },
+  ];
+  const result = matchInvoiceImport(sharedBarcode, [{ ...line, supplierCode: '', barcode: '123456' }]);
+  assert.equal(result[0].status, 'AMBIGUOUS');
+  assert.equal(result[0].productId, null);
+});
