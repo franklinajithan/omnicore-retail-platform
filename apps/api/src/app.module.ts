@@ -4,5 +4,6 @@ import { PosController } from './pos.controller';
 import { PosService } from './pos.service';
 import { PrismaService } from './prisma.service';
 import { CoreAccessService } from './core-access';
-@Module({controllers:[PosController,RetailController],providers:[PosService,PrismaService,CoreAccessService]})
+import { CoreController } from './core.controller';
+@Module({controllers:[PosController,RetailController,CoreController],providers:[PosService,PrismaService,CoreAccessService]})
 export class AppModule {}
