@@ -71,7 +71,7 @@ test.describe('OmniCore Chrome-like workspace tabs',()=>{
   await expect(page.locator('.workspaceTab').filter({hasText:'15953'})).toHaveCount(1);
  });
  test('product grid behaves like an operational spreadsheet',async({page})=>{
-  const dataRows=page.locator('.MuiDataGrid-row'); const firstRow=dataRows.first();
+  const dataRows=page.locator('.ag-center-cols-container .ag-row'); const firstRow=dataRows.first();
   await page.getByRole('columnheader',{name:/stock/i}).click();
   await expect(page.getByRole('columnheader',{name:/stock/i})).toHaveAttribute('aria-sort','ascending');
   await page.getByRole('columnheader',{name:/stock/i}).click();
