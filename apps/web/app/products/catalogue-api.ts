@@ -41,6 +41,28 @@ export class CatalogueApi {
     if (!response.ok) throw new CatalogueApiError(response.status, 'Catalogue request failed (' + response.status + ')');
     return response.json() as Promise<T>;
   }
+  private async post<T>(path: string, payload: Record<string, unknown>): Promise<T> {
+    const url = new URL('/catalogue/v1/' + path, this.origin);
+    const token = await this.getToken();
+    if (!token) throw new CatalogueApiError(401, 'Authentication required');
+    const response = await fetch(url.toString(), {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...payload, tenantId: this.tenantId }),
+      cache: 'no-store',
+    });
+    if (!response.ok) throw new CatalogueApiError(response.status, 'Catalogue write failed (' + response.status + ')');
+    return response.json() as Promise<T>;
+  }
+  createProduct(input: { sku: string; name: string; baseUnit?: string; actorId: string }) {
+    return this.post<CatalogueProduct>('products', input);
+  }
+  addBarcode(productId: string, input: { code: string; actorId: string }) {
+    return this.post<{ id: string; code: string; productId: string }>('products/' + encodeURIComponent(productId) + '/barcodes', input);
+  }
+  setSupplier(productId: string, input: { supplierId: string; supplierCode: string; packSize: string; cost: string; actorId: string }) {
+    return this.post<CatalogueProduct['suppliers'][number]>('products/' + encodeURIComponent(productId) + '/suppliers', input);
+  }
   list(q = '', take = 50, cursor?: string, signal?: AbortSignal) {
     return this.get<CataloguePage>('products', { q, take: String(take), cursor }, signal);
   }
