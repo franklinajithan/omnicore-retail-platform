@@ -7,6 +7,7 @@ import { matchInvoiceImport } from './invoice-matching';
 import type { CatalogueItem } from './delivery-matching';
 import { PrismaService } from '../prisma.service';
 import { previewInvoiceReconciliation } from './invoice-reconciliation';
+import { buildReceiptAuditRows } from './receipt-audit';
 
 const MAX_LINES = 1000;
 function validLines(value: unknown): value is unknown[] {
@@ -184,6 +185,71 @@ export class PurchasingReviewController {
       };
     } catch (error) {
       throw new BadRequestException(error instanceof Error ? error.message : 'Invalid invoice reconciliation');
+    }
+  }
+
+  /**
+   * Uses persisted accepted receipt quantities and agreed PO unit costs.
+   * VAT is supplied as an independent, approved per-product tax reference.
+   * No invoice is approved or saved by this preview.
+   */
+  @Post('order-invoice-reconciliation-preview')
+  async orderInvoiceReconciliationPreview(
+    @Headers('authorization') token: string | undefined,
+    @Body() input: {
+      tenantId: string; supplierId: string; orderId: string;
+      rows: RawInvoiceRow[]; approvedVatRates: { productId: string; vatRate: string }[];
+    },
+  ) {
+    this.authorize(token);
+    if (!input || typeof input.tenantId !== 'string' || !input.tenantId.trim() ||
+        typeof input.supplierId !== 'string' || !input.supplierId.trim() ||
+        typeof input.orderId !== 'string' || !input.orderId.trim() ||
+        !validLines(input.rows) || !Array.isArray(input.approvedVatRates) ||
+        input.approvedVatRates.length > MAX_LINES) {
+      throw new BadRequestException('Order, supplier, tenant, invoice rows and approved VAT rates required');
+    }
+    const order = await this.db.purchaseOrder.findFirst({
+      where: { id: input.orderId, tenantId: input.tenantId, supplierId: input.supplierId },
+      select: {
+        lines: { select: { productId: true, unitCost: true } },
+        receipts: { select: { lines: { select: { productId: true, receivedQuantity: true } } } },
+      },
+    });
+    if (!order) throw new BadRequestException('Purchase order not found in tenant and supplier');
+    const vatMap = new Map<string, string>();
+    for (const rate of input.approvedVatRates) {
+      if (!rate || typeof rate.productId !== 'string' || vatMap.has(rate.productId)) {
+        throw new BadRequestException('Invalid or duplicate VAT product');
+      }
+      vatMap.set(rate.productId, rate.vatRate);
+    }
+    const listings = await this.db.supplierProduct.findMany({
+      where: { supplierId: input.supplierId, product: { tenantId: input.tenantId } },
+      select: { productId: true, supplierCode: true, product: { select: { barcodes: { select: { code: true } } } } },
+    });
+    const catalogue: CatalogueItem[] = listings.map(item => ({
+      productId: item.productId, supplierCode: item.supplierCode,
+      barcodes: item.product.barcodes.map(barcode => barcode.code),
+    }));
+    try {
+      const received = buildReceiptAuditRows(
+        order.receipts.flatMap(receipt => receipt.lines.map(line => ({
+          productId: line.productId, receivedQuantity: line.receivedQuantity.toString(),
+        }))),
+        order.lines.map(line => ({
+          productId: line.productId, unitCost: line.unitCost.toString(),
+          vatRate: vatMap.get(line.productId) ?? '',
+        })),
+      );
+      return {
+        ...previewInvoiceReconciliation(catalogue, input.rows, received),
+        receivedSource: 'DATABASE_GOODS_RECEIPTS',
+        vatSource: 'CALLER_APPROVED_REFERENCE_UNVERIFIED',
+        approvalAllowed: false,
+      };
+    } catch (error) {
+      throw new BadRequestException(error instanceof Error ? error.message : 'Invalid order invoice reconciliation');
     }
   }
 
