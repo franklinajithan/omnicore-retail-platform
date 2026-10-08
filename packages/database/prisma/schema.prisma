@@ -89,6 +89,7 @@ model Product {
   createdAt   DateTime @default(now())
   tenant      Tenant @relation(fields: [tenantId], references: [id])
   barcodes    ProductBarcode[]
+  catalogueChanges CatalogueChange[]
   suppliers   SupplierProduct[]
   balances    StockBalance[]
   movements   StockMovement[]
@@ -481,4 +482,17 @@ model RtcMarkdown {
   store Store @relation(fields: [storeId, tenantId], references: [id, tenantId])
   product Product @relation(fields: [productId, tenantId], references: [id, tenantId])
   @@index([tenantId, storeId, status, expiresAt])
+}
+
+model CatalogueChange {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  productId String   @db.Uuid
+  actorId   String
+  action    String
+  before    Json?
+  after     Json
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId, tenantId], references: [id, tenantId])
+  @@index([tenantId, productId, createdAt])
 }
