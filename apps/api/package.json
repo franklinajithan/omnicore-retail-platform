@@ -5,7 +5,8 @@
     "dev": "nest start --watch",
     "build": "nest build",
     "typecheck": "tsc --noEmit",
-    "prisma:generate": "npm install --prefix ../../packages/database --no-package-lock --ignore-scripts --no-audit --no-fund && prisma generate --schema ../../packages/database/prisma/schema.prisma"
+    "prisma:generate": "npm install --prefix ../../packages/database --no-package-lock --ignore-scripts --no-audit --no-fund && prisma generate --schema ../../packages/database/prisma/schema.prisma",
+    "test": "npm run build && node --test dist/core-access.spec.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
