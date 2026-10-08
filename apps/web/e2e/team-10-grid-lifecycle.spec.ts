@@ -33,4 +33,11 @@ test.describe('Team 10 grid view lifecycle', () => {
     await expect(page.getByRole('columnheader', { name: 'Barcode / EAN' })).toHaveCount(0);
   });
 
+  test('exports the selected store grid as CSV', async ({ page }) => {
+    const downloadPromise = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Export CSV' }).click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toBe('omnicore-products-hounslow.csv');
+  });
+
 });
