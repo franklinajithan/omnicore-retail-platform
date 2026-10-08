@@ -47,7 +47,9 @@ export class CatalogueWriteController {
     return this.db.$transaction(async tx => {
       const product = await tx.product.findFirst({ where: { id: productId, tenantId: input.tenantId }, select: { id: true } });
       if (!product) throw new BadRequestException('Product not found in tenant');
-      // Serializable isolation protects tenant-wide uniqueness under concurrent inserts.
+      // Serialize assignments for this tenant/barcode across concurrent API requests.
+      // This works with the existing schema; a database unique index is still recommended.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${input.tenantId + ':' + code}, 0))`;
       const existing = await tx.productBarcode.findFirst({ where: { code, product: { tenantId: input.tenantId } }, select: { productId: true } });
       if (existing) throw new ConflictException('Barcode already assigned in tenant');
       try {
