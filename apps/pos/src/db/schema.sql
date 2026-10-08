@@ -37,3 +37,17 @@ CREATE TABLE IF NOT EXISTS promotion_rules (
  PRIMARY KEY(promotion_id,product_id,store_id)
 );
 CREATE INDEX IF NOT EXISTS idx_promotion_rules_store_product ON promotion_rules(store_id,product_id,starts_at,ends_at);
+
+-- Immutable cash movements for offline till reconciliation.
+CREATE TABLE IF NOT EXISTS till_cash_movements (
+ id TEXT PRIMARY KEY,
+ session_id TEXT NOT NULL REFERENCES till_sessions(id),
+ store_id TEXT NOT NULL,
+ till_id TEXT NOT NULL,
+ cashier_id TEXT NOT NULL,
+ kind TEXT NOT NULL CHECK(kind IN ('PAID_IN','PAID_OUT')),
+ amount INTEGER NOT NULL CHECK(amount > 0),
+ reason TEXT NOT NULL,
+ created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_till_cash_movements_session ON till_cash_movements(session_id,created_at);
