@@ -15,6 +15,24 @@ export function completeSale(input:Checkout){
     if(!l.productId||!l.itemCode||!Number.isFinite(l.qty)||l.qty<=0||!Number.isSafeInteger(l.unitPrice)||l.unitPrice<0||!Number.isFinite(l.vatRate)||l.vatRate<0)throw new Error('INVALID_SALE_LINE');
   }
   const db=getDb(),id=input.idempotencyKey||randomUUID(),now=new Date(),createdAt=now.toISOString();
+  // A retry must return the persisted transaction even if promotions have changed.
+  // Compare the original sale identity and payment details, not today's recalculated price.
+  if(input.idempotencyKey){
+    const previous:any=db.prepare('SELECT * FROM sales WHERE id=?').get(id);
+    if(previous){
+      if(previous.store_id!==input.storeId||previous.till_id!==input.tillId||previous.cashier_id!==input.cashierId)throw new Error('IDEMPOTENCY_KEY_CONFLICT');
+      const savedLines:any[]=db.prepare('SELECT product_id,item_code,barcode,name,qty,unit_price,discount,vat_rate,price_reason FROM sale_lines WHERE sale_id=? ORDER BY rowid').all(id) as any[];
+      const savedPayments:any[]=db.prepare('SELECT method,amount,reference FROM payments WHERE sale_id=? ORDER BY rowid').all(id) as any[];
+      const matchingLines=savedLines.length===input.lines.length&&savedLines.every((saved,i)=>{
+        const line=input.lines[i];
+        return saved.product_id===line.productId&&saved.item_code===line.itemCode&&saved.barcode===(line.barcode||null)&&saved.name===line.name&&saved.qty===line.qty&&saved.unit_price===line.unitPrice&&saved.vat_rate===line.vatRate&&
+          (line.priceReason==='RTC'?saved.price_reason==='RTC'&&saved.discount===(line.discount||0):saved.price_reason!=='RTC');
+      });
+      const matchingPayments=savedPayments.length===input.payments.length&&savedPayments.every((saved,i)=>saved.method===input.payments[i].method&&saved.amount===input.payments[i].amount&&saved.reference===(input.payments[i].reference||null));
+      if(!matchingLines||!matchingPayments)throw new Error('IDEMPOTENCY_KEY_CONFLICT');
+      return{id,receipt:previous.receipt_no,subtotal:previous.subtotal,discountTotal:previous.discount_total,vatTotal:previous.vat_total,total:previous.total,amountTendered:previous.amount_tendered,changeDue:previous.change_due,createdAt:previous.created_at,syncStatus:previous.sync_status};
+    }
+  }
   const {lines:calc,subtotal,discountTotal,vatTotal,total}=quoteSale(input,now);
   if(!Number.isSafeInteger(total)||total<0||!Number.isSafeInteger(subtotal)||!Number.isSafeInteger(discountTotal)||!Number.isSafeInteger(vatTotal))throw new Error('INVALID_SALE_TOTAL');
   const tendered=input.payments.reduce((sum,p)=>sum+p.amount,0);
