@@ -23,4 +23,14 @@ test.describe('Team 10 grid view lifecycle', () => {
     await page.reload();
     await expect(page.getByRole('columnheader', { name: 'Barcode / EAN' })).toHaveCount(0);
   });
+  test('restores a store preference after switching stores and reloading', async ({ page }) => {
+    await page.getByRole('button', { name: 'Columns' }).click();
+    await page.getByRole('checkbox', { name: 'Barcode / EAN' }).uncheck();
+    await expect.poll(async () => page.evaluate(() => localStorage.getItem('omnicore-product-ag-grid-v2:Hounslow'))).toContain('"barcode":true');
+    await page.locator('select.storeContext').selectOption('Hayes');
+    await expect(page.getByRole('columnheader', { name: 'Barcode / EAN' })).toBeVisible();
+    await page.locator('select.storeContext').selectOption('Hounslow');
+    await expect(page.getByRole('columnheader', { name: 'Barcode / EAN' })).toHaveCount(0);
+  });
+
 });
