@@ -67,4 +67,35 @@ export function closeSession(storeId:string,tillId:string,cashierId:string,closi
     return {sessionId:session.id,storeId,tillId,cashierId:session.cashier_id,openedAt:session.opened_at,closedAt,openingFloat:session.opening_float,cashTendered,changeGiven,paidIn,paidOut,nonCashTendered:Number(totals.nonCashTendered),saleCount:Number(totals.saleCount),expectedCash,countedCash:closingCash,variance:closingCash-expectedCash};
   })();
 }
-export function holdSale(storeId:string,tillId:string,cashierId:string,lines:any[],label?:string){const id=randomUUID();getDb().prepare("INSERT INTO held_sales(id,store_id,till_id,cashier_id,label,lines_json,created_at) VALUES(?,?,?,?,?,?,?)").run(id,storeId,tillId,cashierId,label||null,JSON.stringify(lines),new Date().toISOString());return{id}}export function heldSales(storeId:string,tillId:string){return getDb().prepare("SELECT id,label,created_at createdAt,lines_json linesJson FROM held_sales WHERE store_id=? AND till_id=? ORDER BY created_at DESC").all(storeId,tillId)}export function recallSale(id:string){const db=getDb(),row:any=db.prepare("SELECT * FROM held_sales WHERE id=?").get(id);if(!row)return null;db.prepare("DELETE FROM held_sales WHERE id=?").run(id);return{...row,lines:JSON.parse(row.lines_json)}}
+export function holdSale(storeId:string,tillId:string,cashierId:string,lines:any[],label?:string){
+  if(!storeId?.trim()||!tillId?.trim()||!cashierId?.trim())throw new Error('Store, till and cashier required');
+  if(!Array.isArray(lines)||lines.length===0)throw new Error('Cannot hold an empty sale');
+  const db=getDb();
+  return db.transaction(()=>{
+    const session:any=db.prepare("SELECT cashier_id FROM till_sessions WHERE store_id=? AND till_id=? AND status='OPEN' LIMIT 1").get(storeId,tillId);
+    if(!session||session.cashier_id!==cashierId)throw new Error('Cashier has no open till session');
+    const id=randomUUID();
+    db.prepare("INSERT INTO held_sales(id,store_id,till_id,cashier_id,label,lines_json,created_at) VALUES(?,?,?,?,?,?,?)")
+      .run(id,storeId,tillId,cashierId,label||null,JSON.stringify(lines),new Date().toISOString());
+    return{id};
+  })();
+}
+export function heldSales(storeId:string,tillId:string,cashierId:string){
+  return getDb().prepare("SELECT id,label,created_at createdAt,lines_json linesJson FROM held_sales WHERE store_id=? AND till_id=? AND cashier_id=? ORDER BY created_at DESC")
+    .all(storeId,tillId,cashierId);
+}
+export function recallSale(id:string,storeId:string,tillId:string,cashierId:string){
+  if(!id||!storeId||!tillId||!cashierId)throw new Error('Held sale context required');
+  const db=getDb();
+  return db.transaction(()=>{
+    const session:any=db.prepare("SELECT cashier_id FROM till_sessions WHERE store_id=? AND till_id=? AND status='OPEN' LIMIT 1").get(storeId,tillId);
+    if(!session||session.cashier_id!==cashierId)throw new Error('Cashier has no open till session');
+    const row:any=db.prepare("SELECT * FROM held_sales WHERE id=? AND store_id=? AND till_id=? AND cashier_id=?").get(id,storeId,tillId,cashierId);
+    if(!row)return null;
+    const lines=JSON.parse(row.lines_json);
+    if(!Array.isArray(lines))throw new Error('Invalid held sale data');
+    const deleted=db.prepare("DELETE FROM held_sales WHERE id=? AND store_id=? AND till_id=? AND cashier_id=?").run(id,storeId,tillId,cashierId);
+    if(deleted.changes!==1)throw new Error('Held sale was already recalled');
+    return {...row,lines};
+  })();
+}
