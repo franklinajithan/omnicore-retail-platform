@@ -29,6 +29,7 @@ export class StockAdjustmentService {
       throw new BadRequestException('Counted quantity must be nonnegative with up to 3 decimal places');
     }
     const key = `adjustment:${input.idempotencyKey}`;
+    const referenceType = `STOCK_COUNT:${input.reason.trim()}:COUNT=${counted.toString()}`;
     try {
       return await this.db.$transaction(async tx => {
         const previous = await tx.stockMovement.findUnique({
@@ -37,7 +38,7 @@ export class StockAdjustmentService {
         if (previous) {
           if (previous.storeId !== input.storeId || previous.productId !== input.productId ||
               previous.type !== 'ADJUSTMENT' || previous.referenceId !== input.referenceId ||
-              previous.referenceType !== `STOCK_COUNT:${input.reason.trim()}`) {
+              previous.referenceType !== referenceType) {
             throw new ConflictException('Adjustment key reused with different details');
           }
           return { movement: previous, replayed: true };
@@ -55,7 +56,14 @@ export class StockAdjustmentService {
           update: {},
         });
         const delta = counted.minus(balance.quantity);
-        if (delta.isZero()) return { movement: null, replayed: false, unchanged: true, quantity: counted.toString(), note: 'No movement posted; unchanged counts are not idempotently recorded' };
+        if (delta.isZero()) {
+          const movement = await tx.stockMovement.create({ data: {
+            tenantId: input.tenantId, storeId: input.storeId, productId: input.productId,
+            type: 'ADJUSTMENT', quantityDelta: new Prisma.Decimal(0), referenceType,
+            referenceId: input.referenceId, idempotencyKey: key,
+          } });
+          return { movement, replayed: false, unchanged: true, quantity: counted.toString() };
+        }
         const updated = await tx.stockBalance.updateMany({
           where: { id: balance.id, quantity: balance.quantity },
           data: { quantity: counted },
@@ -63,7 +71,7 @@ export class StockAdjustmentService {
         if (updated.count !== 1) throw new ConflictException('Stock changed while counting; retry with a fresh count');
         const movement = await tx.stockMovement.create({ data: {
           tenantId: input.tenantId, storeId: input.storeId, productId: input.productId,
-          type: 'ADJUSTMENT', quantityDelta: delta, referenceType: `STOCK_COUNT:${input.reason.trim()}`,
+          type: 'ADJUSTMENT', quantityDelta: delta, referenceType,
           referenceId: input.referenceId, idempotencyKey: key,
         } });
         return { movement, replayed: false, unchanged: false, previousQuantity: balance.quantity.toString(),
