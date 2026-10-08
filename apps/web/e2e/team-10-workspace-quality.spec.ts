@@ -32,3 +32,21 @@ test.describe('Team 10 product workspace regression', () => {
     await expect(page.locator('.productListWorkspace')).toBeVisible();
   });
 });
+
+test.describe('Team 10 store-specific grid preferences', () => {
+  test('hidden columns do not leak between stores', async ({ page }) => {
+    await page.goto('/products');
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+
+    await page.getByRole('button', { name: 'Columns' }).click();
+    await page.getByRole('checkbox', { name: 'Barcode / EAN' }).uncheck();
+    await expect(page.getByRole('columnheader', { name: 'Barcode / EAN' })).toHaveCount(0);
+
+    await page.locator('select.storeContext').selectOption('Hayes');
+    await expect(page.getByRole('columnheader', { name: 'Barcode / EAN' })).toBeVisible();
+
+    await page.locator('select.storeContext').selectOption('Hounslow');
+    await expect(page.getByRole('columnheader', { name: 'Barcode / EAN' })).toHaveCount(0);
+  });
+});
