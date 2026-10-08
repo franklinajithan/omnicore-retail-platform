@@ -70,4 +70,28 @@ export class CoreController {
     if (result.count !== 1) throw new BadRequestException('User not found or protected');
     return { userId, role: input.role };
   }
+  @Get('stores/:storeId/devices')
+  async devices(@Headers('authorization') authorization: string | undefined, @Param('storeId') storeId: string) {
+    const actor = await this.access.require(authorization, ['OWNER', 'ADMIN']);
+    if (actor.storeId) throw new ForbiddenException('Store-scoped account cannot manage devices');
+    const store = await this.db.store.findFirst({ where: { id: storeId, tenantId: actor.tenantId } });
+    if (!store) throw new ForbiddenException('Store access denied');
+    return this.db.storeTrustedDevice.findMany({
+      where: { storeId }, select: { id: true, label: true, enabled: true, createdAt: true, lastSeenAt: true }
+    });
+  }
+  @Patch('stores/:storeId/devices/:deviceId/disable')
+  async disableDevice(@Headers('authorization') authorization: string | undefined,
+    @Param('storeId') storeId: string, @Param('deviceId') deviceId: string) {
+    const actor = await this.access.require(authorization, ['OWNER', 'ADMIN']);
+    if (actor.storeId) throw new ForbiddenException('Store-scoped account cannot manage devices');
+    const store = await this.db.store.findFirst({ where: { id: storeId, tenantId: actor.tenantId } });
+    if (!store) throw new ForbiddenException('Store access denied');
+    const result = await this.db.storeTrustedDevice.updateMany({
+      where: { id: deviceId, storeId }, data: { enabled: false }
+    });
+    if (result.count !== 1) throw new BadRequestException('Device not found');
+    return { deviceId, enabled: false };
+  }
+
 }
