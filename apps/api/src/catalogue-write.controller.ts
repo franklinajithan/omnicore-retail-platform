@@ -13,7 +13,7 @@ export class CatalogueWriteController {
   private auth(header: string | undefined, tenantId: string | undefined, actorId: string | undefined) {
     const secret = process.env.OMNICORE_HO_TOKEN;
     if (!secret || header !== `Bearer ${secret}`) throw new UnauthorizedException('Head-office bearer token required');
-    if (!tenantId || !/^[0-9a-f-]{36}$/i.test(tenantId) || !actorId?.trim()) throw new BadRequestException('Tenant and actor required');
+    if (!tenantId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId) || !actorId?.trim()) throw new BadRequestException('Tenant and actor required');
   }
   private clean(value: unknown, field: string, max: number): string {
     if (typeof value !== 'string' || !value.trim() || value.trim().length > max) throw new BadRequestException(`Invalid ${field}`);
