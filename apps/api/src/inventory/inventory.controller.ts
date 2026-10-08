@@ -7,8 +7,10 @@ export class InventoryController {
   constructor(private readonly inventory: InventoryService) {}
 
   private authorize(header: string | undefined, write = false) {
-    const secret = write ? process.env.OMNICORE_HO_TOKEN : (process.env.OMNICORE_HO_TOKEN || process.env.OMNICORE_POS_TOKEN);
-    if (!secret || header !== `Bearer ${secret}`) throw new UnauthorizedException('Configured bearer token required');
+    const secrets = write ? [process.env.OMNICORE_HO_TOKEN] : [process.env.OMNICORE_HO_TOKEN, process.env.OMNICORE_POS_TOKEN];
+    if (!secrets.some(secret => secret && header === `Bearer ${secret}`)) {
+      throw new UnauthorizedException('Configured bearer token required');
+    }
   }
 
   private requireId(value: string | undefined, name: string) {
@@ -37,6 +39,9 @@ export class InventoryController {
       throw new BadRequestException('Valid movement type required');
     }
     if (input.allowNegative) throw new BadRequestException('Negative stock override is not permitted via API');
+    if (input.type !== MovementType.WASTAGE) {
+      throw new BadRequestException('Direct posting is restricted to wastage; use dedicated receipt, transfer and adjustment workflows');
+    }
     return this.inventory.post({ ...input, allowNegative: false });
   }
 }
