@@ -62,6 +62,9 @@ export class GoodsReceivingService {
         if (lines.some(line => !orderedProducts.has(line.productId))) {
           throw new BadRequestException('Receipt includes a product absent from purchase order');
         }
+        // Serialize receipts for the same purchase order before calculating cumulative quantities.
+        // PostgreSQL row lock is held until this transaction commits or rolls back.
+        await tx.$queryRaw`SELECT id FROM "PurchaseOrder" WHERE id = ${input.orderId}::uuid AND "tenantId" = ${input.tenantId}::uuid FOR UPDATE`;
         const previousReceipts = await tx.goodsReceipt.findMany({
           where: { tenantId: input.tenantId, orderId: input.orderId },
           include: { lines: true },
