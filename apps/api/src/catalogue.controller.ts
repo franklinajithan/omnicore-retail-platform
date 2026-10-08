@@ -13,7 +13,7 @@ export class CatalogueController {
   private authenticate(token: string | undefined, tenantId: string | undefined): string {
     const secret = process.env.OMNICORE_HO_TOKEN;
     if (!secret || token !== `Bearer ${secret}`) throw new UnauthorizedException('Head-office bearer token required');
-    if (!tenantId || !/^[0-9a-f-]{36}$/i.test(tenantId)) throw new BadRequestException('Valid tenantId required');
+    if (!tenantId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId)) throw new BadRequestException('Valid tenantId required');
     return tenantId;
   }
 
