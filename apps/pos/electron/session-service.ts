@@ -1,4 +1,16 @@
-import {randomUUID} from 'crypto';import {getDb} from './database';export function openSession(storeId:string,tillId:string,cashierId:string,openingFloat=0){const db=getDb();const existing=db.prepare("SELECT * FROM till_sessions WHERE store_id=? AND till_id=? AND status='OPEN' LIMIT 1").get(storeId,tillId);if(existing)return existing;const row={id:randomUUID(),storeId,tillId,cashierId,openingFloat:Math.round(openingFloat),openedAt:new Date().toISOString()};db.prepare("INSERT INTO till_sessions(id,store_id,till_id,cashier_id,status,opening_float,opened_at) VALUES(?,?,?,?,?,?,?)").run(row.id,storeId,tillId,cashierId,'OPEN',row.openingFloat,row.openedAt);return row}/**
+import {randomUUID} from 'crypto';import {getDb} from './database';export function openSession(storeId:string,tillId:string,cashierId:string,openingFloat=0){
+  if(!storeId?.trim()||!tillId?.trim()||!cashierId?.trim())throw new Error('Store, till and cashier are required');
+  if(!Number.isSafeInteger(openingFloat)||openingFloat<0)throw new RangeError('Opening float must be non-negative integer pence');
+  const db=getDb();
+  return db.transaction(()=>{
+    const existing:any=db.prepare("SELECT * FROM till_sessions WHERE store_id=? AND till_id=? AND status='OPEN' LIMIT 1").get(storeId,tillId);
+    if(existing)return existing;
+    const row={id:randomUUID(),storeId,tillId,cashierId,openingFloat,openedAt:new Date().toISOString()};
+    db.prepare("INSERT INTO till_sessions(id,store_id,till_id,cashier_id,status,opening_float,opened_at) VALUES(?,?,?,?,?,?,?)").run(row.id,storeId,tillId,cashierId,'OPEN',openingFloat,row.openedAt);
+    return row;
+  })();
+}
+/**
  * Close an open till using payments recorded since its opening.
  * All amounts are integer pence; card payments never count as cash.
  * The report is returned to the caller, while the existing closing_cash
