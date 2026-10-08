@@ -13,13 +13,19 @@ export function closeSession(storeId:string,tillId:string,closingCash:number){
     if(!session)throw new Error('No open till session to close');
     const totals:any=db.prepare(`
       SELECT
-        COALESCE(SUM(CASE WHEN p.method='CASH' THEN p.amount ELSE 0 END),0) cashTendered,
-        COALESCE(SUM(CASE WHEN p.method='CASH' THEN s.change_due ELSE 0 END),0) changeGiven,
-        COALESCE(SUM(CASE WHEN p.method<>'CASH' THEN p.amount ELSE 0 END),0) nonCashTendered,
-        COUNT(DISTINCT s.id) saleCount
-      FROM sales s JOIN payments p ON p.sale_id=s.id
-      WHERE s.store_id=? AND s.till_id=?
-        AND s.created_at>=? AND s.status='COMPLETED'
+        COALESCE(SUM(t.cash_tendered),0) cashTendered,
+        COALESCE(SUM(CASE WHEN t.cash_tendered>0 THEN t.change_due ELSE 0 END),0) changeGiven,
+        COALESCE(SUM(t.non_cash_tendered),0) nonCashTendered,
+        COUNT(*) saleCount
+      FROM (
+        SELECT s.id,s.change_due,
+          SUM(CASE WHEN p.method='CASH' THEN p.amount ELSE 0 END) cash_tendered,
+          SUM(CASE WHEN p.method<>'CASH' THEN p.amount ELSE 0 END) non_cash_tendered
+        FROM sales s JOIN payments p ON p.sale_id=s.id
+        WHERE s.store_id=? AND s.till_id=?
+          AND s.created_at>=? AND s.status='COMPLETED'
+        GROUP BY s.id,s.change_due
+      ) t
     `).get(storeId,tillId,session.opened_at);
     const cashTendered=Number(totals.cashTendered),changeGiven=Number(totals.changeGiven);
     const expectedCash=Number(session.opening_float)+cashTendered-changeGiven;
