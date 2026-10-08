@@ -8,7 +8,7 @@ export function syncPending(apiUrl:string,token?:string):Promise<SyncResult>{
   if(inFlight)return inFlight;
   const job=performSync(apiUrl,token);
   inFlight=job;
-  void job.finally(()=>{if(inFlight===job)inFlight=null});
+  void job.then(()=>{if(inFlight===job)inFlight=null},()=>{if(inFlight===job)inFlight=null});
   return job;
 }
 
@@ -20,7 +20,7 @@ async function performSync(apiUrl:string,token?:string):Promise<SyncResult>{
     try{
       const lines=db.prepare('SELECT * FROM sale_lines WHERE sale_id=?').all(sale.id);
       const payments=db.prepare('SELECT * FROM payments WHERE sale_id=?').all(sale.id);
-      const res=await fetch(apiUrl.replace(/\\/$/,'')+'/pos/v1/sales',{
+      const res=await fetch(apiUrl.replace(/\/$/,'')+'/pos/v1/sales',{
         method:'POST',
         headers:{'content-type':'application/json',...(token?{authorization:`Bearer ${token}`}:{})},
         body:JSON.stringify({idempotencyKey:sale.id,sale,lines,payments})
