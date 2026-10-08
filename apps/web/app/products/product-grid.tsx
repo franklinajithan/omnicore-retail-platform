@@ -13,9 +13,9 @@ const labels:Record<Key,string>={itemCode:'Item Code',product:'Product',barcode:
 const storageKeyForStore=(store:string)=>'omnicore-product-ag-grid-v2:'+encodeURIComponent(store);
 
 export default function ProductGrid({rows,workingStore,onPreview,onOpen}:{rows:Product[];workingStore:string;onPreview:(p:Product)=>void;onOpen:(p:Product)=>void}){
- const storageKey=storageKeyForStore(workingStore);const gridRef=useRef<AgGridReact<Row>>(null);const[density,setDensity]=useState<'compact'|'standard'>('compact');const[chooser,setChooser]=useState(false);const[hidden,setHidden]=useState<Record<string,boolean>>({});const[loadedKey,setLoadedKey]=useState<string|null>(null);
+ const storageKey=storageKeyForStore(workingStore);const gridRef=useRef<AgGridReact<Row>>(null);const appliedStoreRef=useRef<string|null>(null);const[density,setDensity]=useState<'compact'|'standard'>('compact');const[chooser,setChooser]=useState(false);const[hidden,setHidden]=useState<Record<string,boolean>>({});const[loadedKey,setLoadedKey]=useState<string|null>(null);
  useEffect(()=>{try{const s=JSON.parse(localStorage.getItem(storageKey)||'{}');setDensity(s.density==='standard'?'standard':'compact');setHidden(s.hidden&&typeof s.hidden==='object'?s.hidden:{});}catch{setDensity('compact');setHidden({});}setLoadedKey(storageKey);},[storageKey]);
- useEffect(()=>{if(loadedKey!==storageKey)return;const grid=gridRef.current?.api;if(!grid)return;grid.resetColumnState();Object.entries(hidden).forEach(([key,isHidden])=>{if(isHidden)grid.setColumnsVisible([key==='product'?'name':key],false)});},[hidden,loadedKey,storageKey]);
+ useEffect(()=>{if(loadedKey!==storageKey || appliedStoreRef.current===storageKey)return;const grid=gridRef.current?.api;if(!grid)return;grid.resetColumnState();Object.entries(hidden).forEach(([key,isHidden])=>{if(isHidden)grid.setColumnsVisible([key==='product'?'name':key],false)});appliedStoreRef.current=storageKey;},[hidden,loadedKey,storageKey]);
  useEffect(()=>{if(loadedKey!==storageKey)return;try{localStorage.setItem(storageKey,JSON.stringify({density,hidden}))}catch{}},[density,hidden,storageKey,loadedKey]);
  const data=useMemo<Row[]>(()=>rows.map(p=>({...p,margin:Math.round((p.retail-p.cost)/p.retail*100)})),[rows]);
  const columns=useMemo<ColDef<Row>[]>(()=>[
@@ -32,7 +32,7 @@ export default function ProductGrid({rows,workingStore,onPreview,onOpen}:{rows:P
  ],[]);
  const api=()=>gridRef.current?.api;
  const reset=()=>{setDensity('compact');setHidden({});api()?.resetColumnState();api()?.setFilterModel(null);try{localStorage.removeItem(storageKey)}catch{}};
- const toggle=(key:Key)=>{const field=key==='product'?'name':key;setHidden(v=>({...v,[key]:!v[key]}));api()?.setColumnsVisible([field],!!hidden[key])};
+ const toggle=(key:Key)=>{if(loadedKey!==storageKey)return;const field=key==='product'?'name':key;setHidden(v=>({...v,[key]:!v[key]}));api()?.setColumnsVisible([field],!!hidden[key])};
  const copy=()=>{api()?.copySelectedRowsToClipboard({includeHeaders:true})};
  const openFrom=(p?:Row|null)=>{if(p)onOpen(p)};
  const click=(e:RowClickedEvent<Row>)=>{if(e.data)onPreview(e.data)};
