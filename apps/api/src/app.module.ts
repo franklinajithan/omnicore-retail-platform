@@ -6,6 +6,7 @@ import { PosService } from './pos.service';
 import { PrismaService } from './prisma.service';
 import { HybridModeGuard } from './hybrid-mode.guard';
 import { TenantMembershipService } from './tenant-membership.service';
+import { StoreAccessService } from './store-access.service';
 import { TenantIdentityController } from './tenant-identity.controller';
 
 @Module({
@@ -14,6 +15,7 @@ import { TenantIdentityController } from './tenant-identity.controller';
     PosService,
     PrismaService,
     TenantMembershipService,
+    StoreAccessService,
     { provide: APP_GUARD, useClass: HybridModeGuard },
   ],
 })
