@@ -78,6 +78,6 @@ export class RetailController {
     if(!store)throw new BadRequestException('Unknown store');
     const now=new Date();
     const assignments=await this.db.storeZoneAssignment.findMany({where:{storeId,effectiveFrom:{lte:now},OR:[{effectiveTo:null},{effectiveTo:{gt:now}}]},select:{zoneId:true}});
-    return this.db.promotion.findMany({where:{tenantId:store.tenantId,status:{in:[PromotionStatus.APPROVED,PromotionStatus.ACTIVE]},startsAt:{lte:now},endsAt:{gt:now},OR:[{scope:PromotionScope.ALL_STORES},{scope:PromotionScope.STORES,stores:{some:{storeId}}},{scope:PromotionScope.ZONES,zones:{some:{zoneId:{in:assignments.map(a=>a.zoneId)}}}}]},include:{products:true},orderBy:[{priority:'desc'},{createdAt:'desc'}]});
+    return this.db.promotion.findMany({where:{tenantId:store.tenantId,status:{in:[PromotionStatus.APPROVED,PromotionStatus.ACTIVE]},endsAt:{gt:now},OR:[{scope:PromotionScope.ALL_STORES},{scope:PromotionScope.STORES,stores:{some:{storeId}}},{scope:PromotionScope.ZONES,zones:{some:{zoneId:{in:assignments.map(a=>a.zoneId)}}}}]},include:{products:true},orderBy:[{priority:'desc'},{createdAt:'desc'}]});
   }
 }
