@@ -20,6 +20,10 @@ export class TenantRouter {
     if (!tenant || tenant.status !== 'ACTIVE' || tenant.database.status !== 'ACTIVE') {
       throw new Error('Tenant unavailable');
     }
+    if (tenant.database.mode === 'DEDICATED') {
+      const count = await this.control.tenantRegistry.count({ where: { databaseId: tenant.databaseId } });
+      if (count !== 1) throw new Error('Dedicated database must belong to exactly one tenant');
+    }
     return {
       tenantId: tenant.id,
       databaseKey: tenant.database.databaseKey,
@@ -34,6 +38,7 @@ export type SecretResolver = (secretReference: string) => Promise<string>;
 
 export class RetailConnectionManager {
   private readonly clients = new Map<string, RetailClient>();
+  private readonly pending = new Map<string, Promise<RetailClient>>();
   constructor(
     private readonly control: ControlClient,
     private readonly resolveSecret: SecretResolver,
@@ -43,21 +48,39 @@ export class RetailConnectionManager {
   async forDatabase(databaseKey: string): Promise<RetailClient> {
     const existing = this.clients.get(databaseKey);
     if (existing) return existing;
-    if (this.clients.size >= this.maxPools) {
+    const inflight = this.pending.get(databaseKey);
+    if (inflight) return inflight;
+    if (this.clients.size + this.pending.size >= this.maxPools) {
       throw new Error('Database pool capacity reached');
     }
+    const opening = this.openDatabase(databaseKey);
+    this.pending.set(databaseKey, opening);
+    try {
+      return await opening;
+    } finally {
+      this.pending.delete(databaseKey);
+    }
+  }
+
+  private async openDatabase(databaseKey: string): Promise<RetailClient> {
     const record = await this.control.databaseRegistry.findUnique({
       where: { databaseKey },
     });
     if (!record || record.status !== 'ACTIVE') throw new Error('Database unavailable');
     const url = await this.resolveSecret(record.secretReference);
     const client = new RetailClient({ datasources: { db: { url } } });
-    await client.$connect();
+    try {
+      await client.$connect();
+    } catch (error) {
+      await client.$disconnect().catch(() => undefined);
+      throw error;
+    }
     this.clients.set(databaseKey, client);
     return client;
   }
 
   async close(): Promise<void> {
+    await Promise.allSettled([...this.pending.values()]);
     await Promise.all([...this.clients.values()].map(client => client.$disconnect()));
     this.clients.clear();
   }
