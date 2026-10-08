@@ -13,6 +13,8 @@ export function buildReceiptAuditRows(
   receipts: readonly AcceptedReceiptLine[],
   ordered: readonly OrderedCostLine[],
 ): InvoiceAuditRow[] {
+  if (!Array.isArray(ordered) || ordered.length === 0) throw new Error('Purchase order must contain lines');
+  if (!Array.isArray(receipts) || receipts.length === 0) throw new Error('No accepted goods receipts available');
   const byProduct = new Map<string, OrderedCostLine>();
   for (const line of ordered) {
     if (!line?.productId?.trim() || byProduct.has(line.productId)) throw new Error('Invalid or duplicate order product');
@@ -26,6 +28,7 @@ export function buildReceiptAuditRows(
     if (!line?.productId?.trim() || typeof line.receivedQuantity !== 'string' ||
         !/^(?:0|[1-9][0-9]*)(?:[.][0-9]{1,3})?$/.test(line.receivedQuantity)) throw new Error('Invalid receipt quantity');
     if (!byProduct.has(line.productId)) throw new Error('Receipt product missing from order');
+    if (new Prisma.Decimal(line.receivedQuantity).lte(0)) throw new Error('Receipt quantity must be positive');
     totals.set(line.productId, (totals.get(line.productId) ?? new Prisma.Decimal(0)).plus(line.receivedQuantity));
   }
   return [...totals.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([productId, quantity]) => ({
