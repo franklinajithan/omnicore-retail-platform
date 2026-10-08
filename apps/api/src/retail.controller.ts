@@ -227,6 +227,15 @@ export class RetailController {
     });
   }
 
+  @Get('stores/:storeId/rtc-history')
+  async rtcHistoryFeed(@Headers('authorization') token:string|undefined,@Param('storeId') storeId:string,@Query('limit') limit='100'){
+    const store=await this.db.store.findFirst({where:{OR:[{id:/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(storeId)?storeId:'00000000-0000-0000-0000-000000000000'},{code:storeId}]},select:{id:true,tenantId:true}});
+    if(!store)throw new BadRequestException('Unknown store');
+    if(!verifyStoreCredential(token,store.id))throw new UnauthorizedException('Store-specific credential required');
+    const count=Number(limit);
+    if(!Number.isSafeInteger(count)||count<1||count>200)throw new BadRequestException('limit must be 1 to 200');
+    return this.db.rtcAuditEvent.findMany({where:{rtc:{tenantId:store.tenantId,storeId:store.id}},include:{rtc:{select:{id:true,labelCode:true,productId:true,status:true}}},orderBy:[{createdAt:'desc'},{id:'desc'}],take:count});
+  }
   @Get('stores/:storeId/rtc/:rtcId/history')
   async rtcHistory(@Headers('authorization') token:string|undefined,@Param('storeId') storeId:string,@Param('rtcId') rtcId:string){
     const store=await this.db.store.findFirst({where:{OR:[{id:/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(storeId)?storeId:'00000000-0000-0000-0000-000000000000'},{code:storeId}]},select:{id:true,tenantId:true}});
