@@ -1,6 +1,7 @@
 import { BadRequestException, Body, Controller, Headers, Post, UnauthorizedException } from '@nestjs/common';
 import { auditSupplierInvoice, type InvoiceAuditRow } from './invoice-audit';
 import { calculateClaim, type ClaimLineInput } from './claims';
+import { planCreditAllocation, type CreditAllocation, type ClaimCreditTotals } from './credit-allocation';
 
 const MAX_LINES = 1000;
 function validLines(value: unknown): value is unknown[] {
@@ -46,4 +47,20 @@ export class PurchasingReviewController {
       throw new BadRequestException(error instanceof Error ? error.message : 'Invalid claim');
     }
   }
+  @Post('credit-preview')
+  creditPreview(
+    @Headers('authorization') token: string | undefined,
+    @Body() input: { claim: ClaimCreditTotals; prior: CreditAllocation[]; incoming: CreditAllocation },
+  ) {
+    this.authorize(token);
+    if (!input || !input.claim || !Array.isArray(input.prior) || input.prior.length > MAX_LINES || !input.incoming) {
+      throw new BadRequestException('Claim totals, prior allocations and incoming credit required');
+    }
+    try {
+      return { status: 'DRAFT_PREVIEW', ...planCreditAllocation(input.claim, input.prior, input.incoming) };
+    } catch (error) {
+      throw new BadRequestException(error instanceof Error ? error.message : 'Invalid credit note');
+    }
+  }
+
 }
