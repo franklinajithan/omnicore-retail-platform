@@ -134,4 +134,30 @@ export class RetailController {
     };
   }
 
+  @Patch('promotions/:id/activate')
+  async activatePromotion(@Headers('authorization') token:string|undefined,@Param('id') id:string,@Body() input:{actorId:string}){
+    this.authorize(token,true);
+    if(!input?.actorId?.trim())throw new BadRequestException('Actor required');
+    return this.db.$transaction(async tx=>{
+      const current=await tx.promotion.findUnique({where:{id}});
+      if(!current||current.status!==PromotionStatus.APPROVED)throw new BadRequestException('Only approved promotions can be activated');
+      if(current.endsAt<=new Date())throw new BadRequestException('Expired promotion cannot be activated');
+      const changed=await tx.promotion.updateMany({where:{id,status:PromotionStatus.APPROVED},data:{status:PromotionStatus.ACTIVE}});
+      if(changed.count!==1)throw new BadRequestException('Promotion was modified');
+      await tx.promotionAudit.create({data:{promotionId:id,actorId:input.actorId,action:'ACTIVATED'}});
+      return tx.promotion.findUniqueOrThrow({where:{id}});
+    });
+  }
+  @Patch('promotions/:id/pause')
+  async pausePromotion(@Headers('authorization') token:string|undefined,@Param('id') id:string,@Body() input:{actorId:string;reason:string}){
+    this.authorize(token,true);
+    if(!input?.actorId?.trim()||!input?.reason?.trim())throw new BadRequestException('Actor and reason required');
+    return this.db.$transaction(async tx=>{
+      const changed=await tx.promotion.updateMany({where:{id,status:PromotionStatus.ACTIVE},data:{status:PromotionStatus.PAUSED}});
+      if(changed.count!==1)throw new BadRequestException('Only active promotions can be paused');
+      await tx.promotionAudit.create({data:{promotionId:id,actorId:input.actorId,action:'PAUSED',details:{reason:input.reason.trim()}}});
+      return tx.promotion.findUniqueOrThrow({where:{id}});
+    });
+  }
+
 }
