@@ -40,11 +40,17 @@ export function matchDeliveryLines(
     const barcode = line.barcode?.trim() ?? '';
     const codeCandidates = supplierCode ? codeMap.get(supplierCode) ?? new Set<string>() : null;
     const barcodeCandidates = barcode ? barcodeMap.get(barcode) ?? new Set<string>() : null;
+    const bothProvided = Boolean(supplierCode && barcode);
+    const codeKnown = Boolean(codeCandidates?.size);
+    const barcodeKnown = Boolean(barcodeCandidates?.size);
+    const intersection = bothProvided && codeKnown && barcodeKnown
+      ? [...codeCandidates!].filter(id => barcodeCandidates!.has(id))
+      : [];
     const union = new Set([...(codeCandidates ?? []), ...(barcodeCandidates ?? [])]);
-    const candidates = [...union].sort();
+    const candidates = (bothProvided && codeKnown && barcodeKnown ? intersection : [...union]).sort();
     let status: MatchedDeliveryLine['status'];
     if (!validQuantity(line.quantity)) status = 'INVALID_QUANTITY';
-    else if (codeCandidates?.size && barcodeCandidates?.size && ![...codeCandidates].some(id => barcodeCandidates.has(id))) status = 'CONFLICT';
+    else if (bothProvided && (!codeKnown || !barcodeKnown || intersection.length === 0)) status = 'CONFLICT';
     else if (candidates.length === 0) status = 'UNMATCHED';
     else if (candidates.length > 1) status = 'AMBIGUOUS';
     else status = 'MATCHED';
