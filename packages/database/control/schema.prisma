@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/control-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("CONTROL_DATABASE_URL")
+}
+
+enum DatabaseMode {
+  SHARED
+  DEDICATED
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  MIGRATING
+}
+
+model TenantRegistry {
+  id          String       @id @default(uuid()) @db.Uuid
+  slug        String       @unique
+  companyName String
+  status      TenantStatus @default(ACTIVE)
+  databaseId  String       @db.Uuid
+  database    DatabaseRegistry @relation(fields: [databaseId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  @@index([databaseId])
+}
+
+model DatabaseRegistry {
+  id              String       @id @default(uuid()) @db.Uuid
+  databaseKey     String       @unique
+  mode            DatabaseMode
+  region          String
+  secretReference String
+  status          String       @default("ACTIVE")
+  tenants         TenantRegistry[]
+  createdAt       DateTime     @default(now())
+}
+
+model TenantMigration {
+  id               String   @id @default(uuid()) @db.Uuid
+  tenantId         String   @db.Uuid
+  sourceDatabaseId String   @db.Uuid
+  targetDatabaseId String   @db.Uuid
+  state            String   @default("PENDING")
+  reconciliation   Json?
+  startedAt        DateTime @default(now())
+  completedAt      DateTime?
+  @@index([tenantId, startedAt])
+}
+
+model ProvisioningJob {
+  id         String   @id @default(uuid()) @db.Uuid
+  databaseId String   @db.Uuid
+  state      String   @default("PENDING")
+  error      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
