@@ -136,6 +136,10 @@ export class CoreController {
       where: { id: deviceId, storeId }, data: { enabled: false }
     });
     if (result.count !== 1) throw new BadRequestException('Device not found');
+    await this.db.securityAuditEvent.create({ data: {
+      tenantId: actor.tenantId, actorUserId: actor.userId, action: 'POS_DEVICE_DISABLED',
+      resourceType: 'POS_DEVICE', resourceId: deviceId, storeId
+    } });
     return { deviceId, enabled: false };
   }
 
