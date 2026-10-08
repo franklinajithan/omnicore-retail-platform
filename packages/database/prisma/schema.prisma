@@ -475,7 +475,25 @@ model RtcMarkdown {
   createdByEmployeeId String @db.Uuid
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  events RtcAuditEvent[]
   store Store @relation(fields: [storeId, tenantId], references: [id, tenantId])
   product Product @relation(fields: [productId, tenantId], references: [id, tenantId])
   @@index([tenantId, storeId, status, expiresAt])
+}
+
+// Immutable RTC history for label creation, redemption and cancellation.
+model RtcAuditEvent {
+  id String @id @default(uuid()) @db.Uuid
+  rtcId String @db.Uuid
+  action String
+  actorId String?
+  saleId String? @db.Uuid
+  quantity Int?
+  remainingBefore Int?
+  remainingAfter Int?
+  reason String?
+  createdAt DateTime @default(now())
+  rtc RtcMarkdown @relation(fields: [rtcId], references: [id])
+  @@index([rtcId, createdAt])
+  @@index([saleId])
 }
