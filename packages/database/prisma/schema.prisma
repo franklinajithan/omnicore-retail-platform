@@ -44,6 +44,8 @@ model Tenant {
   users     TenantUser[]
   posSales  PosSale[]
   prices    ProductPrice[]
+  zones     PricingZone[]
+  promotions Promotion[]
 }
 
 model TenantUser {
@@ -67,6 +69,8 @@ model Store {
   receipts  GoodsReceipt[]
   posSales  PosSale[]
   prices    ProductPrice[]
+  zoneAssignments StoreZoneAssignment[]
+  promotionTargets PromotionStoreTarget[]
   @@unique([tenantId, code])
   @@unique([id, tenantId])
 }
@@ -88,6 +92,7 @@ model Product {
   receiptLines GoodsReceiptLine[]
   posLines     PosSaleLine[]
   prices       ProductPrice[]
+  promotionProducts PromotionProduct[]
   @@unique([tenantId, sku])
   @@unique([id, tenantId])
 }
@@ -270,4 +275,108 @@ model ProductPrice {
   product       Product  @relation(fields: [productId, tenantId], references: [id, tenantId])
   @@index([tenantId, storeId, productId, effectiveFrom])
   @@index([tenantId, storeId, effectiveFrom, effectiveTo])
+}
+
+enum PromotionStatus {
+  DRAFT
+  APPROVED
+  ACTIVE
+  PAUSED
+  CANCELLED
+}
+
+enum PromotionScope {
+  ALL_STORES
+  ZONES
+  STORES
+}
+
+enum PromotionType {
+  FIXED_PRICE
+  PERCENT_OFF
+  AMOUNT_OFF
+  MULTIBUY_FIXED_PRICE
+}
+
+model PricingZone {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  name String
+  code String
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  assignments StoreZoneAssignment[]
+  targets PromotionZoneTarget[]
+  @@unique([tenantId, code])
+}
+
+model StoreZoneAssignment {
+  id String @id @default(uuid()) @db.Uuid
+  storeId String @db.Uuid
+  zoneId String @db.Uuid
+  effectiveFrom DateTime @default(now())
+  effectiveTo DateTime?
+  store Store @relation(fields: [storeId], references: [id])
+  zone PricingZone @relation(fields: [zoneId], references: [id])
+  @@index([storeId, effectiveFrom, effectiveTo])
+}
+
+model Promotion {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  name String
+  status PromotionStatus @default(DRAFT)
+  scope PromotionScope
+  type PromotionType
+  startsAt DateTime
+  endsAt DateTime
+  priority Int @default(0)
+  createdBy String
+  approvedBy String?
+  approvedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  products PromotionProduct[]
+  stores PromotionStoreTarget[]
+  zones PromotionZoneTarget[]
+  audit PromotionAudit[]
+  @@index([tenantId, status, startsAt, endsAt])
+}
+
+model PromotionProduct {
+  id String @id @default(uuid()) @db.Uuid
+  promotionId String @db.Uuid
+  productId String @db.Uuid
+  value Decimal @db.Decimal(18, 4)
+  requiredQuantity Int?
+  promotion Promotion @relation(fields: [promotionId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+  @@unique([promotionId, productId])
+}
+
+model PromotionStoreTarget {
+  promotionId String @db.Uuid
+  storeId String @db.Uuid
+  promotion Promotion @relation(fields: [promotionId], references: [id])
+  store Store @relation(fields: [storeId], references: [id])
+  @@id([promotionId, storeId])
+}
+
+model PromotionZoneTarget {
+  promotionId String @db.Uuid
+  zoneId String @db.Uuid
+  promotion Promotion @relation(fields: [promotionId], references: [id])
+  zone PricingZone @relation(fields: [zoneId], references: [id])
+  @@id([promotionId, zoneId])
+}
+
+model PromotionAudit {
+  id String @id @default(uuid()) @db.Uuid
+  promotionId String @db.Uuid
+  actorId String
+  action String
+  details Json?
+  createdAt DateTime @default(now())
+  promotion Promotion @relation(fields: [promotionId], references: [id])
+  @@index([promotionId, createdAt])
 }
