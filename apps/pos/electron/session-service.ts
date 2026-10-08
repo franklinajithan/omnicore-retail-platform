@@ -25,6 +25,8 @@ export function recordCashMovement(storeId:string,tillId:string,cashierId:string
   return db.transaction(()=>{
     const session:any=db.prepare("SELECT id FROM till_sessions WHERE store_id=? AND till_id=? AND status='OPEN' LIMIT 1").get(storeId,tillId);
     if(!session)throw new Error('No open till session');
+    const owner:any=db.prepare('SELECT cashier_id FROM till_sessions WHERE id=?').get(session.id);
+    if(owner.cashier_id!==cashierId)throw new Error('Cashier does not own open till session');
     const entry={id:randomUUID(),sessionId:session.id,storeId,tillId,cashierId,kind,amount,reason:reason.trim(),createdAt:new Date().toISOString()};
     db.prepare('INSERT INTO till_cash_movements(id,session_id,store_id,till_id,cashier_id,kind,amount,reason,created_at) VALUES(?,?,?,?,?,?,?,?,?)').run(entry.id,entry.sessionId,storeId,tillId,cashierId,kind,amount,entry.reason,entry.createdAt);
     return entry;
