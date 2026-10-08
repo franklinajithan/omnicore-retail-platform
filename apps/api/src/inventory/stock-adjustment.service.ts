@@ -55,7 +55,7 @@ export class StockAdjustmentService {
           update: {},
         });
         const delta = counted.minus(balance.quantity);
-        if (delta.isZero()) return { movement: null, replayed: false, unchanged: true, quantity: counted.toString() };
+        if (delta.isZero()) return { movement: null, replayed: false, unchanged: true, quantity: counted.toString(), note: 'No movement posted; unchanged counts are not idempotently recorded' };
         const updated = await tx.stockBalance.updateMany({
           where: { id: balance.id, quantity: balance.quantity },
           data: { quantity: counted },
