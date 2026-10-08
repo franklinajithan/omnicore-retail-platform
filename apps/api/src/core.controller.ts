@@ -28,4 +28,21 @@ export class CoreController {
     }
     return this.db.store.create({ data: { tenantId: actor.tenantId, code: input.code.toUpperCase(), name: input.name.trim() }, select: { id: true, code: true, name: true } });
   }
+  @Get('users')
+  async users(@Headers('authorization') authorization: string | undefined) {
+    const actor = await this.access.require(authorization, ['OWNER', 'ADMIN']);
+    if (actor.storeId) throw new ForbiddenException('Store-scoped accounts cannot manage users');
+    return this.db.tenantUser.findMany({ where: { tenantId: actor.tenantId }, select: { id: true, userId: true, role: true }, orderBy: { userId: 'asc' } });
+  }
+  @Post('users')
+  async addUser(@Headers('authorization') authorization: string | undefined, @Body() input: { userId: string; role: string }) {
+    const actor = await this.access.require(authorization, ['OWNER']);
+    if (actor.storeId) throw new ForbiddenException('Store-scoped accounts cannot manage users');
+    const allowed = ['ADMIN', 'MANAGER', 'STAFF', 'VIEWER'];
+    if (!input || typeof input.userId !== 'string' || !input.userId.trim() || input.userId.length > 128 || !allowed.includes(input.role)) {
+      throw new BadRequestException('Valid user ID and role required');
+    }
+    return this.db.tenantUser.create({ data: { tenantId: actor.tenantId, userId: input.userId.trim(), role: input.role }, select: { id: true, userId: true, role: true } });
+  }
+
 }
