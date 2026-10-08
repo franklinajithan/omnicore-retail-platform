@@ -8,7 +8,8 @@
     "build": "pnpm copy-db-schema && tsc -p tsconfig.electron.json && vite build && electron-builder --win nsis",
     "preview": "vite preview",
     "postinstall": "electron-rebuild -f -w better-sqlite3",
-    "copy-db-schema": "node -e \"require('fs').mkdirSync('dist/db',{recursive:true});require('fs').copyFileSync('src/db/schema.sql','dist/db/schema.sql')\""
+    "copy-db-schema": "node -e \"require('fs').mkdirSync('dist/db',{recursive:true});require('fs').copyFileSync('src/db/schema.sql','dist/db/schema.sql')\"",
+    "test": "tsx --test src/domain/*.test.ts"
   },
   "dependencies": {
     "@vitejs/plugin-react": "4.3.4",
@@ -29,7 +30,8 @@
     "typescript": "5.7.3",
     "wait-on": "8.0.2",
     "@types/better-sqlite3": "latest",
-    "@electron/rebuild": "3.7.2"
+    "@electron/rebuild": "3.7.2",
+    "tsx": "^4.20.5"
   },
   "build": {
     "appId": "com.omnicore.pos",
