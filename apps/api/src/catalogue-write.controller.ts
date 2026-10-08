@@ -3,7 +3,7 @@ import { Prisma, ProductStatus } from '@prisma/client';
 import { PrismaService } from './prisma.service';
 
 type CreateProduct = { tenantId: string; sku: string; name: string; baseUnit?: string; actorId: string };
-type AddBarcode = { tenantId: string; code: string; actorId: string };
+type AddBarcode = { tenantId: string; code: string; actorId: string; level?: 'UNIT' | 'INNER' | 'CASE' | 'PALLET'; unitsPerScan?: string; supplierId?: string };
 type UpsertSupplier = { tenantId: string; supplierId: string; supplierCode: string; packSize: string; cost: string; actorId: string };
 
 /** Mutations are tenant-scoped and deliberately do not modify POS or promotion data. */
@@ -44,16 +44,21 @@ export class CatalogueWriteController {
     this.auth(token, input?.tenantId, input?.actorId);
     const code = this.clean(input.code, 'barcode', 50);
     if (!/^[0-9A-Za-z-]+$/.test(code)) throw new BadRequestException('Invalid barcode');
+    const level = input.level ?? 'UNIT';
+    if (!['UNIT', 'INNER', 'CASE', 'PALLET'].includes(level)) throw new BadRequestException('Invalid packaging level');
+    const unitsPerScan = this.decimal(input.unitsPerScan ?? '1', 'unitsPerScan', 3, false);
+    if (level === 'UNIT' && !unitsPerScan.equals(1)) throw new BadRequestException('Unit barcode must scan one unit');
     return this.db.$transaction(async tx => {
       const product = await tx.product.findFirst({ where: { id: productId, tenantId: input.tenantId }, select: { id: true } });
       if (!product) throw new BadRequestException('Product not found in tenant');
+      if (input.supplierId && !(await tx.supplier.findFirst({ where: { id: input.supplierId, tenantId: input.tenantId }, select: { id: true } }))) throw new BadRequestException('Supplier must belong to tenant');
       // Serialize assignments for this tenant/barcode across concurrent API requests.
       // This works with the existing schema; a database unique index is still recommended.
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${input.tenantId + ':' + code}, 0))`;
       const existing = await tx.productBarcode.findFirst({ where: { code, product: { tenantId: input.tenantId } }, select: { productId: true } });
       if (existing) throw new ConflictException('Barcode already assigned in tenant');
       try {
-        return await tx.productBarcode.create({ data: { productId, code } });
+        return await tx.productBarcode.create({ data: { productId, code, level, unitsPerScan, supplierId: input.supplierId || null } });
       } catch (error) {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') throw new ConflictException('Duplicate barcode');
         throw error;
