@@ -160,4 +160,57 @@ export class RetailController {
     });
   }
 
+  /**
+   * Store-local RTC creation. Uses the store credential, not Head Office promotion permissions.
+   * A store-scoped identity/device authorization layer is still required before deployment.
+   */
+  @Post('stores/:storeId/rtc')
+  async createRtc(@Headers('authorization') token:string|undefined,@Param('storeId') storeId:string,
+    @Body() input:{productId:string;reducedPrice:string;quantity:number;reason:string;expiresAt:string;employeeId:string;labelCode:string}){
+    this.authorize(token);
+    if(!input?.productId||!input?.employeeId||!input?.reason?.trim()||!input?.labelCode?.trim()||
+      !Number.isSafeInteger(input.quantity)||input.quantity<1||input.quantity>10000)
+      throw new BadRequestException('Invalid RTC details');
+    const reduced=new Prisma.Decimal(input.reducedPrice);
+    const expiry=new Date(input.expiresAt);
+    if(!reduced.isFinite()||reduced.lte(0)||reduced.decimalPlaces()>2||!Number.isFinite(expiry.getTime())||expiry<=new Date())
+      throw new BadRequestException('Invalid RTC price or expiry');
+    const store=await this.db.store.findFirst({where:{OR:[{id:/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(storeId)?storeId:'00000000-0000-0000-0000-000000000000'},{code:storeId}]},select:{id:true,tenantId:true}});
+    if(!store)throw new BadRequestException('Unknown store');
+    const now=new Date();
+    const [product,employee,price]=await Promise.all([
+      this.db.product.findFirst({where:{id:input.productId,tenantId:store.tenantId,status:'ACTIVE'},select:{id:true}}),
+      this.db.employee.findFirst({where:{id:input.employeeId,tenantId:store.tenantId,status:'ACTIVE',stores:{some:{storeId:store.id}}},select:{id:true}}),
+      this.db.productPrice.findFirst({where:{tenantId:store.tenantId,storeId:store.id,productId:input.productId,effectiveFrom:{lte:now},OR:[{effectiveTo:null},{effectiveTo:{gt:now}}]},orderBy:{effectiveFrom:'desc'}})
+    ]);
+    if(!product||!employee||!price)throw new BadRequestException('Product, employee or current price not valid for store');
+    if(reduced.gte(price.retailPrice))throw new BadRequestException('RTC price must be below current retail price');
+    return this.db.rtcMarkdown.create({data:{
+      tenantId:store.tenantId,storeId:store.id,productId:product.id,originalPrice:price.retailPrice,
+      reducedPrice:reduced,quantity:input.quantity,remainingQuantity:input.quantity,
+      reason:input.reason.trim(),labelCode:input.labelCode.trim(),expiresAt:expiry,
+      createdByEmployeeId:employee.id
+    }});
+  }
+  @Get('stores/:storeId/rtc')
+  async listRtc(@Headers('authorization') token:string|undefined,@Param('storeId') storeId:string){
+    this.authorize(token);
+    const store=await this.db.store.findFirst({where:{OR:[{id:/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(storeId)?storeId:'00000000-0000-0000-0000-000000000000'},{code:storeId}]},select:{id:true,tenantId:true}});
+    if(!store)throw new BadRequestException('Unknown store');
+    return this.db.rtcMarkdown.findMany({where:{tenantId:store.tenantId,storeId:store.id},orderBy:{createdAt:'desc'},take:200});
+  }
+  @Patch('stores/:storeId/rtc/:rtcId/cancel')
+  async cancelRtc(@Headers('authorization') token:string|undefined,@Param('storeId') storeId:string,@Param('rtcId') rtcId:string,
+    @Body() input:{employeeId:string;reason:string}){
+    this.authorize(token);
+    if(!input?.employeeId||!input?.reason?.trim())throw new BadRequestException('Employee and reason required');
+    const store=await this.db.store.findFirst({where:{OR:[{id:/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(storeId)?storeId:'00000000-0000-0000-0000-000000000000'},{code:storeId}]},select:{id:true,tenantId:true}});
+    if(!store)throw new BadRequestException('Unknown store');
+    const employee=await this.db.employee.findFirst({where:{id:input.employeeId,tenantId:store.tenantId,status:'ACTIVE',stores:{some:{storeId:store.id}}},select:{id:true}});
+    if(!employee)throw new BadRequestException('Employee not assigned to store');
+    const changed=await this.db.rtcMarkdown.updateMany({where:{id:rtcId,tenantId:store.tenantId,storeId:store.id,status:'ACTIVE'},data:{status:'CANCELLED'}});
+    if(changed.count!==1)throw new BadRequestException('Active RTC not found');
+    return {cancelled:true,rtcId};
+  }
+
 }
