@@ -17,8 +17,8 @@ const toPence=(gbp:number)=>Math.round(gbp*100);
 export function priceProductWithPromotion(
   productId:string,unitPricePence:number,quantity:number,rules:PromotionRule[],at:Date=new Date()
 ):PriceResult{
-  if(!Number.isSafeInteger(unitPricePence)||unitPricePence<0||!Number.isSafeInteger(quantity)||quantity<0)throw new Error('Invalid basket price or quantity');
-  const baseTotalPence=unitPricePence*quantity;
+  if(!Number.isSafeInteger(unitPricePence)||unitPricePence<0||!Number.isFinite(quantity)||quantity<0||Math.round(quantity*1000)!==quantity*1000)throw new Error('Invalid basket price or quantity');
+  const baseTotalPence=Math.round(unitPricePence*quantity);
   if(!Number.isSafeInteger(baseTotalPence))throw new Error('Basket total exceeds supported range');
   const valid=rules.filter(r=>r.productId===productId&&
     Number.isFinite(Date.parse(r.startsAt))&&Number.isFinite(Date.parse(r.endsAt))&&
@@ -27,14 +27,14 @@ export function priceProductWithPromotion(
   valid.sort((a,b)=>scopeRank[b.scope]-scopeRank[a.scope]||(b.priority||0)-(a.priority||0)||a.promotionId.localeCompare(b.promotionId));
   for(const r of valid){
     let total=baseTotalPence;
-    if(r.type==='FIXED_PRICE')total=toPence(r.value)*quantity;
+    if(r.type==='FIXED_PRICE')total=Math.round(toPence(r.value)*quantity);
     else if(r.type==='PERCENT_OFF'){
       if(r.value>100)continue;
       total=baseTotalPence-Math.round(baseTotalPence*r.value/100);
-    }else if(r.type==='AMOUNT_OFF')total=Math.max(0,unitPricePence-toPence(r.value))*quantity;
+    }else if(r.type==='AMOUNT_OFF')total=Math.round(Math.max(0,unitPricePence-toPence(r.value))*quantity);
     else if(r.type==='MULTIBUY_FIXED_PRICE'){
       const n=r.requiredQuantity;
-      if(!n||!Number.isSafeInteger(n)||n<2||quantity<n)continue;
+      if(!n||!Number.isSafeInteger(n)||n<2||!Number.isSafeInteger(quantity)||quantity<n)continue;
       const bundles=Math.floor(quantity/n);
       total=bundles*toPence(r.value)+(quantity%n)*unitPricePence;
     }else continue;
