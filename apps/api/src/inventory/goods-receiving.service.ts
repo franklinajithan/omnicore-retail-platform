@@ -55,10 +55,34 @@ export class GoodsReceivingService {
           }),
         ]);
         if (!store || !order) throw new NotFoundException('Store or purchase order not found in tenant');
+        if (!['SUBMITTED', 'PARTIALLY_RECEIVED'].includes(order.status)) {
+          throw new ConflictException('Purchase order is not open for receiving');
+        }
         const orderedProducts = new Set(order.lines.map(line => line.productId));
         if (lines.some(line => !orderedProducts.has(line.productId))) {
           throw new BadRequestException('Receipt includes a product absent from purchase order');
         }
+        const previousReceipts = await tx.goodsReceipt.findMany({
+          where: { tenantId: input.tenantId, orderId: input.orderId },
+          include: { lines: true },
+        });
+        const ordered = new Map<string, Prisma.Decimal>();
+        for (const line of order.lines) {
+          ordered.set(line.productId, (ordered.get(line.productId) ?? new Prisma.Decimal(0)).plus(line.orderedQuantity));
+        }
+        const alreadyReceived = new Map<string, Prisma.Decimal>();
+        for (const receipt of previousReceipts) for (const line of receipt.lines) {
+          alreadyReceived.set(line.productId, (alreadyReceived.get(line.productId) ?? new Prisma.Decimal(0)).plus(line.receivedQuantity));
+        }
+        for (const line of lines) {
+          const cumulative = (alreadyReceived.get(line.productId) ?? new Prisma.Decimal(0)).plus(line.quantity);
+          if (cumulative.greaterThan(ordered.get(line.productId) ?? new Prisma.Decimal(0))) {
+            throw new ConflictException(`Over-receipt requires approval for product ${line.productId}`);
+          }
+          alreadyReceived.set(line.productId, cumulative);
+        }
+        const fullyReceived = [...ordered].every(([productId, quantity]) =>
+          (alreadyReceived.get(productId) ?? new Prisma.Decimal(0)).greaterThanOrEqualTo(quantity));
         const receipt = await tx.goodsReceipt.create({
           data: {
             tenantId: input.tenantId, orderId: input.orderId, storeId: input.storeId,
@@ -86,7 +110,11 @@ export class GoodsReceivingService {
             referenceId: receipt.id, idempotencyKey: `grn:${receipt.id}:${line.productId}`,
           } });
         }
-        return { receipt, replayed: false };
+        await tx.purchaseOrder.update({
+          where: { id: input.orderId },
+          data: { status: fullyReceived ? 'RECEIVED' : 'PARTIALLY_RECEIVED' },
+        });
+        return { receipt, replayed: false, purchaseOrderStatus: fullyReceived ? 'RECEIVED' : 'PARTIALLY_RECEIVED' };
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError &&
