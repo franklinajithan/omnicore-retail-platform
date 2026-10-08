@@ -81,7 +81,11 @@ export function holdSale(storeId:string,tillId:string,cashierId:string,lines:any
   })();
 }
 export function heldSales(storeId:string,tillId:string,cashierId:string){
-  return getDb().prepare("SELECT id,label,created_at createdAt,lines_json linesJson FROM held_sales WHERE store_id=? AND till_id=? AND cashier_id=? ORDER BY created_at DESC")
+  if(!storeId?.trim()||!tillId?.trim()||!cashierId?.trim())throw new Error('Held sale context required');
+  const db=getDb();
+  const session:any=db.prepare("SELECT cashier_id FROM till_sessions WHERE store_id=? AND till_id=? AND status='OPEN' LIMIT 1").get(storeId,tillId);
+  if(!session||session.cashier_id!==cashierId)throw new Error('Cashier has no open till session');
+  return db.prepare("SELECT id,label,created_at createdAt,lines_json linesJson FROM held_sales WHERE store_id=? AND till_id=? AND cashier_id=? ORDER BY created_at DESC")
     .all(storeId,tillId,cashierId);
 }
 export function recallSale(id:string,storeId:string,tillId:string,cashierId:string){
