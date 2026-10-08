@@ -16,7 +16,7 @@ export default function LiveCatalogue() {
   const [selected,setSelected]=useState<Product360|null>(null);
   const [history,setHistory]=useState<ProductHistory|null>(null);
   const [storeId,setStoreId]=useState('');
-  const [tab,setTab]=useState<'Overview'|'Barcodes'|'Suppliers'|'Pricing'|'Inventory'|'Movements'|'Sales'|'Deliveries'>('Overview');
+  const [tab,setTab]=useState<'Overview'|'Barcodes'|'Suppliers'|'Pricing'|'Inventory'|'Movements'|'Sales'|'Deliveries'|'Audit'>('Overview');
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   const [createOpen,setCreateOpen]=useState(false);
@@ -80,7 +80,7 @@ export default function LiveCatalogue() {
         <label>Store UUID <input placeholder="All stores" value={storeId} onChange={e=>setStoreId(e.target.value)}/></label>
         <button disabled={busy} onClick={()=>void open(selected.id)}>Apply store</button>
       </div>
-      <nav aria-label="Product 360 tabs" style={{display:'flex',gap:8,flexWrap:'wrap'}}>{(['Overview','Barcodes','Suppliers','Pricing','Inventory','Movements','Sales','Deliveries'] as const).map(t=><button key={t} aria-pressed={tab===t} onClick={()=>setTab(t)}>{t}</button>)}</nav>
+      <nav aria-label="Product 360 tabs" style={{display:'flex',gap:8,flexWrap:'wrap'}}>{(['Overview','Barcodes','Suppliers','Pricing','Inventory','Movements','Sales','Deliveries','Audit'] as const).map(t=><button key={t} aria-pressed={tab===t} onClick={()=>setTab(t)}>{t}</button>)}</nav>
       <div style={{marginTop:16,overflowX:'auto'}}>
         {tab==='Overview'&&<dl><dt>Product code</dt><dd>{selected.sku}</dd><dt>Product ID</dt><dd>{selected.id}</dd><dt>Barcodes</dt><dd>{selected.barcodes.length}</dd><dt>Suppliers</dt><dd>{selected.suppliers.length}</dd></dl>}
         {tab==='Barcodes'&&<><table><thead><tr><th>Barcode</th><th>Level</th><th>Units / scan</th><th>Supplier ID</th></tr></thead><tbody>{selected.barcodes.map(b=><tr key={b.id}><td>{b.code}</td><td>{b.level}</td><td>{b.unitsPerScan}</td><td>{b.supplierId||'—'}</td></tr>)}</tbody></table><form onSubmit={e=>{e.preventDefault();void execute(async()=>{if(!api)return;await api.addBarcode(selected.id,{code:barcode,actorId,level:barcodeLevel,unitsPerScan:unitsPerScan,supplierId:barcodeSupplier||undefined});setBarcode('');setBarcodeLevel('UNIT');setUnitsPerScan('1');setBarcodeSupplier('');const detail=await api.detail(selected.id,storeId||undefined);setSelected(detail)})}}><input required placeholder="New barcode" value={barcode} onChange={e=>setBarcode(e.target.value)}/><select aria-label="Packaging level" value={barcodeLevel} onChange={e=>{const level=e.target.value as typeof barcodeLevel;setBarcodeLevel(level);if(level==="UNIT")setUnitsPerScan("1")}}><option value="UNIT">Retail unit</option><option value="INNER">Inner pack</option><option value="CASE">Outer case</option><option value="PALLET">Pallet</option></select><input aria-label="Units per scan" required type="number" min="0.001" step="0.001" value={unitsPerScan} disabled={barcodeLevel==="UNIT"} onChange={e=>setUnitsPerScan(e.target.value)}/><input aria-label="Barcode supplier ID" placeholder="Supplier UUID (optional)" value={barcodeSupplier} onChange={e=>setBarcodeSupplier(e.target.value)}/><button disabled={!actorId||busy}>Add barcode</button></form></>}
@@ -90,6 +90,7 @@ export default function LiveCatalogue() {
         {tab==='Movements'&&<pre>{JSON.stringify(history?.movements||[],null,2)}</pre>}
         {tab==='Sales'&&<pre>{JSON.stringify(history?.sales||[],null,2)}</pre>}
         {tab==='Deliveries'&&<pre>{JSON.stringify(history?.receipts||[],null,2)}</pre>}
+        {tab==='Audit'&&<table><thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Before</th><th>After</th></tr></thead><tbody>{(history?.changes||[]).map(change=><tr key={change.id}><td>{new Date(change.createdAt).toLocaleString()}</td><td>{change.actorId}</td><td>{change.action}</td><td><pre>{JSON.stringify(change.before,null,2)}</pre></td><td><pre>{JSON.stringify(change.after,null,2)}</pre></td></tr>)}</tbody></table>}
       </div>
     </section>}
   </main>;
