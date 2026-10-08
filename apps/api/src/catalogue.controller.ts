@@ -100,7 +100,7 @@ export class CatalogueController {
       this.db.stockMovement.findMany({ where: scope, orderBy: { createdAt: 'desc' }, take }),
       this.db.posSaleLine.findMany({ where: { productId, sale: { tenantId, ...(storeId ? { storeId } : {}) } }, include: { sale: { select: { id: true, storeId: true, soldAt: true, receiptNo: true, cashierId: true } } }, orderBy: { sale: { soldAt: 'desc' } }, take }),
       this.db.productPrice.findMany({ where: scope, orderBy: { effectiveFrom: 'desc' }, take }),
-      this.db.goodsReceiptLine.findMany({ where: { productId, receipt: { tenantId, ...(storeId ? { storeId } : {}) } }, include: { receipt: { select: { id: true, storeId: true, createdAt: true, orderId: true } } }, take }),
+      this.db.goodsReceiptLine.findMany({ where: { productId, receipt: { tenantId, ...(storeId ? { storeId } : {}) } }, include: { receipt: { select: { id: true, storeId: true, createdAt: true, orderId: true } } }, orderBy: { receipt: { createdAt: 'desc' } }, take }),
       this.db.catalogueChange.findMany({ where: { tenantId, productId }, orderBy: { createdAt: 'desc' }, take }),
     ]);
     return { movements, sales, prices, receipts, changes };
