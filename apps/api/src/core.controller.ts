@@ -99,6 +99,21 @@ export class CoreController {
       where: { storeId }, select: { id: true, label: true, enabled: true, createdAt: true, lastSeenAt: true }
     });
   }
+
+  @Post('stores/:storeId/devices/:deviceId/credential')
+  async renewDeviceCredential(@Headers('authorization') authorization: string | undefined,
+    @Param('storeId') storeId: string, @Param('deviceId') deviceId: string) {
+    const actor = await this.access.require(authorization, ['OWNER', 'ADMIN']);
+    if (actor.storeId) throw new ForbiddenException('Store-scoped account cannot provision devices');
+    const device = await this.db.storeTrustedDevice.findFirst({
+      where: { id: deviceId, storeId, enabled: true, store: { tenantId: actor.tenantId } },
+      select: { id: true }
+    });
+    if (!device) throw new ForbiddenException('Device not registered or disabled');
+    const secret = process.env.OMNICORE_POS_DEVICE_SECRET;
+    if (!secret || secret.length < 32) throw new ForbiddenException('POS device provisioning unavailable');
+    return { deviceId, token: issuePosCredential(secret, actor.tenantId, storeId, deviceId), expiresInSeconds: 3600 };
+  }
   @Patch('stores/:storeId/devices/:deviceId/disable')
   async disableDevice(@Headers('authorization') authorization: string | undefined,
     @Param('storeId') storeId: string, @Param('deviceId') deviceId: string) {
