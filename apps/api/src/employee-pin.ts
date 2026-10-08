@@ -2,7 +2,7 @@ import {randomBytes, scrypt as scryptCallback, timingSafeEqual} from 'node:crypt
 import {promisify} from 'node:util';
 
 const scrypt = promisify(scryptCallback);
-const PIN_PATTERN = /^\\d{6}$/;
+const PIN_PATTERN = new RegExp('^[0-9]{6}$');
 
 /** Use a tenant-specific keyed identifier to locate an employee before verifying their PIN.
  * A six-digit PIN has only one million possibilities: hashing does not make offline theft harmless.
