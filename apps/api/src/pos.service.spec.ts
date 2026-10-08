@@ -30,3 +30,20 @@ test('unknown or disabled POS device is rejected', async () => {
   } as any);
   await assert.rejects(() => service.authorizeDevice(scope), /DEVICE_REVOKED_OR_UNREGISTERED/);
 });
+
+test('device authorization checks the requested tenant and store', async () => {
+  const queries: any[] = [];
+  const service = new PosService({
+    storeTrustedDevice: {
+      findFirst: async (query: any) => { queries.push(query.where); return null; }
+    }
+  } as any);
+  await assert.rejects(() => service.authorizeDevice({
+    ...scope, tenantId: '00000000-0000-4000-8000-000000000004'
+  }));
+  await assert.rejects(() => service.authorizeDevice({
+    ...scope, storeId: '00000000-0000-4000-8000-000000000005'
+  }));
+  assert.equal(queries[0].store.tenantId, '00000000-0000-4000-8000-000000000004');
+  assert.equal(queries[1].storeId, '00000000-0000-4000-8000-000000000005');
+});
