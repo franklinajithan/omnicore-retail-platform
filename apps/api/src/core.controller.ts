@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Headers, Patch, Param, Delete, Post, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { CoreAccessService } from './core-access';
 import { PrismaService } from './prisma.service';
+import { issuePosCredential, newDeviceCredentialHash } from './pos-device-credential';
 
 @Controller('core/v1')
 export class CoreController {
@@ -69,6 +70,24 @@ export class CoreController {
     });
     if (result.count !== 1) throw new BadRequestException('User not found or protected');
     return { userId, role: input.role };
+  }
+
+  @Post('stores/:storeId/devices')
+  async registerDevice(@Headers('authorization') authorization: string | undefined,
+    @Param('storeId') storeId: string, @Body() input: { label: string }) {
+    const actor = await this.access.require(authorization, ['OWNER', 'ADMIN']);
+    if (actor.storeId) throw new ForbiddenException('Store-scoped account cannot register devices');
+    if (!input || typeof input.label !== 'string' || !input.label.trim() || input.label.length > 100)
+      throw new BadRequestException('Valid device label required');
+    const store = await this.db.store.findFirst({ where: { id: storeId, tenantId: actor.tenantId } });
+    if (!store) throw new ForbiddenException('Store access denied');
+    const secret = process.env.OMNICORE_POS_DEVICE_SECRET;
+    if (!secret || secret.length < 32) throw new ForbiddenException('POS device provisioning unavailable');
+    const device = await this.db.storeTrustedDevice.create({
+      data: { storeId, label: input.label.trim(), credentialHash: newDeviceCredentialHash() },
+      select: { id: true, label: true, enabled: true }
+    });
+    return { ...device, token: issuePosCredential(secret, actor.tenantId, storeId, device.id), expiresInSeconds: 3600 };
   }
   @Get('stores/:storeId/devices')
   async devices(@Headers('authorization') authorization: string | undefined, @Param('storeId') storeId: string) {
