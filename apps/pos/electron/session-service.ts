@@ -4,7 +4,7 @@ import {randomUUID} from 'crypto';import {getDb} from './database';export functi
   const db=getDb();
   return db.transaction(()=>{
     const existing:any=db.prepare("SELECT * FROM till_sessions WHERE store_id=? AND till_id=? AND status='OPEN' LIMIT 1").get(storeId,tillId);
-    if(existing)return existing;
+    if(existing){if(existing.cashier_id!==cashierId)throw new Error('Till is already open under another cashier');return existing;}
     const row={id:randomUUID(),storeId,tillId,cashierId,openingFloat,openedAt:new Date().toISOString()};
     db.prepare("INSERT INTO till_sessions(id,store_id,till_id,cashier_id,status,opening_float,opened_at) VALUES(?,?,?,?,?,?,?)").run(row.id,storeId,tillId,cashierId,'OPEN',openingFloat,row.openedAt);
     return row;
@@ -32,13 +32,14 @@ export function recordCashMovement(storeId:string,tillId:string,cashierId:string
     return entry;
   })();
 }
-export function closeSession(storeId:string,tillId:string,closingCash:number){
-  if(!storeId?.trim()||!tillId?.trim())throw new Error('Store and till are required');
+export function closeSession(storeId:string,tillId:string,cashierId:string,closingCash:number){
+  if(!storeId?.trim()||!tillId?.trim()||!cashierId?.trim())throw new Error('Store, till and cashier are required');
   if(!Number.isSafeInteger(closingCash)||closingCash<0)throw new RangeError('Counted cash must be non-negative integer pence');
   const db=getDb();
   return db.transaction(()=>{
     const session:any=db.prepare("SELECT * FROM till_sessions WHERE store_id=? AND till_id=? AND status='OPEN' ORDER BY opened_at DESC LIMIT 1").get(storeId,tillId);
     if(!session)throw new Error('No open till session to close');
+    if(session.cashier_id!==cashierId)throw new Error('Cashier does not own open till session');
     const totals:any=db.prepare(`
       SELECT
         COALESCE(SUM(t.cash_tendered),0) cashTendered,
