@@ -14,6 +14,7 @@ export type Product360 = CatalogueProduct & {
   prices: Array<{ storeId: string; retailPrice: string; vatRate: string; effectiveFrom: string; effectiveTo: string | null }>;
 };
 export type ProductHistory = {
+  changes: Array<{ id: string; actorId: string; action: string; before: unknown; after: unknown; createdAt: string }>;
   movements: Array<{ id: string; storeId: string; type: string; quantityDelta: string; createdAt: string; referenceType: string; referenceId: string }>;
   sales: Array<{ id: string; quantity: string; unitPrice: string; lineTotal: string; sale: { storeId: string; soldAt: string; receiptNo: string } }>;
   prices: Product360['prices'];
