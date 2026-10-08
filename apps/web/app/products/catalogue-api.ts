@@ -5,7 +5,7 @@
 export type CatalogueProduct = {
   id: string; tenantId: string; sku: string; name: string;
   status: 'ACTIVE' | 'INACTIVE'; baseUnit: string;
-  barcodes: Array<{ id: string; code: string }>;
+  barcodes: Array<{ id: string; code: string; level: string; unitsPerScan: string; supplierId: string | null }>;
   suppliers: Array<{ id: string; supplierCode: string; packSize: string; cost: string; supplier: { id: string; code: string; name: string } }>;
 };
 export type CataloguePage = { items: CatalogueProduct[]; nextCursor: string | null };
@@ -57,7 +57,7 @@ export class CatalogueApi {
   createProduct(input: { sku: string; name: string; baseUnit?: string; actorId: string }) {
     return this.post<CatalogueProduct>('products', input);
   }
-  addBarcode(productId: string, input: { code: string; actorId: string }) {
+  addBarcode(productId: string, input: { code: string; actorId: string; level?: 'UNIT' | 'INNER' | 'CASE' | 'PALLET'; unitsPerScan?: string; supplierId?: string }) {
     return this.post<{ id: string; code: string; productId: string }>('products/' + encodeURIComponent(productId) + '/barcodes', input);
   }
   setSupplier(productId: string, input: { supplierId: string; supplierCode: string; packSize: string; cost: string; actorId: string }) {
