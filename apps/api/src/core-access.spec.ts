@@ -1,3 +1,4 @@
+import { test } from 'node:test';
 import { createHmac } from 'node:crypto';
 import { verifyCoreToken } from './core-access';
 
@@ -30,3 +31,5 @@ export function runCoreAuthTests(): void {
   rejects(() => verifyCoreToken(undefined, secret), 'Missing authorization must fail');
   rejects(() => verifyCoreToken(token, undefined), 'Missing configured secret must fail');
 }
+
+test('core JWT authentication rejects invalid credentials', runCoreAuthTests);
