@@ -96,4 +96,42 @@ export class RetailController {
     const assignments=await this.db.storeZoneAssignment.findMany({where:{storeId:resolvedStoreId,effectiveFrom:{lte:now},OR:[{effectiveTo:null},{effectiveTo:{gt:now}}]},select:{zoneId:true}});
     return this.db.promotion.findMany({where:{tenantId:store.tenantId,status:{in:[PromotionStatus.APPROVED,PromotionStatus.ACTIVE]},endsAt:{gt:now},OR:[{scope:PromotionScope.ALL_STORES},{scope:PromotionScope.STORES,stores:{some:{storeId:resolvedStoreId}}},{scope:PromotionScope.ZONES,zones:{some:{zoneId:{in:assignments.map(a=>a.zoneId)}}}}]},include:{products:true},orderBy:[{priority:'desc'},{createdAt:'desc'}]});
   }
+  /**
+   * POS promotion snapshot. Returns eligible promotions only; the till must evaluate
+   * startsAt/endsAt and line quantities locally when offline.
+   */
+  @Get('stores/:storeId/pricing-snapshot')
+  async pricingSnapshot(@Headers('authorization') token:string|undefined,@Param('storeId') storeId:string){
+    this.authorize(token);
+    const store=await this.db.store.findFirst({where:{OR:[{id:/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(storeId)?storeId:'00000000-0000-0000-0000-000000000000'},{code:storeId}]},select:{id:true,tenantId:true,code:true}});
+    if(!store)throw new BadRequestException('Unknown store');
+    const now=new Date();
+    const zones=await this.db.storeZoneAssignment.findMany({where:{storeId:store.id,effectiveFrom:{lte:now},OR:[{effectiveTo:null},{effectiveTo:{gt:now}}]},select:{zoneId:true}});
+    const zoneIds=zones.map(z=>z.zoneId);
+    const promotions=await this.db.promotion.findMany({
+      where:{tenantId:store.tenantId,status:{in:[PromotionStatus.APPROVED,PromotionStatus.ACTIVE]},endsAt:{gt:now},
+        OR:[{scope:PromotionScope.ALL_STORES},{scope:PromotionScope.STORES,stores:{some:{storeId:store.id}}},{scope:PromotionScope.ZONES,zones:{some:{zoneId:{in:zoneIds}}}}]},
+      include:{products:true},orderBy:[{priority:'desc'},{createdAt:'desc'}]
+    });
+    const prices=await this.db.productPrice.findMany({
+      where:{tenantId:store.tenantId,storeId:store.id,effectiveFrom:{lte:now},OR:[{effectiveTo:null},{effectiveTo:{gt:now}}]},
+      orderBy:[{productId:'asc'},{effectiveFrom:'desc'}]
+    });
+    const currentPrices=new Map<string,{productId:string;retailPrice:string;vatRate:string;effectiveFrom:Date;effectiveTo:Date|null}>();
+    for(const price of prices)if(!currentPrices.has(price.productId))currentPrices.set(price.productId,{
+      productId:price.productId,retailPrice:price.retailPrice.toString(),vatRate:price.vatRate.toString(),
+      effectiveFrom:price.effectiveFrom,effectiveTo:price.effectiveTo
+    });
+    return {
+      storeId:store.id,storeCode:store.code,tenantId:store.tenantId,generatedAt:now.toISOString(),zoneIds,
+      currency:'GBP',moneyUnit:'MAJOR_DECIMAL_STRING',
+      prices:[...currentPrices.values()],
+      promotions:promotions.map(p=>({
+        id:p.id,name:p.name,status:p.status,scope:p.scope,type:p.type,priority:p.priority,
+        startsAt:p.startsAt,endsAt:p.endsAt,
+        products:p.products.map(line=>({productId:line.productId,value:line.value.toString(),requiredQuantity:line.requiredQuantity}))
+      }))
+    };
+  }
+
 }
