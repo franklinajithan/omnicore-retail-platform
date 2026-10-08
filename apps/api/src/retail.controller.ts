@@ -171,6 +171,8 @@ export class RetailController {
     if(!input?.productId||!input?.employeeId||!input?.reason?.trim()||!input?.labelCode?.trim()||
       !Number.isSafeInteger(input.quantity)||input.quantity<1||input.quantity>10000)
       throw new BadRequestException('Invalid RTC details');
+    if(typeof input.reducedPrice!=='string'||!/^(?:0|[1-9]\\d*)(?:\\.\\d{1,2})?$/.test(input.reducedPrice))
+      throw new BadRequestException('RTC reduced price must be a non-negative GBP decimal string');
     const reduced=new Prisma.Decimal(input.reducedPrice);
     const expiry=new Date(input.expiresAt);
     if(!reduced.isFinite()||reduced.lte(0)||reduced.decimalPlaces()>2||!Number.isFinite(expiry.getTime())||expiry<=new Date())
@@ -208,6 +210,7 @@ export class RetailController {
     if(!store)throw new BadRequestException('Unknown store');
     const employee=await this.db.employee.findFirst({where:{id:input.employeeId,tenantId:store.tenantId,status:'ACTIVE',stores:{some:{storeId:store.id}}},select:{id:true}});
     if(!employee)throw new BadRequestException('Employee not assigned to store');
+    // TODO: persist the cancellation actor and reason in a dedicated RTC audit table.
     const changed=await this.db.rtcMarkdown.updateMany({where:{id:rtcId,tenantId:store.tenantId,storeId:store.id,status:'ACTIVE'},data:{status:'CANCELLED'}});
     if(changed.count!==1)throw new BadRequestException('Active RTC not found');
     return {cancelled:true,rtcId};
