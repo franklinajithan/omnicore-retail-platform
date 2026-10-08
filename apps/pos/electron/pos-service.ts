@@ -25,6 +25,7 @@ export function completeSale(input:Checkout){
   const tx=db.transaction(()=>{
     const session:any=db.prepare("SELECT id,cashier_id FROM till_sessions WHERE store_id=? AND till_id=? AND status='OPEN' LIMIT 1").get(input.storeId,input.tillId);
     if(!session)throw new Error('TILL_NOT_OPEN');
+    if(session.cashier_id!==input.cashierId)throw new Error('CASHIER_DOES_NOT_OWN_TILL_SESSION');
     receipt=nextReceipt(db,input.storeId,input.tillId,now);
     db.prepare('INSERT INTO sales(id,receipt_no,store_id,till_id,cashier_id,status,subtotal,discount_total,vat_total,total,amount_tendered,change_due,created_at,sync_status) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(id,receipt,input.storeId,input.tillId,input.cashierId,'COMPLETED',subtotal,discountTotal,vatTotal,total,tendered,change,createdAt,'PENDING');
     const line=db.prepare('INSERT INTO sale_lines(id,sale_id,product_id,item_code,barcode,name,qty,unit_price,discount,vat_rate,vat_amount,line_total,price_reason) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)');
