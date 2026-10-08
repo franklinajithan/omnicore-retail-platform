@@ -1,2 +1,3 @@
+import {CatalogueWriteController} from './catalogue-write.controller';
 import {CatalogueController} from './catalogue.controller';
-import {RetailController} from './retail.controller';import {Module} from '@nestjs/common';import {PosController} from './pos.controller';import {PosService} from './pos.service';import {PrismaService} from './prisma.service';@Module({controllers:[PosController,RetailController,CatalogueController],providers:[PosService,PrismaService]})export class AppModule{}
+import {RetailController} from './retail.controller';import {Module} from '@nestjs/common';import {PosController} from './pos.controller';import {PosService} from './pos.service';import {PrismaService} from './prisma.service';@Module({controllers:[PosController,RetailController,CatalogueController,CatalogueWriteController],providers:[PosService,PrismaService]})export class AppModule{}
