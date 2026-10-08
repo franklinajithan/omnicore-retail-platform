@@ -98,6 +98,10 @@ export class CoreController {
       data: { storeId, label: input.label.trim(), credentialHash: newDeviceCredentialHash() },
       select: { id: true, label: true, enabled: true }
     });
+    await this.db.securityAuditEvent.create({ data: {
+      tenantId: actor.tenantId, actorUserId: actor.userId, action: 'POS_DEVICE_REGISTERED',
+      resourceType: 'POS_DEVICE', resourceId: device.id, storeId
+    } });
     return { ...device, token: issuePosCredential(secret, actor.tenantId, storeId, device.id), expiresInSeconds: 3600 };
   }
   @Get('stores/:storeId/devices')
