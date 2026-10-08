@@ -55,6 +55,19 @@ export class CatalogueApi {
     if (!response.ok) throw new CatalogueApiError(response.status, 'Catalogue write failed (' + response.status + ')');
     return response.json() as Promise<T>;
   }
+  async updateProduct(productId: string, input: { actorId: string; name?: string; baseUnit?: string; status?: 'ACTIVE' | 'INACTIVE' }) {
+    const url = new URL('/catalogue/v1/products/' + encodeURIComponent(productId), this.origin);
+    const token = await this.getToken();
+    if (!token) throw new CatalogueApiError(401, 'Authentication required');
+    const response = await fetch(url.toString(), {
+      method: 'PATCH',
+      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...input, tenantId: this.tenantId }),
+      cache: 'no-store',
+    });
+    if (!response.ok) throw new CatalogueApiError(response.status, 'Product update failed (' + response.status + ')');
+    return response.json() as Promise<CatalogueProduct>;
+  }
   createProduct(input: { sku: string; name: string; baseUnit?: string; actorId: string }) {
     return this.post<CatalogueProduct>('products', input);
   }
