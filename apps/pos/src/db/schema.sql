@@ -21,3 +21,19 @@ CREATE TABLE IF NOT EXISTS held_sales(id TEXT PRIMARY KEY,store_id TEXT NOT NULL
 CREATE INDEX IF NOT EXISTS idx_held_sales_till ON held_sales(store_id,till_id,created_at);
 CREATE TABLE IF NOT EXISTS sale_returns(id TEXT PRIMARY KEY,original_sale_id TEXT NOT NULL,store_id TEXT NOT NULL,till_id TEXT NOT NULL,cashier_id TEXT NOT NULL,reason TEXT NOT NULL,total INTEGER NOT NULL,created_at TEXT NOT NULL,sync_status TEXT NOT NULL DEFAULT 'PENDING');
 CREATE TABLE IF NOT EXISTS sale_return_lines(id TEXT PRIMARY KEY,return_id TEXT NOT NULL REFERENCES sale_returns(id),original_line_id TEXT,product_id TEXT NOT NULL,item_code TEXT NOT NULL,qty REAL NOT NULL,unit_price INTEGER NOT NULL,line_total INTEGER NOT NULL);
+
+-- Centrally approved promotions cached for offline store checkout.
+CREATE TABLE IF NOT EXISTS promotion_rules (
+ promotion_id TEXT NOT NULL,
+ product_id TEXT NOT NULL,
+ store_id TEXT NOT NULL,
+ scope TEXT NOT NULL,
+ type TEXT NOT NULL,
+ value REAL NOT NULL,
+ required_quantity INTEGER,
+ priority INTEGER NOT NULL DEFAULT 0,
+ starts_at TEXT NOT NULL,
+ ends_at TEXT NOT NULL,
+ PRIMARY KEY(promotion_id,product_id,store_id)
+);
+CREATE INDEX IF NOT EXISTS idx_promotion_rules_store_product ON promotion_rules(store_id,product_id,starts_at,ends_at);
