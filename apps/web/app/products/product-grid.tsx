@@ -2,7 +2,7 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Box,Button,Checkbox,FormControlLabel,MenuItem,Paper,Select,Stack,Typography} from '@mui/material';
 import {AgGridReact} from 'ag-grid-react';
-import {AllCommunityModule,ColDef,GridApi,ModuleRegistry,RowDoubleClickedEvent,RowClickedEvent} from 'ag-grid-community';
+import {AllCommunityModule,ColDef,GridApi,ICellRendererParams,ModuleRegistry,RowDoubleClickedEvent,RowClickedEvent} from 'ag-grid-community';
 import type {Product} from './page';
 import {Icon} from '../app-shell';
 
@@ -27,7 +27,7 @@ export default function ProductGrid({rows,workingStore,onPreview,onOpen}:{rows:P
   {field:'retail',headerName:labels.retail,width:90,type:'numericColumn',valueFormatter:p=>'£'+Number(p.value).toFixed(2)},
   {field:'margin',headerName:labels.margin,width:90,type:'numericColumn',valueFormatter:p=>p.value+'%'},
   {field:'stock',headerName:labels.stock,width:85,type:'numericColumn'},
-  {field:'status',headerName:labels.status,width:130,cellRenderer:(p:any)=>{const e=document.createElement('span');e.className='agStatus '+String(p.value).toLowerCase().replaceAll(' ','-');e.textContent=String(p.value);return e}}
+  {field:'status',headerName:labels.status,width:130,cellRenderer:(p:ICellRendererParams<Row,Product['status']>)=>{const status=String(p.value??'');return <span className={'agStatus '+status.toLowerCase().replaceAll(' ','-')}>{status}</span>}}
  ],[]);
  const api=()=>gridRef.current?.api;
  const reset=()=>{setDensity('compact');setHidden({});api()?.resetColumnState();api()?.setFilterModel(null);try{localStorage.removeItem(storageKey)}catch{}};
