@@ -2,7 +2,7 @@
   "name": "@omnicore/pos",
   "version": "0.1.0",
   "private": true,
-  "main": "dist-electron/main.js",
+  "main": "dist-electron/electron/main.js",
   "scripts": {
     "dev": "pnpm copy-db-schema && tsc -p tsconfig.electron.json && concurrently \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5174 && electron .\"",
     "build": "pnpm copy-db-schema && tsc -p tsconfig.electron.json && vite build && electron-builder --win nsis",
