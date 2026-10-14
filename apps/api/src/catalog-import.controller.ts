@@ -20,7 +20,7 @@ export class CatalogImportController{
  async execute(@Headers('authorization') header:string|undefined,@Body() input:unknown){const tenantId=this.tenant(header),rows=this.parse(input);
   return this.db.$transaction(async tx=>{
     const results=await this.analyse(tenantId,rows,tx);if(results.some(r=>r.errors.length))throw new BadRequestException({message:'Import conflicts detected; nothing imported',rows:results});
-    const created=[];for(const row of rows){const item=await tx.product.create({data:{tenantId,sku:row.sku,name:row.name,baseUnit:row.baseUnit||'EACH',...(row.barcode?{barcodes:{create:[{code:row.barcode}]}}:{})},select:{id:true,sku:true}});created.push(item)}
+    const created=[];for(const row of rows){const item=await tx.product.create({data:{tenantId,sku:row.sku,name:row.name,baseUnit:row.baseUnit||'EACH',...(row.barcode?{barcodes:{create:[{code:row.barcode,tenantId}]}}:{})},select:{id:true,sku:true}});created.push(item)}
     return{created:created.length,items:created};
   },{timeout:15000});
  }
