@@ -131,15 +131,12 @@ export class CatalogController {
   @Patch(':id')
   async update(@Headers('authorization') auth: string | undefined, @Param('id') id: string, @Body() body: { name?: unknown; status?: unknown; baseUnit?: unknown }) {
     const tenantId = this.tenant(auth);
-    if (!body || typeof body !== 'object' || !['name','status','baseUnit'].some(k => Object.prototype.hasOwnProperty.call(body, k)))
+    if (!body || typeof body !== 'object' || !['name','baseUnit'].some(k => Object.prototype.hasOwnProperty.call(body, k)))
       throw new BadRequestException('At least one mutable product field required');
     const data: Prisma.ProductUpdateManyMutationInput = {};
     if (body.name !== undefined) data.name = this.requiredString(body.name, 'name', 250);
     if (body.baseUnit !== undefined) data.baseUnit = this.requiredString(body.baseUnit, 'baseUnit', 30);
-    if (body.status !== undefined) {
-      if (!Object.values(ProductStatus).includes(body.status as ProductStatus)) throw new BadRequestException('Invalid status');
-      data.status = body.status as ProductStatus;
-    }
+    if (body.status !== undefined) throw new BadRequestException('Use lifecycle transition endpoint for status changes');
     if (!Object.keys(data).length) throw new BadRequestException('No valid updates');
     await this.db.$transaction(async tx=>{const before=await tx.product.findFirst({where:{id,tenantId},select:{name:true,baseUnit:true,status:true}});if(!before)throw new NotFoundException('Product not found');await tx.product.update({where:{id},data});await tx.catalogAudit.create({data:{tenantId,productId:id,action:'PRODUCT_UPDATED',before,after:data as Prisma.InputJsonObject}})});
     return this.get(auth, id);
