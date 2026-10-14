@@ -8,8 +8,11 @@ datasource db {
 }
 
 enum ProductStatus {
+  DRAFT
   ACTIVE
   INACTIVE
+  DISCONTINUED
+  ARCHIVED
 }
 
 enum PurchaseOrderStatus {
