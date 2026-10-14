@@ -1,5 +1,5 @@
 import {ForbiddenException,Injectable,UnauthorizedException} from '@nestjs/common';
-import {createHash,timingSafeEqual} from 'node:crypto';
+import {createHash} from 'node:crypto';
 import {PrismaService} from './prisma.service';
 
 /** Catalogue permissions are derived from an unexpired server-issued session, not request claims. */
