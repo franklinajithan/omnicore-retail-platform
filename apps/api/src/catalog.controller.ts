@@ -1,4 +1,4 @@
-import { BadRequestException, Body, ConflictException, Controller, Get, Headers, Param, Patch, Post, Query, UnauthorizedException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Body, ConflictException, Controller, Delete, Get, Headers, Param, Patch, Post, Query, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { ProductStatus, Prisma } from '@prisma/client';
 import { timingSafeEqual } from 'node:crypto';
 import { PrismaService } from './prisma.service';
@@ -65,6 +65,35 @@ export class CatalogController {
     const page = rows.slice(0, take);
     return { items: page, hasMore, nextCursor: hasMore ? page[page.length - 1].id : null };
   }
+
+
+  @Post(':id/barcodes')
+  async addBarcode(@Headers('authorization') auth: string | undefined, @Param('id') id: string, @Body() input: { code?: unknown }) {
+    const tenantId = this.tenant(auth);
+    const code = this.barcodeCodes([input?.code])[0];
+    return this.db.$transaction(async tx => {
+      const product = await tx.product.findFirst({ where: { id, tenantId }, select: { id: true } });
+      if (!product) throw new NotFoundException('Product not found');
+      const conflict = await tx.productBarcode.findFirst({ where: { code, product: { tenantId } } });
+      if (conflict) throw new ConflictException('Barcode is already assigned');
+      try {
+        return await tx.productBarcode.create({ data: { productId: id, code } });
+      } catch (err) {
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002')
+          throw new ConflictException('Barcode already exists');
+        throw err;
+      }
+    });
+  }
+
+  @Delete(':id/barcodes/:barcodeId')
+  async removeBarcode(@Headers('authorization') auth: string | undefined, @Param('id') id: string, @Param('barcodeId') barcodeId: string) {
+    const tenantId = this.tenant(auth);
+    const result = await this.db.productBarcode.deleteMany({ where: { id: barcodeId, productId: id, product: { tenantId } } });
+    if (!result.count) throw new NotFoundException('Barcode not found');
+    return { deleted: true };
+  }
+
 
   @Get(':id')
   async get(@Headers('authorization') auth: string | undefined, @Param('id') id: string) {
