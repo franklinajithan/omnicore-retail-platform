@@ -8,8 +8,11 @@ datasource db {
 }
 
 enum ProductStatus {
+  DRAFT
   ACTIVE
   INACTIVE
+  DISCONTINUED
+  ARCHIVED
 }
 
 enum PurchaseOrderStatus {
@@ -36,6 +39,8 @@ model Tenant {
   createdAt DateTime @default(now())
   stores    Store[]
   products  Product[]
+  barcodes ProductBarcode[]
+  catalogAudit CatalogAudit[]
   suppliers Supplier[]
   orders    PurchaseOrder[]
   movements StockMovement[]
@@ -46,6 +51,8 @@ model Tenant {
   prices    ProductPrice[]
   zones     PricingZone[]
   promotions Promotion[]
+  categories ProductCategory[]
+  manufacturers Manufacturer[]
   employees Employee[]
 }
 
@@ -88,7 +95,15 @@ model Product {
   baseUnit    String @default("EACH")
   createdAt   DateTime @default(now())
   tenant      Tenant @relation(fields: [tenantId], references: [id])
+  categoryId String? @db.Uuid
+  manufacturerId String? @db.Uuid
+  category ProductCategory? @relation(fields:[categoryId,tenantId],references:[id,tenantId])
+  manufacturer Manufacturer? @relation(fields:[manufacturerId,tenantId],references:[id,tenantId])
+  aliases ProductAlias[]
+  translations ProductTranslation[]
+  packs ProductPack[]
   barcodes    ProductBarcode[]
+  catalogAudit CatalogAudit[]
   suppliers   SupplierProduct[]
   balances    StockBalance[]
   movements   StockMovement[]
@@ -104,11 +119,14 @@ model Product {
 
 model ProductBarcode {
   id        String @id @default(uuid()) @db.Uuid
+  tenantId  String @db.Uuid
   productId String @db.Uuid
   code      String
-  product   Product @relation(fields: [productId], references: [id])
-  @@unique([productId, code])
-  @@index([code])
+  tenant    Tenant @relation(fields: [tenantId], references: [id])
+  product   Product @relation(fields: [productId, tenantId], references: [id, tenantId])
+  pack ProductPack?
+  @@unique([tenantId, code])
+  @@index([productId])
 }
 
 model Supplier {
@@ -133,8 +151,102 @@ model SupplierProduct {
   cost         Decimal @db.Decimal(18, 4)
   supplier     Supplier @relation(fields: [supplierId], references: [id])
   product      Product @relation(fields: [productId], references: [id])
+  costHistory  SupplierCostHistory[]
   @@unique([supplierId, supplierCode])
   @@unique([supplierId, productId])
+}
+
+model SupplierCostHistory {
+  id String @id @default(uuid()) @db.Uuid
+  supplierProductId String @db.Uuid
+  previousCost Decimal? @db.Decimal(18, 4)
+  newCost Decimal @db.Decimal(18, 4)
+  previousPackSize Decimal? @db.Decimal(18, 3)
+  newPackSize Decimal @db.Decimal(18, 3)
+  reason String
+  changedAt DateTime @default(now())
+  supplierProduct SupplierProduct @relation(fields: [supplierProductId], references: [id])
+  @@index([supplierProductId, changedAt])
+}
+
+model CatalogAudit {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  productId String @db.Uuid
+  action String
+  actorType String @default("PILOT_SERVICE")
+  before Json?
+  after Json?
+  occurredAt DateTime @default(now())
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  product Product @relation(fields: [productId, tenantId], references: [id, tenantId])
+  @@index([tenantId, productId, occurredAt])
+}
+
+
+model ProductCategory {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @db.Uuid
+ code String
+ name String
+ parentId String? @db.Uuid
+ tenant Tenant @relation(fields:[tenantId],references:[id])
+ parent ProductCategory? @relation("CategoryTree",fields:[parentId,tenantId],references:[id,tenantId])
+ children ProductCategory[] @relation("CategoryTree")
+ products Product[]
+ @@unique([tenantId,code])
+ @@unique([id,tenantId])
+}
+
+model Manufacturer {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @db.Uuid
+ code String
+ name String
+ tenant Tenant @relation(fields:[tenantId],references:[id])
+ products Product[]
+ @@unique([tenantId,code])
+ @@unique([id,tenantId])
+}
+
+model ProductAlias {
+ id String @id @default(uuid()) @db.Uuid
+ productId String @db.Uuid
+ value String
+ product Product @relation(fields:[productId],references:[id])
+ @@unique([productId,value])
+}
+
+model ProductTranslation {
+ id String @id @default(uuid()) @db.Uuid
+ productId String @db.Uuid
+ locale String
+ name String
+ product Product @relation(fields:[productId],references:[id])
+ @@unique([productId,locale])
+}
+
+model ProductPack {
+ id String @id @default(uuid()) @db.Uuid
+ productId String @db.Uuid
+ name String
+ unitsPerPack Decimal @db.Decimal(18,3)
+ barcodeId String? @unique @db.Uuid
+ product Product @relation(fields:[productId],references:[id])
+ barcode ProductBarcode? @relation(fields:[barcodeId],references:[id])
+ components ProductPackComponent[] @relation("PackParent")
+ usedIn ProductPackComponent[] @relation("PackChild")
+ @@unique([productId,name])
+}
+
+model ProductPackComponent {
+ id String @id @default(uuid()) @db.Uuid
+ parentPackId String @db.Uuid
+ childPackId String @db.Uuid
+ quantity Decimal @db.Decimal(18,3)
+ parent ProductPack @relation("PackParent",fields:[parentPackId],references:[id])
+ child ProductPack @relation("PackChild",fields:[childPackId],references:[id])
+ @@unique([parentPackId,childPackId])
 }
 
 model StockBalance {
@@ -408,8 +520,20 @@ model Employee {
   tenant Tenant @relation(fields: [tenantId], references: [id])
   stores EmployeeStoreAssignment[]
   accessGrants EmployeeStoreAccessGrant[]
+  catalogSessions CatalogEmployeeSession[]
   @@unique([tenantId, employeeCode])
   @@index([tenantId, status])
+}
+
+model CatalogEmployeeSession {
+  id String @id @default(uuid()) @db.Uuid
+  employeeId String @db.Uuid
+  tokenHash String @unique
+  issuedAt DateTime @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  @@index([employeeId, expiresAt])
 }
 
 model EmployeeStoreAssignment {
