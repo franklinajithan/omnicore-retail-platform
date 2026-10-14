@@ -29,6 +29,7 @@ export default function ImportProducts(){
  return <main style={{padding:24,maxWidth:1150,margin:'auto',fontFamily:'sans-serif'}}>
   <Link href="/products/manage">← Back to Product Manager</Link><h1>Import Products (CSV)</h1><p>Internal pilot · Upload up to 100 records. Preview detects duplicate SKUs and barcodes before writing. This import creates new products only; it never overwrites existing product data.</p>
   <p><strong>Required columns:</strong> SKU, Name. <strong>Optional:</strong> Barcode, BaseUnit. Save Excel files as UTF-8 CSV first.</p>
+  <a download="omnicore-product-import-template.csv" href={'data:text/csv;charset=utf-8,'+encodeURIComponent('SKU,Name,Barcode,BaseUnit\r\n10001,Sample Product,5901234567890,EACH\r\n')}>Download sample CSV template</a><p>Preserve barcodes as text in Excel to retain leading zeros.</p>
   <input aria-label="Choose product CSV" type="file" accept=".csv,text/csv" onChange={fileChanged}/>
   {error&&<p role="alert" style={{color:'firebrick'}}>{error}</p>}
   {created!==null&&<p role="status">Created {created} products. Return to the manager to view them.</p>}
