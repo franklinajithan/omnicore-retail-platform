@@ -48,6 +48,8 @@ model Tenant {
   prices    ProductPrice[]
   zones     PricingZone[]
   promotions Promotion[]
+  categories ProductCategory[]
+  manufacturers Manufacturer[]
   employees Employee[]
 }
 
@@ -90,6 +92,13 @@ model Product {
   baseUnit    String @default("EACH")
   createdAt   DateTime @default(now())
   tenant      Tenant @relation(fields: [tenantId], references: [id])
+  categoryId String? @db.Uuid
+  manufacturerId String? @db.Uuid
+  category ProductCategory? @relation(fields:[categoryId,tenantId],references:[id,tenantId])
+  manufacturer Manufacturer? @relation(fields:[manufacturerId,tenantId],references:[id,tenantId])
+  aliases ProductAlias[]
+  translations ProductTranslation[]
+  packs ProductPack[]
   barcodes    ProductBarcode[]
   catalogAudit CatalogAudit[]
   suppliers   SupplierProduct[]
@@ -168,6 +177,59 @@ model CatalogAudit {
   tenant Tenant @relation(fields: [tenantId], references: [id])
   product Product @relation(fields: [productId, tenantId], references: [id, tenantId])
   @@index([tenantId, productId, occurredAt])
+}
+
+
+model ProductCategory {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @db.Uuid
+ code String
+ name String
+ parentId String? @db.Uuid
+ tenant Tenant @relation(fields:[tenantId],references:[id])
+ parent ProductCategory? @relation("CategoryTree",fields:[parentId,tenantId],references:[id,tenantId])
+ children ProductCategory[] @relation("CategoryTree")
+ products Product[]
+ @@unique([tenantId,code])
+ @@unique([id,tenantId])
+}
+
+model Manufacturer {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @db.Uuid
+ code String
+ name String
+ tenant Tenant @relation(fields:[tenantId],references:[id])
+ products Product[]
+ @@unique([tenantId,code])
+ @@unique([id,tenantId])
+}
+
+model ProductAlias {
+ id String @id @default(uuid()) @db.Uuid
+ productId String @db.Uuid
+ value String
+ product Product @relation(fields:[productId],references:[id])
+ @@unique([productId,value])
+}
+
+model ProductTranslation {
+ id String @id @default(uuid()) @db.Uuid
+ productId String @db.Uuid
+ locale String
+ name String
+ product Product @relation(fields:[productId],references:[id])
+ @@unique([productId,locale])
+}
+
+model ProductPack {
+ id String @id @default(uuid()) @db.Uuid
+ productId String @db.Uuid
+ name String
+ unitsPerPack Decimal @db.Decimal(18,3)
+ barcodeId String? @unique @db.Uuid
+ product Product @relation(fields:[productId],references:[id])
+ @@unique([productId,name])
 }
 
 model StockBalance {
