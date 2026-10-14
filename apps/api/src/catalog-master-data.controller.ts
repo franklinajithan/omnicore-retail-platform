@@ -41,7 +41,7 @@ export class CatalogMasterDataController {
  @Post('products/:id/packs')
  async pack(@Headers('authorization') auth:string|undefined,@Param('id') id:string,@Body() input:{name?:string;unitsPerPack?:string|number}){
   const tenantId=this.tenant(auth),name=this.str(input?.name,'pack name',80),value=String(input?.unitsPerPack??'');
-  if(!/^\\d+(?:\\.\\d{1,3})?$/.test(value)||Number(value)<=0)throw new BadRequestException('Invalid pack quantity');
+  if(!/^[0-9]+(?:[.][0-9]{1,3})?$/.test(value)||Number(value)<=0)throw new BadRequestException('Invalid pack quantity');
   if(!await this.db.product.findFirst({where:{id,tenantId}}))throw new NotFoundException('Product not found');
   return this.db.$transaction(async tx=>{const pack=await tx.productPack.upsert({where:{productId_name:{productId:id,name}},create:{productId:id,name,unitsPerPack:new Prisma.Decimal(value)},update:{unitsPerPack:new Prisma.Decimal(value)}});await tx.catalogAudit.create({data:{tenantId,productId:id,action:'PACK_SAVED',after:{name,unitsPerPack:value}}});return pack});
  }
