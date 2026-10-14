@@ -36,6 +36,7 @@ model Tenant {
   createdAt DateTime @default(now())
   stores    Store[]
   products  Product[]
+  barcodes ProductBarcode[]
   suppliers Supplier[]
   orders    PurchaseOrder[]
   movements StockMovement[]
@@ -104,11 +105,13 @@ model Product {
 
 model ProductBarcode {
   id        String @id @default(uuid()) @db.Uuid
+  tenantId  String @db.Uuid
   productId String @db.Uuid
   code      String
-  product   Product @relation(fields: [productId], references: [id])
-  @@unique([productId, code])
-  @@index([code])
+  tenant    Tenant @relation(fields: [tenantId], references: [id])
+  product   Product @relation(fields: [productId, tenantId], references: [id, tenantId])
+  @@unique([tenantId, code])
+  @@index([productId])
 }
 
 model Supplier {
@@ -133,8 +136,22 @@ model SupplierProduct {
   cost         Decimal @db.Decimal(18, 4)
   supplier     Supplier @relation(fields: [supplierId], references: [id])
   product      Product @relation(fields: [productId], references: [id])
+  costHistory  SupplierCostHistory[]
   @@unique([supplierId, supplierCode])
   @@unique([supplierId, productId])
+}
+
+model SupplierCostHistory {
+  id String @id @default(uuid()) @db.Uuid
+  supplierProductId String @db.Uuid
+  previousCost Decimal? @db.Decimal(18, 4)
+  newCost Decimal @db.Decimal(18, 4)
+  previousPackSize Decimal? @db.Decimal(18, 3)
+  newPackSize Decimal @db.Decimal(18, 3)
+  reason String
+  changedAt DateTime @default(now())
+  supplierProduct SupplierProduct @relation(fields: [supplierProductId], references: [id])
+  @@index([supplierProductId, changedAt])
 }
 
 model StockBalance {
