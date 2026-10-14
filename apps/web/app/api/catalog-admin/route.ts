@@ -1,0 +1,17 @@
+import {NextRequest,NextResponse} from 'next/server';
+import {createHmac,timingSafeEqual} from 'node:crypto';
+const cookie='omnicore_catalog_pilot';
+const secret=()=>process.env.OMNICORE_CATALOG_ADMIN_TOKEN || '';
+function signature(expires:string){return createHmac('sha256',secret()).update('catalog-pilot:'+expires).digest('hex')}
+function valid(req:NextRequest){const token=req.cookies.get(cookie)?.value||'';const [expires,sig]=token.split('.');if(!secret()||!expires||!sig||!/^\\d{13}$/.test(expires)||Number(expires)<Date.now())return false;const expected=Buffer.from(signature(expires));const received=Buffer.from(sig);return expected.length===received.length&&timingSafeEqual(expected,received)}
+const authorized=(req:NextRequest)=>valid(req)?null:NextResponse.json({error:'Catalogue administrator login required'},{status:401});
+function target(req:NextRequest){const base=process.env.OMNICORE_CATALOG_API_URL;if(!base)throw Error('Catalogue backend is not configured');const endpoint=new URL(base);if(!['https:','http:'].includes(endpoint.protocol))throw Error('Invalid API configuration');const u=new URL(req.url);const path=u.searchParams.get('id');if(path && !/^[a-f0-9-]{36}$/i.test(path))throw Error('Invalid product ID');const barcodeId=u.searchParams.get('barcodeId');if(barcodeId && !/^[a-f0-9-]{36}$/i.test(barcodeId))throw Error('Invalid barcode ID');const upstream=new URL('/catalog/v1/products'+(path?'/'+path:'')+(barcodeId?'/barcodes/'+barcodeId:''),endpoint);for(const key of ['q','cursor','limit','status']){const value=u.searchParams.get(key);if(value!==null)upstream.searchParams.set(key,value)}return upstream}
+async function relay(req:NextRequest,method:string){const blocked=authorized(req);if(blocked)return blocked;try{const options:RequestInit={method,headers:{authorization:'Bearer '+secret()},cache:'no-store',redirect:'error'};if(['POST','PATCH'].includes(method)){options.headers={...options.headers,'content-type':'application/json'};const json=await req.json();options.body=JSON.stringify(json)}const response=await fetch(target(req),options);const text=await response.text();return new NextResponse(text,{status:response.status,headers:{'content-type':response.headers.get('content-type')||'application/json','cache-control':'no-store'}})}catch(e){return NextResponse.json({error:e instanceof Error?e.message:'Catalogue request failed'},{status:502})}}
+export async function GET(req:NextRequest){return relay(req,'GET')}
+export async function POST(req:NextRequest){return relay(req,'POST')}
+export async function PATCH(req:NextRequest){return relay(req,'PATCH')}
+export async function DELETE(req:NextRequest){return relay(req,'DELETE')}
+export async function PUT(){return NextResponse.json({error:'Unsupported'},{status:405})}
+export async function OPTIONS(){return NextResponse.json({error:'Unsupported'},{status:405})}
+export async function HEAD(){return new NextResponse(null,{status:405})}
+export {valid,signature,secret,cookie};
