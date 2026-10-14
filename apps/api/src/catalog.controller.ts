@@ -77,7 +77,7 @@ export class CatalogController {
       const conflict = await tx.productBarcode.findFirst({ where: { code, product: { tenantId } } });
       if (conflict) throw new ConflictException('Barcode is already assigned');
       try {
-        return await tx.productBarcode.create({ data: { productId: id, code } });
+        return await tx.productBarcode.create({ data: { productId: id, tenantId, code } });
       } catch (err) {
         if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002')
           throw new ConflictException('Barcode already exists');
@@ -114,7 +114,7 @@ export class CatalogController {
       return await this.db.$transaction(async tx => {
         const conflicts = codes.length ? await tx.productBarcode.findMany({ where: { code: { in: codes }, product: { tenantId } }, select: { code: true } }) : [];
         if (conflicts.length) throw new ConflictException('Barcode already assigned in this tenant: ' + conflicts[0].code);
-        return tx.product.create({ data: { tenantId, sku, name, baseUnit, barcodes: { create: codes.map(code => ({ code })) } }, include: { barcodes: true } });
+        return tx.product.create({ data: { tenantId, sku, name, baseUnit, barcodes: { create: codes.map(code => ({ code, tenantId })) } }, include: { barcodes: true } });
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') throw new ConflictException('SKU or barcode already exists');
