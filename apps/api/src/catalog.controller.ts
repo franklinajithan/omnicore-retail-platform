@@ -77,7 +77,7 @@ export class CatalogController {
       const conflict = await tx.productBarcode.findFirst({ where: { code, product: { tenantId } } });
       if (conflict) throw new ConflictException('Barcode is already assigned');
       try {
-        return await tx.productBarcode.create({ data: { productId: id, tenantId, code } });
+        const added=await tx.productBarcode.create({ data: { productId: id, tenantId, code } });await tx.catalogAudit.create({data:{tenantId,productId:id,action:'BARCODE_ADDED',after:{code}}});return added;
       } catch (err) {
         if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002')
           throw new ConflictException('Barcode already exists');
@@ -89,11 +89,17 @@ export class CatalogController {
   @Delete(':id/barcodes/:barcodeId')
   async removeBarcode(@Headers('authorization') auth: string | undefined, @Param('id') id: string, @Param('barcodeId') barcodeId: string) {
     const tenantId = this.tenant(auth);
-    const result = await this.db.productBarcode.deleteMany({ where: { id: barcodeId, productId: id, product: { tenantId } } });
-    if (!result.count) throw new NotFoundException('Barcode not found');
-    return { deleted: true };
+    return this.db.$transaction(async tx=>{const previous=await tx.productBarcode.findFirst({where:{id:barcodeId,productId:id,tenantId}});if(!previous)throw new NotFoundException('Barcode not found');await tx.productBarcode.delete({where:{id:barcodeId}});await tx.catalogAudit.create({data:{tenantId,productId:id,action:'BARCODE_REMOVED',before:{code:previous.code}}});return{deleted:true}});
   }
 
+
+  @Get(':id/audit')
+  async audit(@Headers('authorization') auth:string|undefined,@Param('id') id:string){
+    const tenantId=this.tenant(auth);
+    const exists=await this.db.product.findFirst({where:{id,tenantId},select:{id:true}});
+    if(!exists)throw new NotFoundException('Product not found');
+    return this.db.catalogAudit.findMany({where:{tenantId,productId:id},orderBy:{occurredAt:'desc'},take:100});
+  }
 
   @Get(':id')
   async get(@Headers('authorization') auth: string | undefined, @Param('id') id: string) {
@@ -114,7 +120,7 @@ export class CatalogController {
       return await this.db.$transaction(async tx => {
         const conflicts = codes.length ? await tx.productBarcode.findMany({ where: { code: { in: codes }, product: { tenantId } }, select: { code: true } }) : [];
         if (conflicts.length) throw new ConflictException('Barcode already assigned in this tenant: ' + conflicts[0].code);
-        return tx.product.create({ data: { tenantId, sku, name, baseUnit, barcodes: { create: codes.map(code => ({ code, tenantId })) } }, include: { barcodes: true } });
+        const product=await tx.product.create({ data: { tenantId, sku, name, baseUnit, barcodes: { create: codes.map(code => ({ code, tenantId })) } }, include: { barcodes: true } });await tx.catalogAudit.create({data:{tenantId,productId:product.id,action:'PRODUCT_CREATED',after:{sku,name,baseUnit,barcodes:codes}}});return product;
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') throw new ConflictException('SKU or barcode already exists');
@@ -135,8 +141,7 @@ export class CatalogController {
       data.status = body.status as ProductStatus;
     }
     if (!Object.keys(data).length) throw new BadRequestException('No valid updates');
-    const count = await this.db.product.updateMany({ where: { id, tenantId }, data });
-    if (!count.count) throw new NotFoundException('Product not found');
+    await this.db.$transaction(async tx=>{const before=await tx.product.findFirst({where:{id,tenantId},select:{name:true,baseUnit:true,status:true}});if(!before)throw new NotFoundException('Product not found');await tx.product.update({where:{id},data});await tx.catalogAudit.create({data:{tenantId,productId:id,action:'PRODUCT_UPDATED',before,after:data as Prisma.InputJsonObject}})});
     return this.get(auth, id);
   }
 }
