@@ -24,7 +24,16 @@ export class CatalogCommercialController {
   const packSize=this.value(input.packSize,'packSize',true),cost=this.value(input.cost,'cost');
   const [product,supplier]=await Promise.all([this.db.product.findFirst({where:{id:productId,tenantId},select:{id:true}}),this.db.supplier.findFirst({where:{id:input.supplierId,tenantId},select:{id:true}})]);
   if(!product||!supplier)throw new NotFoundException('Supplier or product not found in tenant');
-  try{return await this.db.supplierProduct.upsert({where:{supplierId_productId:{supplierId:supplier.id,productId}},create:{supplierId:supplier.id,productId,supplierCode:input.supplierCode.trim(),packSize,cost},update:{supplierCode:input.supplierCode.trim(),packSize,cost}})}
+  try{return await this.db.$transaction(async tx=>{
+   const existing=await tx.supplierProduct.findUnique({where:{supplierId_productId:{supplierId:supplier.id,productId}}});
+   const item=existing
+    ?await tx.supplierProduct.update({where:{id:existing.id},data:{supplierCode:input.supplierCode.trim(),packSize,cost}})
+    :await tx.supplierProduct.create({data:{supplierId:supplier.id,productId,supplierCode:input.supplierCode.trim(),packSize,cost}});
+   if(!existing||!existing.cost.equals(cost)||!existing.packSize.equals(packSize)){
+    await tx.supplierCostHistory.create({data:{supplierProductId:item.id,previousCost:existing?.cost??null,newCost:cost,previousPackSize:existing?.packSize??null,newPackSize:packSize,reason:existing?'SUPPLIER_COST_OR_PACK_UPDATED':'SUPPLIER_LINK_CREATED'}});
+   }
+   return item;
+  })}
   catch(e){if(e instanceof Prisma.PrismaClientKnownRequestError&&e.code==='P2002')throw new ConflictException('Supplier code already assigned');throw e}
  }
  @Post('products/:id/prices')
