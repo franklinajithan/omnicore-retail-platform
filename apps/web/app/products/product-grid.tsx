@@ -16,7 +16,7 @@ export default function ProductGrid({rows,workingStore,onPreview,onOpen}:{rows:P
  const gridRef=useRef<AgGridReact<Row>>(null);const[density,setDensity]=useState<'compact'|'standard'>('compact');const[chooser,setChooser]=useState(false);const[hidden,setHidden]=useState<Record<string,boolean>>({});
  useEffect(()=>{try{const s=JSON.parse(localStorage.getItem(storageKey)||'{}');if(s.density)setDensity(s.density);if(s.hidden)setHidden(s.hidden)}catch{}},[]);
  useEffect(()=>{try{localStorage.setItem(storageKey,JSON.stringify({density,hidden}))}catch{}},[density,hidden]);
- const data=useMemo<Row[]>(()=>rows.map(p=>({...p,margin:Math.round((p.retail-p.cost)/p.retail*100)})),[rows]);
+ const data=useMemo<Row[]>(()=>rows.map(p=>({...p,margin:p.retail>0?Math.round((p.retail-p.cost)/p.retail*100):0})),[rows]);
  const columns=useMemo<ColDef<Row>[]>(()=>[
   {field:'itemCode',headerName:labels.itemCode,width:115,pinned:'left'},
   {field:'name',headerName:labels.product,minWidth:280,flex:1},
@@ -31,15 +31,27 @@ export default function ProductGrid({rows,workingStore,onPreview,onOpen}:{rows:P
  ],[]);
  const api=()=>gridRef.current?.api;
  const reset=()=>{setDensity('compact');setHidden({});api()?.resetColumnState();api()?.setFilterModel(null);try{localStorage.removeItem(storageKey)}catch{}};
- const toggle=(key:Key)=>{const field=key==='product'?'name':key;setHidden(v=>({...v,[key]:!v[key]}));api()?.setColumnsVisible([field],!!hidden[key])};
+ const toggle=(key:Key)=>{setHidden(v=>({...v,[key]:!v[key]}))};
  const copy=()=>{api()?.copySelectedRowsToClipboard({includeHeaders:true})};
+ const exportCsv=()=>{
+  const grid=api();if(!grid)return;
+  const safeStore=workingStore.replace(/[^a-z0-9_-]+/gi,'-').replace(/^-|-$/g,'')||'Store';
+  const date=new Date().toISOString().slice(0,10);
+  grid.exportDataAsCsv({
+   fileName:`OmniCore-Products-${safeStore}-${date}.csv`,
+   exportedRows:'filteredAndSorted',
+   allColumns:false,
+   processCellCallback:p=>p.column.getColId()==='margin'?`${p.value}%`:p.value==null?'':String(p.value),
+  });
+ };
+ useEffect(()=>{const grid=api();if(!grid)return;for(const key of Object.keys(labels) as Key[]){grid.setColumnsVisible([key==='product'?'name':key],!hidden[key])}},[hidden]);
  const openFrom=(p?:Row|null)=>{if(p)onOpen(p)};
  const click=(e:RowClickedEvent<Row>)=>{if(e.data)onPreview(e.data)};
  const dbl=(e:RowDoubleClickedEvent<Row>)=>openFrom(e.data);
  return <Box className="agProductShell">
   <Paper className="gridToolbar" variant="outlined"><Stack direction="row" spacing={1} alignItems="center" sx={{width:'100%',flexWrap:'wrap'}}>
    <Typography fontWeight={600}>Product grid · {workingStore}</Typography><Typography variant="body2" color="text.secondary" sx={{flex:1}}>AG Grid · sort, filter, resize, reorder, keyboard navigation & Excel copy</Typography>
-   <Button variant="outlined" size="small" onClick={copy}>Copy rows</Button><Button variant="outlined" size="small" startIcon={<Icon name="Columns"/>} onClick={()=>setChooser(!chooser)}>Columns</Button>
+   <Button variant="outlined" size="small" onClick={copy}>Copy rows</Button><Button variant="outlined" size="small" onClick={exportCsv}>Export CSV</Button><Button variant="outlined" size="small" startIcon={<Icon name="Columns"/>} onClick={()=>setChooser(!chooser)}>Columns</Button>
    <Select size="small" value={density} onChange={e=>setDensity(e.target.value as 'compact'|'standard')}><MenuItem value="compact">Compact</MenuItem><MenuItem value="standard">Comfortable</MenuItem></Select>
    <Button variant="outlined" size="small" startIcon={<Icon name="Reset"/>} onClick={reset}>Reset view</Button>
   </Stack></Paper>
