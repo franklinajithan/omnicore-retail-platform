@@ -32,6 +32,7 @@ export class CatalogCommercialController {
    if(!existing||!existing.cost.equals(cost)||!existing.packSize.equals(packSize)){
     await tx.supplierCostHistory.create({data:{supplierProductId:item.id,previousCost:existing?.cost??null,newCost:cost,previousPackSize:existing?.packSize??null,newPackSize:packSize,reason:existing?'SUPPLIER_COST_OR_PACK_UPDATED':'SUPPLIER_LINK_CREATED'}});
    }
+   await tx.catalogAudit.create({data:{tenantId,productId,action:'SUPPLIER_LINK_SAVED',before:existing?{supplierCode:existing.supplierCode,cost:String(existing.cost),packSize:String(existing.packSize)}:Prisma.JsonNull,after:{supplierId:supplier.id,supplierCode:item.supplierCode,cost:String(item.cost),packSize:String(item.packSize)}}});
    return item;
   })}
   catch(e){if(e instanceof Prisma.PrismaClientKnownRequestError&&e.code==='P2002')throw new ConflictException('Supplier code already assigned');throw e}
@@ -50,7 +51,7 @@ export class CatalogCommercialController {
    const overlapping=await tx.productPrice.findFirst({where:{tenantId,productId,storeId:store.id,effectiveFrom:{gt:effectiveFrom},OR:[{effectiveTo:null},{effectiveTo:{gt:effectiveFrom}}]},select:{id:true}});
    if(overlapping)throw new ConflictException('Future overlapping price exists; review schedule first');
    await tx.productPrice.updateMany({where:{tenantId,productId,storeId:store.id,effectiveFrom:{lte:effectiveFrom},OR:[{effectiveTo:null},{effectiveTo:{gt:effectiveFrom}}]},data:{effectiveTo:effectiveFrom}});
-   return tx.productPrice.create({data:{tenantId,productId,storeId:store.id,retailPrice,vatRate,effectiveFrom}});
+   const price=await tx.productPrice.create({data:{tenantId,productId,storeId:store.id,retailPrice,vatRate,effectiveFrom}});await tx.catalogAudit.create({data:{tenantId,productId,action:'STORE_PRICE_SET',after:{storeId:store.id,retailPrice:String(retailPrice),vatRate:String(vatRate),effectiveFrom:effectiveFrom.toISOString()}}});return price;
   });
  }
 }
