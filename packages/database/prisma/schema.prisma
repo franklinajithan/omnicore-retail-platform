@@ -121,6 +121,7 @@ model ProductBarcode {
   code      String
   tenant    Tenant @relation(fields: [tenantId], references: [id])
   product   Product @relation(fields: [productId, tenantId], references: [id, tenantId])
+  pack ProductPack?
   @@unique([tenantId, code])
   @@index([productId])
 }
@@ -229,7 +230,20 @@ model ProductPack {
  unitsPerPack Decimal @db.Decimal(18,3)
  barcodeId String? @unique @db.Uuid
  product Product @relation(fields:[productId],references:[id])
+ barcode ProductBarcode? @relation(fields:[barcodeId],references:[id])
+ components ProductPackComponent[] @relation("PackParent")
+ usedIn ProductPackComponent[] @relation("PackChild")
  @@unique([productId,name])
+}
+
+model ProductPackComponent {
+ id String @id @default(uuid()) @db.Uuid
+ parentPackId String @db.Uuid
+ childPackId String @db.Uuid
+ quantity Decimal @db.Decimal(18,3)
+ parent ProductPack @relation("PackParent",fields:[parentPackId],references:[id])
+ child ProductPack @relation("PackChild",fields:[childPackId],references:[id])
+ @@unique([parentPackId,childPackId])
 }
 
 model StockBalance {
