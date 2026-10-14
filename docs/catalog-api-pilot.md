@@ -37,3 +37,13 @@ The tenant comes exclusively from server configuration. A caller cannot set tena
 7. Document backup/restore, monitoring, operational limitations and release readiness.
 
 Do not merge or deploy without validation.
+
+## CSV import pilot
+- UI: `/products/manage/import` (linked from catalogue manager)
+- Required CSV headers: SKU, Name; optional Barcode, BaseUnit (also accepts Item Code / Product Code, EAN / GTIN).
+- Supports quoted commas and escaped quotes, 1 MB maximum uploaded file and 100 data rows per batch.
+- Preview: `POST /catalog/v1/import/preview`; execute: `POST /catalog/v1/import/execute`.
+- Detects repeated SKU/barcode in file and existing tenant SKU/barcode conflicts.
+- Rejects entire batch if any row is invalid or a matching existing record is found; imports do not overwrite records.
+- Execute performs revalidation in a Prisma transaction; concurrent barcode writes are not yet secured with a tenant-scoped unique DB constraint, so imports are for internal testing only.
+- Production requires employee audit, stronger database constraints, large-file streaming/batched processing, automated tests and restore procedures.
