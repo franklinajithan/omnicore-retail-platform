@@ -441,8 +441,20 @@ model Employee {
   tenant Tenant @relation(fields: [tenantId], references: [id])
   stores EmployeeStoreAssignment[]
   accessGrants EmployeeStoreAccessGrant[]
+  catalogSessions CatalogEmployeeSession[]
   @@unique([tenantId, employeeCode])
   @@index([tenantId, status])
+}
+
+model CatalogEmployeeSession {
+  id String @id @default(uuid()) @db.Uuid
+  employeeId String @db.Uuid
+  tokenHash String @unique
+  issuedAt DateTime @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  @@index([employeeId, expiresAt])
 }
 
 model EmployeeStoreAssignment {
